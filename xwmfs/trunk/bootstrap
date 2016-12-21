@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# bootstrapping of GNU autotools setup such that you get a configure script that's hopefully working
+
+AUTORECONF=`which autoreconf`
+if [ $? -ne 0 ]; then
+	echo "Couldn't find autoreconf!"
+else
+	echo "Using '${AUTORECONF}' to perform bootstrapping"
+fi
+
+DIR=`dirname $0`
+if [ $? -ne 0 ]; then
+	echo "Couldn't determine base directory!"
+else
+	echo "Using '${DIR}' as base directory"
+fi
+
+${AUTORECONF} -vi "${DIR}"
+if [ $? -ne 0 ]; then
+	echo "Error bootstrapping!"
+	exit 1
+else
+	echo "Successfully performed bootstrapping"
+fi
