@@ -1,6 +1,6 @@
 #include <iostream>
 #include <iomanip>
-#include <set>
+#include <string>
 
 // EXIT_*
 #include <stdlib.h>
@@ -32,7 +32,8 @@ struct WindowFileEntry :
 	WindowFileEntry(
 		const std::string &n,
 		const XWindow& win,
-		const time_t &t = 0) :
+		const time_t &t = 0
+	) :
 		// For now this type is always writeable
 		FileEntry(n, true, t),
 		m_win(win)
@@ -43,11 +44,11 @@ struct WindowFileEntry :
 	 * 	Implementation of write() that updates window properties
 	 * 	according to the file that is being written
 	 **/
-	virtual int write(const char *data, const size_t bytes, off_t offset)
+	int write(const char *data, const size_t bytes, off_t offset) override
 	{
 		// we don't support writing at offsets
 		if( offset )
-			return -EINVAL;
+			return -EOPNOTSUPP;
 		
 		try
 		{
@@ -58,24 +59,18 @@ struct WindowFileEntry :
 			}
 			else if( this->m_name == "desktop" )
 			{
-				std::string num(data, bytes);
-				std::stringstream ss;
-				ss.str( num );
 				int the_num;
-				ss >> the_num;
+				const auto parsed = parseInteger(
+					data, bytes, the_num
+				);
 
-				if( ss.fail() )
+				if( parsed >= 0 )
 				{
-					xwmfs::StdLogger::getInstance().warn()
-						<< __FUNCTION__
-						<< ": Got argument for window "
-						"desktop that isn't numerical:"
-						<< " \"" << data << "\""
-						<< "\n";
-					return -EINVAL;
+					m_win.setDesktop( the_num );
 				}
 
-				m_win.setDesktop( the_num );
+
+				return parsed;
 			}
 			else
 			{
@@ -116,13 +111,80 @@ struct WindowFileEntry :
 	 * \brief
 	 * 	Casts the object to its associated XWindow type
 	 **/
-	operator XWindow&()
-	{
-		return m_win;
-	}
+	operator XWindow&() { return m_win; }
 protected:
+
 	//! XWindow associated with this FileEntry
 	XWindow m_win; // XXX currently a flat copy
+};
+
+/**
+ * \brief
+ * 	A FileEntry that is associated with a global window manager entry
+ * \details
+ * 	This is a specialized FileEntry for particular global entries relating
+ * 	to the window manager. Mostly this is only used for writable files to
+ * 	relay the write request correctly.
+ **/
+struct WinManagerEntry : 
+	public FileEntry
+{
+	WinManagerEntry(const std::string &n, const time_t &t) :
+		FileEntry(n, true, t)
+	{}
+
+	int write(const char *data, const size_t bytes, off_t offset) override
+	{
+		// we don't support writing at offsets
+		if( offset )
+			return -EOPNOTSUPP;
+
+		auto root_win = xwmfs::Xwmfs::getInstance().getRootWin();
+		auto &logger = xwmfs::StdLogger::getInstance();
+
+		try
+		{
+			if( this->m_name == "active_desktop" )
+			{
+				int the_num;
+				const auto parsed = parseInteger(
+					data, bytes, the_num
+				);
+
+				if( parsed >= 0 )
+				{
+					root_win.setWM_ActiveDesktop(the_num);
+				}
+			}
+			else
+			{
+				logger.warn()
+					<< __FUNCTION__
+					<< ": Write cal for win manager file of unknown type: \""
+					<< this->m_name
+					<< "\"\n";
+				return -ENXIO;
+			}
+		}
+		catch( const xwmfs::XWindow::NotImplemented &e )
+		{
+			return -ENOSYS;
+		}
+		catch( const xwmfs::Exception &e )
+		{
+			logger.error()
+				<< __FUNCTION__ << ": Error setting window manager property ("
+				<< this->m_name << "): " << e.what() << std::endl;
+			return -EINVAL;
+		}
+
+
+		// claim we wrote all content. This "eats up" things like
+		// newlines passed with 'echo'.  Otherwise programs may try to
+		// write the "missing" bytes which turns into an offset write
+		// than which we don't support
+		return bytes;
+	}
 };
 
 /*
@@ -408,7 +470,7 @@ void Xwmfs::createFS()
 
 	// add name entry in wm dir
 	FileEntry *wm_name =
-		m_wm_dir->addEntry( new xwmfs::FileEntry("name", true) );
+		m_wm_dir->addEntry( new xwmfs::FileEntry("name", false) );
 
 	*wm_name << (m_root_win.hasWM_Name() ?
 		m_root_win.getWM_Name() : "N/A") << '\n';
@@ -433,11 +495,11 @@ void Xwmfs::createFS()
 	*wm_class << (m_root_win.hasWM_Class() ?
 		m_root_win.getWM_Class() : "N/A" ) << '\n';
 
-	// XXX allow writing this file, too. Should be enough to make the
-	// FileEntry a WindowFileEntry for the root window
-	// XXX also allow for updates of this property via the event thread
+	// add an entry reflecting the active desktop and also allowing to
+	// change it
 	FileEntry *wm_active_desktop = m_wm_dir->addEntry(
-		new xwmfs::FileEntry("active_desktop") );
+		new xwmfs::WinManagerEntry("active_desktop", true)
+	);
 	*wm_active_desktop << (m_root_win.hasWM_ActiveDesktop() ?
 		m_root_win.getWM_ActiveDesktop() : -1 ) << '\n';
 
