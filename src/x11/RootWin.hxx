@@ -102,6 +102,9 @@ public: // functions
 	//! returns the currently active desktop, if found
 	int getWM_ActiveDesktop() const { return m_wm_active_desktop; }
 
+	//! changes the active desktop
+	void setWM_ActiveDesktop(const int &num);
+
 	//! returns the number of desktops determined
 	int getWM_NumDesktops() const { return m_wm_num_desktops; }
 
