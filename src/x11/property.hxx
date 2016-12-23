@@ -115,7 +115,8 @@ public: // functions
 	static void assignNative(
 		int &i,
 		NativePtrType data,
-		unsigned int count)
+		unsigned int count
+	)
 	{
 		i = static_cast<int>(*data);
 		(void)count;
@@ -374,7 +375,8 @@ public: // functions
 		if( !m_data )
 		{
 			throw Exception(XWMFS_SRC_LOCATION,
-				"No valid property stored"); 
+				"No valid property stored"
+			); 
 		}
 
 		return m_native;
@@ -435,14 +437,12 @@ protected: // functions
 		Traits::assignNative(
 			m_native,
 			m_data,
-			size / (Traits::format / 8) );
+			size / (Traits::format / 8)
+		);
 	}
 	
 	//! Retrieves the associated XAtom type from the traits of PROPTYPE
-	Atom getXType() const
-	{
-		return Traits::x_type;
-	}
+	Atom getXType() const { return Traits::x_type; }
 
 	/**
 	 * \brief
@@ -462,7 +462,7 @@ protected: // functions
 			//std::cout << "Xfree res = " << res << std::endl;
 			//assert( res == Success );
 
-			m_data = NULL;
+			m_data = nullptr;
 		}
 	}
 private:

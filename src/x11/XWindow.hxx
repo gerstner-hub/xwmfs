@@ -97,6 +97,18 @@ public: // types
 
 	};
 
+	//! exception used in situations when an operation is not implemented
+	//! by the window manager
+	class NotImplemented :
+		public xwmfs::Exception
+	{
+	public: // functions
+
+		NotImplemented(const SourceLocation sl) :
+			Exception(sl, "The operation is not implemented")
+		{ }
+	};
+
 public: // functions
 
 	//! Create an object without binding to a window
@@ -113,16 +125,10 @@ public: // functions
 	XWindow(Window win);
 	
 	//! returns true if the object holds a valid XWindow
-	bool valid() const
-	{
-		return m_win != 0;
-	}
+	bool valid() const { return m_win != 0; }
 
 	//! returns the Xlib primitive Window identifier
-	Window id() const
-	{
-		return m_win;
-	}
+	Window id() const { return m_win; }
 
 	/**
 	 * \brief
@@ -196,7 +202,8 @@ public: // functions
 	 **/
 	template <typename PROPTYPE>
 	inline void getProperty(
-		const Atom name_atom, Property<PROPTYPE> &p) const;
+		const Atom name_atom, Property<PROPTYPE> &p
+	) const;
 
 	/**
 	 * \brief
@@ -222,15 +229,14 @@ public: // functions
 	 **/
 	template <typename PROPTYPE>
 	inline void setProperty(
-		const Atom name_atom, const Property<PROPTYPE> &p);
+		const Atom name_atom, const Property<PROPTYPE> &p
+	);
 	
 	//! compares the Xlib Window primitive for equality
-	bool operator==(const XWindow &o) const
-	{ return m_win == o.m_win; }
+	bool operator==(const XWindow &o) const { return m_win == o.m_win; }
 	
-	//! oppositve of operator==(const XWindow&) const
-	bool operator!=(const XWindow &o) const
-	{ return !operator==(o); }
+	//! opposive of operator==(const XWindow&) const
+	bool operator!=(const XWindow &o) const { return !operator==(o); }
 
 	/**
 	 * \brief
@@ -253,7 +259,8 @@ public: // functions
 		// and such
 		m_event_mask |= SubstructureNotifyMask;
 		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask);
+			XDisplay::getInstance(), m_win, m_event_mask
+		);
 		
 		// stupid return codes again
 		(void)res;
@@ -271,7 +278,8 @@ public: // functions
 	{
 		m_event_mask |= StructureNotifyMask;
 		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask);
+			XDisplay::getInstance(), m_win, m_event_mask
+		);
 		
 		// stupid return codes again
 		(void)res;
@@ -289,7 +297,8 @@ public: // functions
 	{
 		m_event_mask |= PropertyChangeMask;
 		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask);
+			XDisplay::getInstance(), m_win, m_event_mask
+		);
 
 		// stupid return codes again
 		(void)res;
@@ -351,7 +360,8 @@ inline void XWindow::getProperty(
 		&ret_items,
 		&remaining_bytes,
 		// where data is stored
-		&data);
+		&data
+	);
 
 	// note: on success data is memory allocated by Xlib. data always
 	// contains one excess byte that is set to zero thus its possible to
@@ -361,7 +371,8 @@ inline void XWindow::getProperty(
 		throw PropertyQueryError(
 			XWMFS_SRC_LOCATION,
 			XDisplay::getInstance(),
-			res);
+			res
+		);
 	}
 
 	if( actual_type == None )
@@ -388,7 +399,8 @@ inline void XWindow::getProperty(
 
 template <typename PROPTYPE>
 inline void XWindow::setProperty(
-	const Atom name_atom, const Property<PROPTYPE> &prop)
+	const Atom name_atom, const Property<PROPTYPE> &prop
+)
 {
 	/*
 	 * NOTE: currently only performs mode PropModeReplace
@@ -411,7 +423,8 @@ inline void XWindow::setProperty(
 		THIS_PROP::Traits::format,
 		PropModeReplace,
 		(unsigned char*)prop.getRawData(),
-		siz);
+		siz
+	);
 
 	// XChangeProperty returns constantly 1 which would result in
 	// "BadRequest".
