@@ -33,7 +33,8 @@ void RootWin::getInfo()
 
 void RootWin::sendRequest(
 	const XWindow &window,
-	const XAtom &message, unsigned long data)
+	const XAtom &message, unsigned long data
+)
 {
 	XEvent event;
 	// TODO: find out what the mask actually does mean in the send event
@@ -54,7 +55,8 @@ void RootWin::sendRequest(
 		this->id(),
 		False,
 		mask,
-		&event );
+		&event
+	);
 
 	if( s == BadValue || s == BadWindow )
 	{
@@ -317,7 +319,10 @@ void RootWin::updateActiveDesktop()
 	{
 		Property<int> wm_desktop;
 
-		this->getProperty(m_std_props.atom_ewmh_wm_cur_desktop, wm_desktop);
+		this->getProperty(
+			m_std_props.atom_ewmh_wm_cur_desktop,
+			wm_desktop
+		);
 
 		m_wm_active_desktop = wm_desktop.get();
 
@@ -400,6 +405,20 @@ void RootWin::queryWindows()
 		throw;
 	}
 
+}
+
+void RootWin::setWM_ActiveDesktop(const int &num)
+{
+	if( ! hasWM_ActiveDesktop() )
+	{
+		throw NotImplemented(XWMFS_SRC_LOCATION);
+	}
+
+	this->sendRequest(
+		*this,
+		m_std_props.atom_ewmh_wm_cur_desktop,
+		num
+	);
 }
 	
 void RootWin::setWM_NumDesktops(const int &num)
