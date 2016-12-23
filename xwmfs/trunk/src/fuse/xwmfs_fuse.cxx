@@ -1,4 +1,8 @@
+// xwmfs
 #include "fuse/xwmfs_fuse.hxx"
+
+// C++
+#include <string>
 
 namespace xwmfs
 {
@@ -82,6 +86,24 @@ Entry* RootEntry::findEntry(const char* path)
 	assert( ret );
 
 	return ret;
+}
+
+int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
+{
+	size_t endpos;
+	std::string string(data, bytes);
+	try
+	{
+		result = std::stoi( string, &endpos );
+	}
+	catch( const std::exception &ex )
+	{
+		std::cerr << ex.what() << std::endl;
+		result = -1;
+		return -EINVAL;
+	}
+
+	return endpos;
 }
 
 } // end ns

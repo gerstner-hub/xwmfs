@@ -1,13 +1,16 @@
 #ifndef XWMFS_FUSE_HXX
 #define XWMFS_FUSE_HXX
 
+// C
 #include <errno.h>
 
+// C++
 #include <cstring>
 #include <cassert>
 #include <sstream>
 #include <map>
 
+// xwmfs
 #include "common/RWLock.hxx"
 #include "main/StdLogger.hxx"
 
@@ -107,16 +110,13 @@ public: // functions
 	}
 
 	//! returns the name of the file system entry
-	const std::string& name() const
-	{ return m_name; }
+	const std::string& name() const { return m_name; }
 
 	//! returns the type of the file system entry
-	Type type() const
-	{ return m_type; }
+	Type type() const { return m_type; }
 
 	//! returns whether the file system entry is writeable
-	bool isWriteable() const
-	{ return m_writeable; }
+	bool isWriteable() const { return m_writeable; }
 
 	//! sets the modification time of the file system entry to \c t
 	void setModifyTime(const time_t &t)
@@ -156,11 +156,30 @@ protected: // functions
 	 * 	will be handled as writeable if \c writeable is set and the
 	 * 	initial status and modification times will be \c time.
 	 **/
-	Entry(const std::string &n, const Type &t, const bool writeable = false,
-		const time_t &time = 0) :
+	Entry(
+		const std::string &n,
+		const Type &t,
+		const bool writeable = false,
+		const time_t &time = 0
+	) :
 		m_name(n), m_type(t), m_writeable(writeable),
 		m_modify_time(time), m_status_time(time)
 	{ };
+
+	/**
+	 * \brief
+	 * 	Converts untrusted input \c data of \c bytes length into its
+	 * 	integer representation
+	 * \details
+	 * 	The string in \c data can be octal, hexadecimal or decimal
+	 * 	using the typical syntax.
+	 * \return
+	 * 	< 0 if an error occured. This will then be the error code to
+	 * 	return to FUSE. >= 0 is an integer could be parsed. This will
+	 * 	then be the number of characters from \c data that have been
+	 * 	parsed.
+	 **/
+	int parseInteger(const char *data, const size_t bytes, int &result) const;
 
 protected: // data
 	
