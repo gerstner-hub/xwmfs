@@ -345,7 +345,7 @@ public: // functions
 	//! construct an empty/default property value
 	Property() :
 		m_native(),
-		m_data(NULL)
+		m_data(nullptr)
 	{ }
 
 	//! construct a property holding the value from \c p
@@ -374,7 +374,8 @@ public: // functions
 	{
 		if( !m_data )
 		{
-			throw Exception(XWMFS_SRC_LOCATION,
+			throw Exception(
+				XWMFS_SRC_LOCATION,
 				"No valid property stored"
 			); 
 		}
