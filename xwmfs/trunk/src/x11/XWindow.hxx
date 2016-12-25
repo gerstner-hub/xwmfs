@@ -122,7 +122,7 @@ public: // functions
 	 * \brief
 	 * 	Create an object representing \c win on the current Display
 	 **/
-	XWindow(Window win);
+	explicit XWindow(Window win);
 	
 	//! returns true if the object holds a valid XWindow
 	bool valid() const { return m_win != 0; }
@@ -444,10 +444,12 @@ inline void XWindow::setProperty(
 	// without copying it.
 }
 
+} // end ns
+
 //! \brief
 //! output operator that prints out the X11 window ID associated with \c
 //! w onto the stream in hex and dec
-inline std::ostream& operator<<(std::ostream &o, const XWindow &w)
+inline std::ostream& operator<<(std::ostream &o, const xwmfs::XWindow &w)
 {
 	const std::ostream::fmtflags f = o.flags();
 
@@ -458,11 +460,10 @@ inline std::ostream& operator<<(std::ostream &o, const XWindow &w)
 		<< std::dec << " (" << w.id() << ")";
 
 	o.flags(f);
+	o << std::dec;
 
 	return o;
 }
-
-} // end ns
 
 #endif // inc. guard
 
