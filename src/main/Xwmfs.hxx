@@ -58,12 +58,7 @@ public: // functions
 	 **/
 	void exit();
 	
-	~Xwmfs()
-	{
-		FD_ZERO(&m_select_set);
-		m_wm_dir = nullptr;
-		m_win_dir = nullptr;
-	}
+	~Xwmfs();
 
 	//! returns the global XWMFS instance
 	static xwmfs::Xwmfs& getInstance()

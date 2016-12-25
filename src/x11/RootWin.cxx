@@ -9,17 +9,12 @@ RootWin::RootWin() :
 	XWindow( DefaultRootWindow(
 		static_cast<Display*>(XDisplay::getInstance()) ) ),
 	m_wm_name(),
-	m_wm_pid(-1),
 	m_wm_class(),
-	m_wm_showing_desktop(-1),
-	m_windows(),
-	m_wm_type(WindowManager::UNKNOWN),
-	m_wm_num_desktops(-1),
-	m_wm_active_desktop(-1)
+	m_windows()
 {
 	xwmfs::StdLogger::getInstance().debug()
 		<< "root window has id: " 
-		<< std::hex << std::showbase << this->id()
+		<< std::hex << std::showbase << this->id() << std::dec
 		<< std::endl;
 	this->getInfo();
 }
@@ -32,29 +27,48 @@ void RootWin::getInfo()
 }
 
 void RootWin::sendRequest(
-	const XWindow &window,
-	const XAtom &message, unsigned long data
+	const XAtom &message,
+	const char *data,
+	const size_t len,
+	const XWindow *window
 )
 {
+	auto &logger = xwmfs::StdLogger::getInstance();
+
+	logger.debug()
+		<< "Sending request to root window: "
+		<< "msg = " << message << " with " << len << " bytes of data, window = "
+		<< (window ? window->id() : 0) << std::endl;
 	XEvent event;
-	// TODO: find out what the mask actually does mean in the send event
-	// context
-	long mask = SubstructureRedirectMask | SubstructureNotifyMask;
+	std::memset( &event, 0, sizeof(event) );
+
+	if( len > sizeof(event.xclient.data) )
+	{
+		throw Exception(
+			XWMFS_SRC_LOCATION,
+			"XEvent data exceeds maximum"
+		);
+	}
 
 	event.xclient.type = ClientMessage;
 	event.xclient.serial = 0;
 	event.xclient.send_event = True;
 	event.xclient.message_type = message;
-	event.xclient.window = window.id();
+	event.xclient.window = window ? window->id() : 0;
 	event.xclient.format = 32;
-	event.xclient.data.l[0] = data;
-	memset( event.xclient.data.l + 1, 0, 4 );
+	std::memcpy(event.xclient.data.b, data, len);
 
 	Status s = XSendEvent(
 		XDisplay::getInstance(),
 		this->id(),
 		False,
-		mask,
+		// the event mask influences which X clients will receive the
+		// event. For the root window to react to our requests these
+		// masks seem to be helpful. 0 value doesn't work. I'm not
+		// sure if this is not too broad but there is no clear
+		// documentation which specific value might be correct for our
+		// use caes
+		SubstructureRedirectMask | SubstructureNotifyMask,
 		&event
 	);
 
@@ -63,7 +77,8 @@ void RootWin::sendRequest(
 		throw X11Exception(
 			XWMFS_SRC_LOCATION,
 			XDisplay::getInstance(),
-			s );
+			s
+		);
 	}
 
 	// make sure the event gets sent out
@@ -72,6 +87,8 @@ void RootWin::sendRequest(
 
 void RootWin::queryWMWindow()
 {
+	auto &logger = xwmfs::StdLogger::getInstance();
+
 	/*
 	 *	I hope I got this stuff right. This part is about checking for
 	 *	the presence of a compatible window manager. Both variants
@@ -107,9 +124,9 @@ void RootWin::queryWMWindow()
 
 		m_ewmh_child = XWindow( child_window_prop.get() );
 
-		xwmfs::StdLogger::getInstance().debug() <<
-			"Child window of EWMH is: " <<
-			std::hex << std::showbase << m_ewmh_child.id() << "\n";
+		logger.debug() << "Child window of EWMH is: "
+			<< std::hex << std::showbase << m_ewmh_child.id()
+			<< std::dec << "\n";
 
 		/*
 		 *	m_ewmh_child also needs to have
@@ -128,8 +145,7 @@ void RootWin::queryWMWindow()
 
 		if( m_ewmh_child == child2 )
 		{
-			xwmfs::StdLogger::getInstance().debug() <<
-				"EWMH compatible WM is running!\n";
+			logger.debug() << "EWMH compatible WM is running!\n";
 		}
 		else
 		{
@@ -140,7 +156,7 @@ void RootWin::queryWMWindow()
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().error()
+		logger.error()
 			<< "Couldn't query EWMH child window: " << ex.what()
 			<< "\nSorry, can't continue without EWMH compatible"\
 			" WM running\n";
@@ -280,6 +296,7 @@ void RootWin::queryBasicWMProperties()
 	updateShowingDesktop();
 	updateNumberOfDesktops();
 	updateActiveDesktop();
+	updateActiveWindow();
 }
 
 
@@ -338,13 +355,44 @@ void RootWin::updateActiveDesktop()
 	}
 }
 
+// TODO: write a template function that can update arbitrary properties
+// like
+// updateProperty<PRIMITIVE>(const XAtom &, PRIMITIVE &member) ...
+void RootWin::updateActiveWindow()
+{
+	try
+	{
+		Property<Window> active_window;
+
+		this->getProperty(
+			m_std_props.atom_ewmh_wm_active_window,
+			active_window
+		);
+
+		m_wm_active_window = active_window.get();
+
+		xwmfs::StdLogger::getInstance().debug()
+			<< "active window acquired: "
+			<< m_wm_active_window << "\n";
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().warn()
+			<< "Couldn't determine active window: "
+			<< ex.what();
+	}
+}
+
 void RootWin::updateNumberOfDesktops()
 {
 	try
 	{
 		Property<int> wm_desks;
 
-		this->getProperty(m_std_props.atom_ewmh_wm_nr_desktops, wm_desks);
+		this->getProperty(
+			m_std_props.atom_ewmh_wm_nr_desktops,
+			wm_desks
+		);
 
 		m_wm_num_desktops = wm_desks.get();
 
@@ -414,17 +462,48 @@ void RootWin::setWM_ActiveDesktop(const int &num)
 		throw NotImplemented(XWMFS_SRC_LOCATION);
 	}
 
+	this->sendRequest(m_std_props.atom_ewmh_wm_cur_desktop, num);
+}
+	
+void RootWin::setWM_ActiveWindow(const XWindow &win)
+{
+	if( ! hasWM_ActiveWindow() )
+	{
+		throw NotImplemented(XWMFS_SRC_LOCATION);
+	}
+
+	long data[3];
+	// source indication. 0 == outdated client, 1 == application, 2 ==
+	// pager. Suppose we're a pager.
+	data[0] = 2;
+	// timestamp of the last user activity in the client. Since we have no
+	// real window associated we can set this to zero. Could also set it
+	// to the current time if we count the write request as an activity
+	data[1] = 0;
+	// our currently active window, which I again guess is zero for "we
+	// have none"
+	data[2] = 0;
+	/*
+	 * the window manager may ignore this request based on our provided
+	 * parameters and current states. For example it may set
+	 * _NET_WM_STATE_DEMANDS_ATTENTION instead.
+	 */
 	this->sendRequest(
-		*this,
-		m_std_props.atom_ewmh_wm_cur_desktop,
-		num
+		m_std_props.atom_ewmh_wm_active_window,
+		(const char*)data,
+		sizeof(data),
+		&win
 	);
 }
 	
 void RootWin::setWM_NumDesktops(const int &num)
 {
-	// TODO: not yet implemented
-	(void)num;
+	if( ! hasWM_NumDesktops() )
+	{
+		throw NotImplemented(XWMFS_SRC_LOCATION);
+	}
+
+	this->sendRequest(m_std_props.atom_ewmh_wm_nr_desktops, num);
 }
 
 } // end ns

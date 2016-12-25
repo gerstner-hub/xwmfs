@@ -69,13 +69,10 @@ void XWindow::setDesktop(const int num)
 	 * if the WM honors the request then it will set the property itself
 	 * and we will get an update
 	 */
-	// TODO: it's pretty stupid that we need to pull in the XWMFS code part
-	// here. It breaks modularity. So maybe it's better to make
-	// sendRequest a method of XWindow already.
 	xwmfs::Xwmfs::getInstance().getRootWin().sendRequest(
-		*this,
 		m_std_props.atom_ewmh_window_desktop,
-		num
+		num,
+		this
 	);
 }
 

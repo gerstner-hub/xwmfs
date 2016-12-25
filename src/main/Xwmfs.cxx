@@ -129,7 +129,7 @@ protected:
 struct WinManagerEntry : 
 	public FileEntry
 {
-	WinManagerEntry(const std::string &n, const time_t &t) :
+	WinManagerEntry(const std::string &n, const time_t &t = 0) :
 		FileEntry(n, true, t)
 	{}
 
@@ -144,16 +144,30 @@ struct WinManagerEntry :
 
 		try
 		{
+			int the_num = 0;
+			const auto parsed = parseInteger(data, bytes, the_num);
+
 			if( this->m_name == "active_desktop" )
 			{
-				int the_num;
-				const auto parsed = parseInteger(
-					data, bytes, the_num
-				);
-
 				if( parsed >= 0 )
 				{
 					root_win.setWM_ActiveDesktop(the_num);
+				}
+			}
+			else if( this->m_name == "number_of_desktops" )
+			{
+				if( parsed >= 0 )
+				{
+					root_win.setWM_NumDesktops(the_num);
+				}
+			}
+			else if( this->m_name == "active_window" )
+			{
+				if( parsed >= 0 )
+				{
+					root_win.setWM_ActiveWindow(
+						XWindow(the_num)
+					);
 				}
 			}
 			else
@@ -238,7 +252,9 @@ void Xwmfs::addWindow(const XWindow &win)
 	// add an ID file (when symlinks point there then it's easier this way
 	// to find out the ID of the window
 	FileEntry *win_id = win_dir->addEntry(
-		new xwmfs::FileEntry("id", false, m_current_time), false );
+		new xwmfs::FileEntry("id", false, m_current_time),
+		false
+	);
 
 	// the content for the ID file is the ID, of course
 	*win_id << id.rdbuf() << '\n';
@@ -298,6 +314,7 @@ void Xwmfs::updateRootWindow(Atom changed_atom)
 	updateTime();
 	FileSysWriteGuard write_guard(m_fs_root);
 	
+	auto &logger = xwmfs::StdLogger::getInstance();
 	auto std_props = StandardProps::instance();
 
 	FileEntry *entry = nullptr;
@@ -319,7 +336,7 @@ void Xwmfs::updateRootWindow(Atom changed_atom)
 		}
 		catch(...)
 		{
-			xwmfs::StdLogger::getInstance().error()
+			logger.error()
 				<< "Error udpating number_of_desktops property"
 				<< std::endl;
 		}
@@ -341,15 +358,37 @@ void Xwmfs::updateRootWindow(Atom changed_atom)
 		}
 		catch(...)
 		{
-			xwmfs::StdLogger::getInstance().error()
+			logger.error()
 				<< "Error udpating number_of_desktops property"
 				<< std::endl;
 		}
 
 	}
+	else if( std_props.atom_ewmh_wm_active_window == changed_atom )
+	{
+		m_root_win.updateActiveWindow();
+
+		entry = (FileEntry*)m_wm_dir->getEntry("active_window");
+		if( ! entry )
+			// shouldn't happen
+			return;
+
+		entry->str("");
+
+		try
+		{
+			*entry << m_root_win.getWM_ActiveWindow() << "\n";
+		}
+		catch(...)
+		{
+			logger.error()
+				<< "Error updating active_window property"
+				<< std::endl;
+		}
+	}
 	else
 	{
-		xwmfs::StdLogger::getInstance().warn()
+		logger.warn()
 			<< "Root window unknown property "
 			<< "0x" << changed_atom << ") changed" << std::endl;
 	}
@@ -484,7 +523,7 @@ void Xwmfs::createFS()
 		*wm_sdm << "-1" << '\n';
 
 	FileEntry *wm_nr_desktops = m_wm_dir->addEntry(
-		new xwmfs::FileEntry("number_of_desktops")
+		new xwmfs::WinManagerEntry("number_of_desktops")
 	);
 
 	*wm_nr_desktops << m_root_win.getWM_NumDesktops() << '\n';
@@ -498,10 +537,17 @@ void Xwmfs::createFS()
 	// add an entry reflecting the active desktop and also allowing to
 	// change it
 	FileEntry *wm_active_desktop = m_wm_dir->addEntry(
-		new xwmfs::WinManagerEntry("active_desktop", true)
+		new xwmfs::WinManagerEntry("active_desktop")
 	);
 	*wm_active_desktop << (m_root_win.hasWM_ActiveDesktop() ?
 		m_root_win.getWM_ActiveDesktop() : -1 ) << '\n';
+
+	FileEntry *wm_active_window = m_wm_dir->addEntry(
+		new xwmfs::WinManagerEntry("active_window")
+	);
+
+	*wm_active_window << (m_root_win.hasWM_ActiveWindow() ?
+		m_root_win.getWM_ActiveWindow() : Window(0) ) << '\n';
 
 	// now add a directory that contains each window
 	m_win_dir = new xwmfs::DirEntry("windows");
@@ -706,6 +752,16 @@ Xwmfs::Xwmfs() :
 		abort();
 	}
 }
+	
+Xwmfs::~Xwmfs()
+{
+	FD_ZERO(&m_select_set);
+	m_wm_dir = nullptr;
+	m_win_dir = nullptr;
+
+	::close( m_wakeup_pipe[0] );
+	::close( m_wakeup_pipe[1] );
+}
 
 void Xwmfs::threadEntry(const xwmfs::Thread &t)
 {
@@ -821,7 +877,8 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 			logger.debug() << "Property (atom = "
 				<< std::dec << ev.xproperty.atom
 				<< ") on window " << std::hex
-				<< "0x" << ev.xproperty.window << " changed" << std::endl;
+				<< "0x" << ev.xproperty.window << " changed"
+				<< std::dec << std::endl;
 			switch( ev.xproperty.state )
 			{
 			case PropertyNewValue:
