@@ -86,6 +86,12 @@ public: // functions
 
 	//! returns whether the currently active desktop was found
 	bool hasWM_ActiveDesktop() const { return m_wm_active_desktop != -1; }
+	
+	//! returns whether the currently active desktop was found
+	bool hasWM_ActiveWindow() const { return m_wm_active_window != 0; }
+
+	//! returns whether the current number of desktops was found
+	bool hasWM_NumDesktops() const { return m_wm_num_desktops != -1; }
 
 	//! returns the window manager name, if found
 	const char* getWM_Name() const { return m_wm_name.data(); }
@@ -108,18 +114,41 @@ public: // functions
 	//! returns the number of desktops determined
 	int getWM_NumDesktops() const { return m_wm_num_desktops; }
 
-	//! sets the number of desktops, XXX not yet implemented
+	//! sets the number of desktops
 	void setWM_NumDesktops(const int &num);
 
-	//void setWM_ActiveDesktop(const int desktop_num);
-
-	//!  returns the window manager type running
+	//! returns the window manager type running
 	WindowManager getWM_Type() const { return m_wm_type; }
+
+	//! returns the currently focused window, if any / supported
+	Window getWM_ActiveWindow() const { return m_wm_active_window; }
+
+	//! requests to change the focus to the given window
+	void setWM_ActiveWindow(const XWindow &win);
 
 	//! Returns the list of windows managed by the window manager
 	const std::vector<XWindow>& getWindowList() const
 	{ return m_windows; }
 
+	/**
+	 * \brief
+	 * 	Sends a request to the root window with a single long
+	 * 	parameter as data
+	 **/
+	void sendRequest(
+		const XAtom &message,
+		long data,
+		const XWindow *window = nullptr
+	)
+	{
+		return sendRequest(
+			message,
+			(const char*)&data,
+			sizeof(data),
+			window
+		);
+	}
+	
 	/**
 	 * \brief
 	 * 	Sends a request to the root window
@@ -130,29 +159,22 @@ public: // functions
 	 * 	This event contains a window to operate on, a message of what
 	 * 	to do and parameters to that message.
 	 *
-	 * 	This is currently a very simplified implementation only
-	 * 	allowed to provide exactly one 32-bit parameter to the
-	 * 	message.
+	 * 	data and len make up the raw data to be passed along with the
+	 * 	event. This data is dependent on the message type.
 	 *
 	 * 	Throws an exception on error.
-	 * \todo
-	 * 	XXX
-	 * 	Change the function to take a Property object for data and
-	 * 	then find out automagically how to pack that data into the
-	 * 	event message.
 	 **/
 	void sendRequest(
-		const XWindow &window,
 		const XAtom &message,
-		unsigned long data
+		const char *data = nullptr,
+		const size_t len = 0,
+		const XWindow *window = nullptr
 	);
 
 	void updateShowingDesktop();
-	
 	void updateActiveDesktop();
-
 	void updateNumberOfDesktops();
-
+	void updateActiveWindow();
 
 protected: // functions
 
@@ -201,25 +223,28 @@ private: // data
 	//! queried name of the window manager in UTF8 (or NULL if N/A)
 	std::string m_wm_name;
 	//! the process ID of the window manager (or -1 if N/A)
-	int m_wm_pid;
+	int m_wm_pid = -1;
 	//! queried class of the window manager in UTF8 (or NULL if N/A)
 	xwmfs::Property<xwmfs::utf8_string> m_wm_class;
 	//! \brief
 	//! integer specifying whether currently the "show desktop mode" is
 	//! active (or -1 if N/A)
-	int m_wm_showing_desktop;
+	int m_wm_showing_desktop = -1;
 
 	//! An array of all windows existing, in undefined order
 	std::vector<XWindow> m_windows;
 
 	//! the concrete type of window manager encountered
-	WindowManager m_wm_type;
+	WindowManager m_wm_type = WindowManager::UNKNOWN;
 
 	//! number of available desktops
-	int m_wm_num_desktops;
+	int m_wm_num_desktops = -1;
 
 	//! the currently active/shown desktop nr.
-	int m_wm_active_desktop;
+	int m_wm_active_desktop = -1;
+
+	//! the window that currently has focus
+	Window m_wm_active_window = 0;
 
 	//! names of the desktops 0 ... m_wm_num_desktops
 	std::vector<std::string> m_wm_desktop_names;
