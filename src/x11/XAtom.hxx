@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <stdint.h>
+#include <iosfwd>
 
 #include "common/RWLock.hxx"
 
@@ -49,11 +50,9 @@ public: // functions
 		m_atom(None)
 	{ }
 
-	XAtom( const XAtom &atom ) :
-		m_atom(atom.m_atom)
-	{ }
+	XAtom( const XAtom &atom ) : m_atom(atom.m_atom) { }
 
-	XAtom( const Atom &atom ) :
+	explicit XAtom( const Atom &atom ) :
 		m_atom(atom)
 	{ }
 
@@ -69,11 +68,7 @@ public: // functions
 		return *this;
 	}
 
-	// TODO: check against any side-effects with implicit casting
-	operator Atom() const
-	{
-		return m_atom;
-	}
+	operator Atom() const { return m_atom; }
 
 	Atom get() const { return m_atom; }
 
@@ -134,6 +129,9 @@ public: // functions
 		return this->getAtom(std::string(s));
 	}
 
+	//! tries to do a reverse lookup to get the name of \c atom
+	const std::string& getName(const XAtom &atom) const;
+
 protected: // functions
 
 	//! protected constructor to enforce singleton usage
@@ -187,6 +185,8 @@ struct StandardProps
 	XAtom atom_ewmh_desktop_nr;
 	//! property containing an array of windows managed by EWMH comp. WM
 	XAtom atom_ewmh_wm_window_list;
+	//! property containing the ID of the currently active window
+	XAtom atom_ewmh_wm_active_window;
 	//! name of the machine running the client as seen from server
 	XAtom atom_icccm_client_machine;
 	//! window name property acc. to ICCCM spec.
@@ -200,6 +200,8 @@ private:
 };
 
 } // end ns
+
+std::ostream& operator<<(std::ostream &o, const xwmfs::XAtom &atom);
 
 #endif // inc. guard
 
