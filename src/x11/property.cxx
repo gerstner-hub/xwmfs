@@ -4,7 +4,7 @@
 namespace xwmfs
 {
 
-XAtom XPropTraits<utf8_string>::x_type = 0;
+XAtom XPropTraits<utf8_string>::x_type = XAtom(0);
 
 } // end ns
 
