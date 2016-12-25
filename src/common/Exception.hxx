@@ -120,6 +120,8 @@ private: // data
 	std::vector<xwmfs::Exception> m_pre_errors;
 };
 
+} // end ns
+
 //! \brief
 //! stream output operator that allows to directly print an exception
 //! onto an ostream
@@ -131,8 +133,6 @@ inline std::ostream& operator<<(
 
 	return o;
 }
-
-} // end ns
 
 #endif // inc. guard
 
