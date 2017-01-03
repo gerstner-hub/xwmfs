@@ -32,10 +32,10 @@ struct WindowFileEntry :
 	WindowFileEntry(
 		const std::string &n,
 		const XWindow& win,
-		const time_t &t = 0
+		const time_t &t = 0,
+		const bool writable = true
 	) :
-		// For now this type is always writeable
-		FileEntry(n, true, t),
+		FileEntry(n, writable, t),
 		m_win(win)
 	{ }
 
@@ -264,6 +264,7 @@ void Xwmfs::addWindow(const XWindow &win)
 
 	addWindowName(*win_dir, win);
 	addDesktopNumber(*win_dir, win);
+	addPID(*win_dir, win);
 }
 
 void Xwmfs::addWindowName(DirEntry &win_dir, const XWindow &win)
@@ -305,6 +306,25 @@ void Xwmfs::addDesktopNumber(DirEntry &win_dir, const XWindow &win)
 	{
 		xwmfs::StdLogger::getInstance().debug()
 			<< "Couldn't get desktop nr. for window right away"
+			<< std::endl;
+	}
+}
+
+void Xwmfs::addPID(DirEntry &win_dir, const XWindow &win)
+{
+	try
+	{
+		const int pid = win.getPID();
+		FileEntry *win_pid = win_dir.addEntry(
+			new xwmfs::WindowFileEntry("pid", win, m_current_time, false),
+			false
+		);
+		*win_pid << pid << '\n';
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().debug()
+			<< "Couldn't get pid for window right away"
 			<< std::endl;
 	}
 }

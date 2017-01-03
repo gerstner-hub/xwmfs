@@ -128,6 +128,13 @@ protected: // functions
 	 * 	Adds an entry for the desktop number of \c win into win_dir
 	 **/
 	void addDesktopNumber(DirEntry &win_dir, const XWindow &win);
+	
+	/**
+	 * \brief
+	 * 	Adds an entry for the PID of the window owner of \c win into
+	 * 	win_dir
+	 **/
+	void addPID(DirEntry &win_dir, const XWindow &win);
 
 	/**
 	 * \brief

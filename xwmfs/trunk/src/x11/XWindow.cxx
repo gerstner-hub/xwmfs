@@ -41,6 +41,15 @@ std::string XWindow::getName() const
 	return name.get();
 }
 
+pid_t XWindow::getPID() const
+{
+	xwmfs::Property<int> pid;
+
+	this->getProperty(m_std_props.atom_ewmh_window_pid, pid);
+
+	return pid.get();
+}
+
 int XWindow::getDesktop() const
 {
 	xwmfs::Property<int> desktop_nr;

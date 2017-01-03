@@ -76,9 +76,10 @@ windows: A subdirectory containing further directories that represent all
 |       |                title of the window. You can also write to this file
 |       |                for giving the window a new name.
 |       |--------> desktop: The number of the desktop the window is currently
-|                           located on. Counting starts at zero. You can also
-|                           write a new desktop number to this file to move
-|                           the window to another desktop.
+|       |                   located on. Counting starts at zero. You can also
+|       |                   write a new desktop number to this file to move
+|       |                   the window to another desktop.
+|       |--------> pid: The PID of the process that owns the window
 |--------> wm: A directory containing global state information about the
         |      window manager
         |--------> name: Contains the name of the running window manager.
