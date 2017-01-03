@@ -169,6 +169,8 @@ struct StandardProps
 	XAtom atom_ewmh_window_name;
 	//! desktop on which a window is currently on
 	XAtom atom_ewmh_window_desktop;
+	//! PID associated with a window
+	XAtom atom_ewmh_window_pid;
 	//! name of UTF8 string type
 	XAtom atom_ewmh_utf8_string;
 	//! property of EWMH comp. wm on root window

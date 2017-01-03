@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include <unistd.h> // pid_t
+
 // main xlib header, provides Display declaration
 #include "X11/Xlib.h"
 // declaration of various atom types like XA_WINDOW
@@ -144,6 +146,14 @@ public: // functions
 	 * 	If the name cannot be determined an exception is thrown.
 	 **/
 	std::string getName() const;
+
+	/**
+	 * \brief
+	 * 	Retrieve the PID that owns the represented window
+	 * \details
+	 * 	If the pid cannot be determined an exception is thrown.
+	 **/
+	pid_t getPID() const;
 
 	/**
 	 * \brief

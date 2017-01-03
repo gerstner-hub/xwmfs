@@ -23,6 +23,7 @@ StandardProps::StandardProps()
 		auto &mapper = XAtomMapper::getInstance();
 		atom_ewmh_window_name = mapper.getAtom("_NET_WM_NAME");
 		atom_ewmh_window_desktop = mapper.getAtom("_NET_WM_DESKTOP");
+		atom_ewmh_window_pid = mapper.getAtom("_NET_WM_PID");
 		atom_ewmh_utf8_string = mapper.getAtom("UTF8_STRING");
 		atom_ewmh_support_check = mapper.getAtom("_NET_SUPPORTING_WM_CHECK");
 		atom_ewmh_wm_pid = mapper.getAtom("_NET_WM_PID");
