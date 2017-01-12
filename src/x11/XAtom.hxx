@@ -193,6 +193,10 @@ struct StandardProps
 	XAtom atom_icccm_client_machine;
 	//! window name property acc. to ICCCM spec.
 	XAtom atom_icccm_window_name;
+	//! contains and defines x11 protocols to be supported by clients or not
+	XAtom atom_icccm_wm_protocols;
+	//! a WM_PROTOCOLS request to delete a window
+	XAtom atom_icccm_wm_delete_window;
 
 	static const StandardProps& instance();
 
