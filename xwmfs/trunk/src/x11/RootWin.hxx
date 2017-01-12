@@ -130,47 +130,6 @@ public: // functions
 	const std::vector<XWindow>& getWindowList() const
 	{ return m_windows; }
 
-	/**
-	 * \brief
-	 * 	Sends a request to the root window with a single long
-	 * 	parameter as data
-	 **/
-	void sendRequest(
-		const XAtom &message,
-		long data,
-		const XWindow *window = nullptr
-	)
-	{
-		return sendRequest(
-			message,
-			(const char*)&data,
-			sizeof(data),
-			window
-		);
-	}
-	
-	/**
-	 * \brief
-	 * 	Sends a request to the root window
-	 * \details
-	 * 	To have the window manager actively do something on our
-	 * 	request we need to send it an event to the root window.
-	 *
-	 * 	This event contains a window to operate on, a message of what
-	 * 	to do and parameters to that message.
-	 *
-	 * 	data and len make up the raw data to be passed along with the
-	 * 	event. This data is dependent on the message type.
-	 *
-	 * 	Throws an exception on error.
-	 **/
-	void sendRequest(
-		const XAtom &message,
-		const char *data = nullptr,
-		const size_t len = 0,
-		const XWindow *window = nullptr
-	);
-
 	void updateShowingDesktop();
 	void updateActiveDesktop();
 	void updateNumberOfDesktops();

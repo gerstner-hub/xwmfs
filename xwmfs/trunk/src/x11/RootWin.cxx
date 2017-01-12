@@ -17,6 +17,13 @@ RootWin::RootWin() :
 		<< std::hex << std::showbase << this->id() << std::dec
 		<< std::endl;
 	this->getInfo();
+		
+	// the event mask influences which X clients will receive the event.
+	// For the root window to react to our requests these masks seem to be
+	// helpful. 0 value doesn't work. I'm not sure if this is not too
+	// broad but there is no clear documentation which specific value
+	// might be correct for our use cases
+	m_send_event_mask = SubstructureRedirectMask | SubstructureNotifyMask;
 }
 
 void RootWin::getInfo()
@@ -24,65 +31,6 @@ void RootWin::getInfo()
 	queryWMWindow();
 	queryBasicWMProperties();
 	queryWindows();
-}
-
-void RootWin::sendRequest(
-	const XAtom &message,
-	const char *data,
-	const size_t len,
-	const XWindow *window
-)
-{
-	auto &logger = xwmfs::StdLogger::getInstance();
-
-	logger.debug()
-		<< "Sending request to root window: "
-		<< "msg = " << message << " with " << len << " bytes of data, window = "
-		<< (window ? window->id() : 0) << std::endl;
-	XEvent event;
-	std::memset( &event, 0, sizeof(event) );
-
-	if( len > sizeof(event.xclient.data) )
-	{
-		throw Exception(
-			XWMFS_SRC_LOCATION,
-			"XEvent data exceeds maximum"
-		);
-	}
-
-	event.xclient.type = ClientMessage;
-	event.xclient.serial = 0;
-	event.xclient.send_event = True;
-	event.xclient.message_type = message;
-	event.xclient.window = window ? window->id() : 0;
-	event.xclient.format = 32;
-	std::memcpy(event.xclient.data.b, data, len);
-
-	Status s = XSendEvent(
-		XDisplay::getInstance(),
-		this->id(),
-		False,
-		// the event mask influences which X clients will receive the
-		// event. For the root window to react to our requests these
-		// masks seem to be helpful. 0 value doesn't work. I'm not
-		// sure if this is not too broad but there is no clear
-		// documentation which specific value might be correct for our
-		// use caes
-		SubstructureRedirectMask | SubstructureNotifyMask,
-		&event
-	);
-
-	if( s == BadValue || s == BadWindow )
-	{
-		throw X11Exception(
-			XWMFS_SRC_LOCATION,
-			XDisplay::getInstance(),
-			s
-		);
-	}
-
-	// make sure the event gets sent out
-	XDisplay::getInstance().flush();
 }
 
 void RootWin::queryWMWindow()

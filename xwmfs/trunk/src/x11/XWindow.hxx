@@ -116,7 +116,6 @@ public: // functions
 	//! Create an object without binding to a window
 	XWindow() :
 		m_win(),
-		m_event_mask(0),
 		m_std_props(StandardProps::instance())
 	{ }
 
@@ -191,6 +190,33 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Requests the X server to destroy the represented window and
+	 * 	all sub-windows
+	 * \details
+	 * 	This request cannot be ignored by the application owning the
+	 * 	window. It is a forcible way to remove the window from the X
+	 * 	server. An alternative is the function sendDeleteRequest()
+	 * 	which is a cooperative way to ask an application to close the
+	 * 	window.
+	 *
+	 * 	The window represented by this object will be invalid after a
+	 * 	successful return from this function. Further operations on it
+	 * 	will fail.
+	 **/
+	void destroy();
+
+	/**
+	 * \brief
+	 * 	Requests the targeted window to close itself
+	 * \details
+	 * 	In contrast to destroy() this is a cooperative call that
+	 * 	allows the targeted window to cleanly close itself and the
+	 * 	associated application, possibly asking the user first.
+	 **/
+	void sendDeleteRequest();
+
+	/**
+	 * \brief
 	 *	Retrieve a property from this window object
 	 * \details
 	 *	The property \c name will be queried from the current window
@@ -256,7 +282,6 @@ public: // functions
 	 * 	This call mostly makes sense for the root window to get
 	 * 	notified of new windows that come to life.
 	 **/
-	// XXX should be wisely structured, maybe using a complex Event type
 	void selectCreateEvent() const
 	{
 		// XXX using substructure notify might be unwise. This gets us
@@ -267,13 +292,7 @@ public: // functions
 		// also: it might be better to look for MappedEvents instead
 		// of CreateEvents. In case there are strange hidden windows
 		// and such
-		m_event_mask |= SubstructureNotifyMask;
-		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask
-		);
-		
-		// stupid return codes again
-		(void)res;
+		selectEvent(SubstructureNotifyMask);
 	}
 
 	/**
@@ -286,13 +305,7 @@ public: // functions
 	 **/
 	void selectDestroyEvent() const
 	{
-		m_event_mask |= StructureNotifyMask;
-		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask
-		);
-		
-		// stupid return codes again
-		(void)res;
+		selectEvent(StructureNotifyMask);
 	}
 
 	/**
@@ -305,31 +318,84 @@ public: // functions
 	 **/
 	void selectPropertyNotifyEvent() const
 	{
-		m_event_mask |= PropertyChangeMask;
-		const int res = ::XSelectInput(
-			XDisplay::getInstance(), m_win, m_event_mask
-		);
-
-		// stupid return codes again
-		(void)res;
+		selectEvent(PropertyChangeMask);
 	}
 
 	XWindow& operator=(const XWindow &other)
 	{
 		m_win = other.m_win;
-		m_event_mask  = other.m_event_mask;
+		m_input_event_mask = other.m_input_event_mask;
+		m_send_event_mask = other.m_send_event_mask;
 		return *this;
 	}
+	
+protected: // functions
 
-private: // data
+	/**
+	 * \brief
+	 * 	Adds the given event(s) to the set of events we want to be
+	 * 	notified if properties of the current window change
+	 **/
+	void selectEvent(const long new_event) const;
+
+	/**
+	 * \brief
+	 * 	Sends a request to the window with a single long parameter as
+	 * 	data
+	 **/
+	void sendRequest(
+		const XAtom &message,
+		long data,
+		const XWindow *window = nullptr
+	)
+	{
+		return sendRequest(
+			message,
+			(const char*)&data,
+			sizeof(data),
+			window
+		);
+	}
+	
+	/**
+	 * \brief
+	 * 	Sends a request to the window
+	 * \details
+	 * 	To have the window (manager) actively do something on our
+	 * 	request we need to send it an event.
+	 *
+	 * 	This event contains a message of what to do and parameters to
+	 * 	that message.
+	 *
+	 * 	Throws an exception on error.
+	 * \param[in] message
+	 * 	The basic message type that defines the further parameters of
+	 * 	the request
+	 * \param[in] data
+	 * 	The raw data making up the parameters to the message
+	 * \param[in] len
+	 * 	The length of the raw data in bytes
+	 * \param[in] window
+	 * 	An optional window parameter. Mostly used for the RootWin to
+	 * 	specify another window upon which should be acted.
+	 **/
+	void sendRequest(
+		const XAtom &message,
+		const char *data = nullptr,
+		const size_t len = 0,
+		const XWindow *window = nullptr
+	);
+
+
+protected: // data
 
 	//! The X11 window ID this object represents
 	Window m_win;
 
-	//! The X11 event mask currently associated with this window
-	mutable long m_event_mask;
-
-protected: // data
+	//! The X11 input event mask currently associated with this window
+	mutable long m_input_event_mask = 0;
+	//! The X11 send event mask currently associated with this window
+	mutable long m_send_event_mask = NoEventMask;
 
 	const StandardProps &m_std_props;
 };
