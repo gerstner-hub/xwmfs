@@ -80,6 +80,10 @@ windows: A subdirectory containing further directories that represent all
 |       |                   write a new desktop number to this file to move
 |       |                   the window to another desktop.
 |       |--------> pid: The PID of the process that owns the window
+|       |--------> command: Can be used to send a command to the window. When
+|       |                   read then a list of valid commands is returned.
+|       |                   Currently "destroy" or "delete" to force or ask
+|       |                   the window to be closed.
 |--------> wm: A directory containing global state information about the
         |      window manager
         |--------> name: Contains the name of the running window manager.

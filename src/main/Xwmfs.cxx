@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <map>
+#include <functional>
 
 // EXIT_*
 #include <stdlib.h>
@@ -13,6 +15,7 @@
 #include "fuse/xwmfs_fuse.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
+#include "common/Helper.hxx"
 
 namespace xwmfs
 {
@@ -52,27 +55,9 @@ struct WindowFileEntry :
 		
 		try
 		{
-			if( this->m_name == "name" )
-			{
-				std::string name(data, bytes);
-				m_win.setName( name );
-			}
-			else if( this->m_name == "desktop" )
-			{
-				int the_num;
-				const auto parsed = parseInteger(
-					data, bytes, the_num
-				);
+			auto it = m_write_member_function_map.find(m_name);
 
-				if( parsed >= 0 )
-				{
-					m_win.setDesktop( the_num );
-				}
-
-
-				return parsed;
-			}
-			else
+			if( it == m_write_member_function_map.end() )
 			{
 				xwmfs::StdLogger::getInstance().error()
 					<< __FUNCTION__
@@ -82,18 +67,44 @@ struct WindowFileEntry :
 					<< "\"\n";
 				return -ENXIO;
 			}
+
+			auto mem_fn = it->second;
+
+			(this->*(mem_fn))(data, bytes);
 		}
 		catch( const xwmfs::Exception &e )
 		{
 			xwmfs::StdLogger::getInstance().error()
-				<< __FUNCTION__ << ": Error setting window"
-				" property (" << this->m_name << "): "
+				<< __FUNCTION__
+				<< ": Error operating on window (node '"
+				<< this->m_name << "'): "
 				<< e.what() << std::endl;
 			return -EINVAL;
 		}
 			
 		return bytes;
 	}
+
+	void writeName(const char *data, const size_t bytes)
+	{
+		std::string name(data, bytes);
+		m_win.setName( name );
+	}
+
+	void writeDesktop(const char *data, const size_t bytes)
+	{
+		int the_num;
+		const auto parsed = parseInteger(
+			data, bytes, the_num
+		);
+
+		if( parsed >= 0 )
+		{
+			m_win.setDesktop( the_num );
+		}
+	}
+
+	void writeCommand(const char *data, const size_t bytes);
 
 	/**
 	 * \brief
@@ -102,21 +113,54 @@ struct WindowFileEntry :
 	 * 	If this file system entry is associated with \c w then \c true
 	 * 	is returned. \c false otherwise.
 	 **/
-	bool operator==(const XWindow &w) const
-	{
-		return m_win == w;
-	}
+	bool operator==(const XWindow &w) const { return m_win == w; }
+	bool operator!=(const XWindow &w) const { return !((*this) == w); }
 
 	/**
 	 * \brief
 	 * 	Casts the object to its associated XWindow type
 	 **/
 	operator XWindow&() { return m_win; }
-protected:
+
+protected: // types
+
+	typedef void (WindowFileEntry::*WriteMemberFunction)(const char*, const size_t);
+	typedef std::map<std::string, WriteMemberFunction> WriteMemberFunctionMap;
+
+protected: // data
 
 	//! XWindow associated with this FileEntry
 	XWindow m_win; // XXX currently a flat copy
+
+	// a mapping of file system names to their associated write functions
+	static const WriteMemberFunctionMap m_write_member_function_map;
 };
+
+const WindowFileEntry::WriteMemberFunctionMap WindowFileEntry::m_write_member_function_map = {
+	{ "name", &WindowFileEntry::writeName },
+	{ "desktop", &WindowFileEntry::writeDesktop },
+	{ "command", &WindowFileEntry::writeCommand }
+};
+
+void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
+{
+	const auto command = tolower(stripped(std::string(data, bytes)));
+
+	if( command == "destroy" )
+	{
+		m_win.destroy();
+	}
+	else if( command == "delete" )
+	{
+		m_win.sendDeleteRequest();
+	}
+	else
+	{
+		throw xwmfs::Exception(
+			XWMFS_SRC_LOCATION, "invalid command encountered"
+		);
+	}
+}
 
 /**
  * \brief
@@ -174,7 +218,7 @@ struct WinManagerEntry :
 			{
 				logger.warn()
 					<< __FUNCTION__
-					<< ": Write cal for win manager file of unknown type: \""
+					<< ": Write call for win manager file of unknown type: \""
 					<< this->m_name
 					<< "\"\n";
 				return -ENXIO;
@@ -265,6 +309,7 @@ void Xwmfs::addWindow(const XWindow &win)
 	addWindowName(*win_dir, win);
 	addDesktopNumber(*win_dir, win);
 	addPID(*win_dir, win);
+	addCommandControl(*win_dir, win);
 }
 
 void Xwmfs::addWindowName(DirEntry &win_dir, const XWindow &win)
@@ -327,6 +372,22 @@ void Xwmfs::addPID(DirEntry &win_dir, const XWindow &win)
 			<< "Couldn't get pid for window right away"
 			<< std::endl;
 	}
+}
+
+void Xwmfs::addCommandControl(DirEntry &win_dir, const XWindow &win)
+{
+	auto entry = win_dir.addEntry(
+		new xwmfs::WindowFileEntry("command", win, m_current_time, true)
+	);
+
+	for( const auto command: { "destroy", "delete" } )
+	{
+		// provide the available commands as read content
+		*entry << command << " ";
+	}
+
+	entry->seekp(-1, entry->cur);
+	(*entry) << "\n";
 }
 
 void Xwmfs::updateRootWindow(Atom changed_atom)
@@ -645,6 +706,19 @@ int Xwmfs::XErrorHandler(
 
 	return 0;
 }
+
+int Xwmfs::XIOErrorHandler(Display *disp)
+{
+	(void)disp;
+	
+	StdLogger::getInstance().error()
+		<< "A fatal X error occured. Exiting." << std::endl;
+
+	// call the internal exit explicitly, the normal exit would cause
+	// follow up errors through destruction of static objects in
+	// unexpected states
+	::_exit(1);
+}
 	
 void Xwmfs::early_init()
 {
@@ -671,6 +745,7 @@ int Xwmfs::init()
 	{
 		// sets the asynchronous error handler
 		::XSetErrorHandler( & Xwmfs::XErrorHandler );
+		::XSetIOErrorHandler( & Xwmfs::XIOErrorHandler );
 
 		try
 		{

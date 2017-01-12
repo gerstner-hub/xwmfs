@@ -69,22 +69,13 @@ public: // functions
 	}
 
 	//! Returns the root window hold in the Xwmfs
-	xwmfs::RootWin& getRootWin()
-	{
-		return m_root_win;
-	}
+	xwmfs::RootWin& getRootWin() { return m_root_win; }
 
 	//! returns the file system structure root entry
-	xwmfs::RootEntry& getFS()
-	{
-		return m_fs_root;
-	}
+	xwmfs::RootEntry& getFS() { return m_fs_root; }
 
 	//! returns the options in effect for Xwmfs
-	xwmfs::Options& getOptions()
-	{
-		return m_opts;
-	}
+	xwmfs::Options& getOptions() { return m_opts; }
 
 protected: // functions
 
@@ -103,10 +94,17 @@ protected: // functions
 	 * 	error handler and simply print out information to stdout
 	 * 	without exiting.
 	 **/
-	static int XErrorHandler(
-		Display *disp,
-		XErrorEvent *error
-	);
+	static int XErrorHandler(Display *disp, XErrorEvent *error);
+	
+	/**
+	 * \brief
+	 * 	Called from Xlib on fatal error conditions
+	 * \details
+	 * 	This is called if fatal errors occur like the X connection
+	 * 	being lost. It's supposed not to return, otherwise Xlib calls
+	 * 	exit()
+	 **/
+	static int XIOErrorHandler(Display *disp);
 	
 	//! working loop for the event handling thread
 	virtual void threadEntry(const Thread &t);
@@ -135,6 +133,12 @@ protected: // functions
 	 * 	win_dir
 	 **/
 	void addPID(DirEntry &win_dir, const XWindow &win);
+
+	/**
+	 * \brief
+	 * 	Adds an entry for the command control file of a window
+	 **/
+	void addCommandControl(DirEntry &win_dir, const XWindow &win);
 
 	/**
 	 * \brief
