@@ -22,5 +22,14 @@ std::string tolower(const std::string &s)
 	return ret;
 }
 
+void strip(std::string &s)
+{
+	while( !s.empty() && std::isspace(s[0]) )
+		s.erase( s.begin() );
+
+	while( !s.empty() && std::isspace(s[s.length()-1]) )
+		s.pop_back();
+}
+
 } // end ns
 
