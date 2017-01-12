@@ -152,6 +152,9 @@ protected: // functions
 		}
 	}
 
+	// disallow copy of the singleton XDisplay
+	XDisplay(const XDisplay &other) = delete;
+
 protected:
 
 	//! The Xlib primitive for the Display
