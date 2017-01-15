@@ -1,11 +1,19 @@
 // xwmfs
 #include "fuse/xwmfs_fuse.hxx"
+#include "main/Xwmfs.hxx"
 
 // C++
 #include <string>
 
+// POSIX
+#include <unistd.h>
+#include <sys/stat.h>
+
 namespace xwmfs
 {
+
+const uid_t Entry::m_uid = ::getuid();
+const gid_t Entry::m_gid = ::getgid();
 
 Entry* RootEntry::findEntry(const char* path)
 {
@@ -104,6 +112,43 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 	}
 
 	return endpos;
+}
+
+void Entry::getStat(struct stat *s)
+{
+	s->st_uid = m_uid;
+	s->st_gid = m_gid;
+	s->st_atime = s->st_mtime = getModifyTime();
+	s->st_ctime = getStatusTime();
+
+
+	if( this->isDir() )
+	{
+		s->st_mode = S_IFDIR | 0755;
+		// a directory is always linked at least twice due to '.'
+		s->st_nlink = 2;
+	}
+	else if( this->isRegular() )
+	{
+		s->st_mode = S_IFREG | (this->isWritable() ? 0664 : 0444);
+		s->st_nlink = 1;
+	}
+	else
+	{
+		// ???
+	}
+
+	// apply the current process's umask to the file permissions
+	s->st_mode &= ~(Xwmfs::getUmask());
+}
+
+void FileEntry::getStat(struct stat *s)
+{
+	Entry::getStat(s);
+		
+	// determine size of stream and return it in stat structure
+	this->seekg( 0, xwmfs::FileEntry::end );
+	s->st_size = this->tellg();
 }
 
 } // end ns

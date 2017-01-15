@@ -40,11 +40,10 @@ xwmfs::RootEntry *filesystem = NULL;
  **/
 int xwmfs_getattr(const char *path, struct stat *stbuf)
 {
+	memset(stbuf, 0, sizeof(struct stat));
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	xwmfs::Entry *entry = xwmfs::filesystem->findEntry( path );
-
-	xwmfs::DirEntry *dir_entry = xwmfs::Entry::tryCastDirEntry(entry);
 
 	if( ! entry )
 	{
@@ -54,27 +53,7 @@ int xwmfs_getattr(const char *path, struct stat *stbuf)
 		return -ENOENT;
 	}
 
-	memset(stbuf, 0, sizeof(struct stat));
-
-	if( dir_entry )
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		// a directory is always linked at least twice due to '.'
-		stbuf->st_nlink = 2;
-	}
-	else
-	{
-		xwmfs::FileEntry *file_entry = xwmfs::Entry::tryCastFileEntry(entry);
-		assert(file_entry);
-		stbuf->st_mode = S_IFREG | (file_entry->isWriteable() ? 0666 : 0444);
-		stbuf->st_nlink = 1;
-		// determine size of stream and return it in stat structure
-		file_entry->seekg( 0, xwmfs::FileEntry::end );
-		stbuf->st_size = file_entry->tellg();
-	}
-
-	stbuf->st_atime = stbuf->st_mtime = entry->getModifyTime();
-	stbuf->st_ctime = entry->getStatusTime();
+	entry->getStat(stbuf);
 
 	return 0;
 }
@@ -167,7 +146,7 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 		return -ENOENT;
 	}
 	// don't allow any write access if entity is not writeable
-	else if((fi->flags & 3) != O_RDONLY && !entry->isWriteable() )
+	else if((fi->flags & 3) != O_RDONLY && !entry->isWritable() )
 		return -EACCES;
 
 	// now we could store e.g. a pointer to entry in fi

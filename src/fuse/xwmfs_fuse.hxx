@@ -35,6 +35,9 @@
  * re-translate the whole file system again.
  */
 
+// fwd. declaration
+struct stat;
+
 namespace xwmfs
 {
 
@@ -76,8 +79,7 @@ public: // types
 public: // functions
 
 	//! makes sure derived class's destructors are always called
-	virtual ~Entry()
-	{ }
+	virtual ~Entry() { }
 
 	/**
 	 * \brief
@@ -115,32 +117,33 @@ public: // functions
 	//! returns the type of the file system entry
 	Type type() const { return m_type; }
 
-	//! returns whether the file system entry is writeable
-	bool isWriteable() const { return m_writeable; }
+	//! returns whether this entry is of the DIRECTORY type
+	bool isDir() const { return type() == DIRECTORY; }
+
+	//! returns whether this entry is of the REG_FILE type
+	bool isRegular() const { return type() == REG_FILE; }
+
+	//! returns whether the file system entry is writable
+	bool isWritable() const { return m_writable; }
 
 	//! sets the modification time of the file system entry to \c t
-	void setModifyTime(const time_t &t)
-	{
-		m_modify_time = t;
-	}
+	void setModifyTime(const time_t &t) { m_modify_time = t; }
 
 	//! sets the status time of the file system entry to \c t
-	void setStatusTime(const time_t &t)
-	{
-		m_status_time = t;
-	}
+	void setStatusTime(const time_t &t) { m_status_time = t; }
 
 	//! gets the current modification time of the file system entry
-	const time_t& getModifyTime() const
-	{
-		return m_modify_time;
-	}
+	const time_t& getModifyTime() const { return m_modify_time; }
 
 	//! gets the current status time of the file system entry
-	const time_t& getStatusTime() const
-	{
-		return m_status_time;
-	}
+	const time_t& getStatusTime() const { return m_status_time; }
+
+	/**
+	 * \brief
+	 * 	Fills in the status information corresponding to this entry
+	 * 	into \c s
+	 **/
+	virtual void getStat(struct stat *s);
 
 protected: // functions
 
@@ -153,16 +156,16 @@ protected: // functions
 	 * 	FileEntry.
 	 *
 	 * 	The file system entry will get the name \c n, the type \c t,
-	 * 	will be handled as writeable if \c writeable is set and the
+	 * 	will be handled as writable if \c writable is set and the
 	 * 	initial status and modification times will be \c time.
 	 **/
 	Entry(
 		const std::string &n,
 		const Type &t,
-		const bool writeable = false,
+		const bool writable = false,
 		const time_t &time = 0
 	) :
-		m_name(n), m_type(t), m_writeable(writeable),
+		m_name(n), m_type(t), m_writable(writable),
 		m_modify_time(time), m_status_time(time)
 	{ };
 
@@ -185,14 +188,18 @@ protected: // data
 	
 	const std::string m_name;
 	const Type m_type;
-	const bool m_writeable;
+	const bool m_writable;
 
 	//! set to the last write/creation event
 	time_t m_modify_time;
-	//! \brief
-	//!	set to the creation time, metadata isn't changed afterwards
-	//!	any more
+	//! set to the creation time, metadata isn't changed afterwards any
+	//! more
 	time_t m_status_time;
+
+	//! the user id we're running as
+	static const uid_t m_uid;
+	//! the group id we're running as
+	static const gid_t m_gid;
 };
 
 /**
@@ -221,13 +228,13 @@ struct FileEntry :
 	/**
 	 * \brief
 	 * 	Create a new FileEntry with name \c n, being read-write if \c
-	 * 	writeable is set and using \c t for initial timestamps
+	 * 	writable is set and using \c t for initial timestamps
 	 **/
 	FileEntry(
 		const std::string &n,
-		const bool writeable = false,
+		const bool writable = false,
 		const time_t &t = 0) :
-			Entry(n, REG_FILE, writeable, t)
+			Entry(n, REG_FILE, writable, t)
 	{ }
 
 	/**
@@ -237,7 +244,7 @@ struct FileEntry :
 	 *	Returns EINVAL to indicate "unsuitable object for writing"
 	 * \note
 	 *	Calling this function should never happen. Objects that aren't
-	 *	writeable should be covered at open() time with EACCES.
+	 *	writable should be covered at open() time with EACCES.
 	 *	Writeable files should overwrite this function appropriately.
 	 *
 	 *	If it is still called then "invalid argument" will be
@@ -250,6 +257,8 @@ struct FileEntry :
 		(void)offset;
 		return -EINVAL;
 	}
+
+	void getStat(struct stat*) override;
 };
 
 
