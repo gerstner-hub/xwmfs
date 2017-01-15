@@ -77,6 +77,9 @@ public: // functions
 	//! returns the options in effect for Xwmfs
 	xwmfs::Options& getOptions() { return m_opts; }
 
+	//! returns the umask of the current process
+	static mode_t getUmask() { return m_umask; }
+
 protected: // functions
 
 	/**
@@ -179,7 +182,7 @@ private: // data
 	xwmfs::Options &m_opts;
 
 	// this is the fd for the connection to the display
-	int m_dis_fd;
+	int m_dis_fd = -1;
 	// wakeup pipe read and write end
 	int m_wakeup_pipe[2];
 
@@ -188,20 +191,23 @@ private: // data
 
 	//! the time of the last event that might lead to creating new file
 	//! system objects
-	time_t m_current_time;
+	time_t m_current_time = 0;
 
 	//! directory node containing all windows
 	DirEntry *m_win_dir = nullptr;
 	//! directory node containing global wm information
 	DirEntry *m_wm_dir = nullptr;
 
+	//! the active umask of the current process
+	static mode_t m_umask;
+
 private: // functions
 
 	//! private constructor to enforce singleton pattern
 	Xwmfs();
 
-	//! \see Xwmfs()
-	Xwmfs(const Xwmfs &w);
+	//! deleted copy constructor to enforce singleton pattern
+	Xwmfs(const Xwmfs &w) = delete;
 
 	/**
 	 * \brief

@@ -21,47 +21,56 @@ extern "C"
 
 extern int xwmfs_getattr(
 	const char *path,
-	struct stat *stbuf);
+	struct stat *stbuf
+);
 
 extern int xwmfs_readdir(
 	const char *path,
 	void *buf,
 	fuse_fill_dir_t filler,
 	off_t offset,
-	struct fuse_file_info *fi);
+	struct fuse_file_info *fi
+);
 
 extern int xwmfs_open(
 	const char *path,
-	struct fuse_file_info *fi);
+	struct fuse_file_info *fi
+);
 
 extern int xwmfs_read(
 	const char *path,
 	char *buf,
 	size_t size,
 	off_t offset,
-	struct fuse_file_info *fi);
+	struct fuse_file_info *fi
+);
 
 extern int xwmfs_write(
 	const char *path,
 	const char *data,
 	size_t size,
 	off_t offset,
-	struct fuse_file_info *fi);
+	struct fuse_file_info *fi
+);
 
 extern int xwmfs_truncate(
 	const char *path,
-	off_t size);
+	off_t size
+);
 
 extern void* xwmfs_init(
-	struct fuse_conn_info*);
+	struct fuse_conn_info*
+);
 
 extern void xwmfs_destroy(
-	void*);
+	void*
+);
 
 extern int xwmfs_create(
 	const char *path,
 	mode_t mode,
-	struct fuse_file_info *ffi);
+	struct fuse_file_info *ffi
+);
 
 extern struct fuse_operations xwmfs_oper;
 

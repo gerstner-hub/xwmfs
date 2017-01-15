@@ -10,6 +10,7 @@
 
 #include <unistd.h> // pipe
 #include <sys/select.h>
+#include <sys/stat.h>
 
 #include "main/Xwmfs.hxx"
 #include "fuse/xwmfs_fuse.hxx"
@@ -19,6 +20,8 @@
 
 namespace xwmfs
 {
+
+mode_t Xwmfs::m_umask = 0777;
 			
 /**
  * \brief
@@ -722,6 +725,13 @@ int Xwmfs::XIOErrorHandler(Display *disp)
 	
 void Xwmfs::early_init()
 {
+	// to get the current umask we need to temporarily change the umask.
+	// There seems to be no better system call. Starting from Linux 4.7 an
+	// entry will be in /proc/<pid>/status, so we could read it from there
+	// if present
+	m_umask = ::umask(0777);
+	(void)::umask(m_umask);
+
 	// this asks the Xlib to be thread-safe
 	// be careful that this must be the first Xlib call in the
 	// process otherwise it won't work!
@@ -828,8 +838,7 @@ void Xwmfs::printWMInfo()
 
 Xwmfs::Xwmfs() :
 	m_ev_thread(*this, "x11_event_thread"),
-	m_opts( xwmfs::Options::getInstance() ),
-	m_current_time()
+	m_opts( xwmfs::Options::getInstance() )
 {
 	// to get X events in a blocking way but still be able to react to
 	// e.  g. a shutdown request we need to get the lower level file
