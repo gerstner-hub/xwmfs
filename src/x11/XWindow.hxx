@@ -284,14 +284,13 @@ public: // functions
 	 **/
 	void selectCreateEvent() const
 	{
-		// XXX using substructure notify might be unwise. This gets us
-		// all the child windows like menus, too.
-		// we could also have success only using StructureNotifyMask
-		// on exactly the windows we're interested in
+		// This is the only way to get CreateNotify events from the X
+		// server.
 		//
-		// also: it might be better to look for MappedEvents instead
-		// of CreateEvents. In case there are strange hidden windows
-		// and such
+		// This gets us all the child windows like menus, too.
+		//
+		// Thus if we don't want grandchildren Windows of the root
+		// window then we need to filter on the event receiving side
 		selectEvent(SubstructureNotifyMask);
 	}
 

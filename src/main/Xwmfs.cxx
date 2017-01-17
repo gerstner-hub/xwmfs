@@ -913,11 +913,20 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 		switch( ev.type )
 		{
 		// a new window came into existence
+		//
+		// NOTE: it might be better to look for MappedEvents instead
+		// of CreateEvents. In case there are strange hidden windows
+		// and such
 		case CreateNotify:
 		{
 			// Xlib manual says one should generally ignore these
 			// events as they come from popups
 			if( ev.xcreatewindow.override_redirect )
+				break;
+			// this is grand-kid or something. we could add these
+			// in a hierarchical manner as sub-windows but for now
+			// we ignore them
+			else if( ev.xcreatewindow.parent != m_root_win.id() )
 				break;
 				
 			XWindow w(ev.xcreatewindow.window);
