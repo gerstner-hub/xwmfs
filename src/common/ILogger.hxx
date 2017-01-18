@@ -1,8 +1,10 @@
 #ifndef XWMFS_ILOGGER_HXX
 #define XWMFS_ILOGGER_HXX
 
+// C++
 #include <ostream>
 #include <fstream>
+#include <sstream>
 
 namespace xwmfs
 {
@@ -21,59 +23,59 @@ namespace xwmfs
  **/
 class ILogger
 {
-public: // functions
+public: // types
 
-	ILogger() :
-		m_err(),
-		m_warn(),
-		m_info(),
-		m_debug(),
-		m_err_enabled(true),
-		m_warn_enabled(true),
-		m_info_enabled(true),
-		m_debug_enabled(false)
+	/**
+	 * \brief
+	 * 	Color constants with correct values for ANSI escape sequences
+	 **/
+	enum class Color : size_t
 	{
-		// XXX: This null device handling is somewhat expensive for
-		// disabled channels as we're still passing data through our
-		// program just to discard it.
-		m_null.open( "/dev/null" );
-	}
+		BLACK = 0,
+		RED,
+		GREEN,
+		YELLOW,
+		BLUE,
+		MAGENTA,
+		CYAN,
+		WHITE,
+		NONE
+	};
+
+public: // functions
 
 	virtual ~ILogger() {};
 
 	std::ostream& error()
 	{
-		if( !m_err_enabled )
-			return m_null;
-		*m_err << "Error: ";
-		return *m_err;
+		return getStream(
+			*m_err, "Error: ", Color::RED,
+			m_err_enabled, m_err_is_tty
+		);
 	}
 
 	std::ostream& warn()
 	{
-		if( !m_warn_enabled )
-			return m_null;
-
-		*m_warn << "Warning: ";
-		return *m_warn;
+		return getStream(
+			*m_err, "Warning: ", Color::YELLOW,
+			m_warn_enabled, m_warn_is_tty
+		);
 	}
 
 	std::ostream& info()
 	{
-		if( !m_info_enabled )
-			return m_null;
-
-		*m_info << "Info: ";
-		return *m_info;
+		return getStream(
+			*m_info, "Info: ", Color::NONE,
+			m_info_enabled, m_info_is_tty
+		);
 	}
 
 	std::ostream& debug()
 	{
-		if( !m_debug_enabled )
-			return m_null;
-
-		*m_debug << "Debug: ";
-		return *m_debug;
+		return getStream(
+			*m_debug, "Debug: ", Color::CYAN,
+			m_debug_enabled, m_debug_is_tty
+		);
 	}
 
 	void setChannels(
@@ -89,20 +91,76 @@ public: // functions
 		m_debug_enabled = debug;
 	}
 
+protected: // functions
+
+	std::ostream& getStream(
+		std::ostream &s,
+		const char *prefix,
+		const Color &color,
+		const bool &enabled,
+		const bool &tty)
+	{
+		auto &out = enabled ? s : getNoopStream();
+
+		if(tty)
+			startColor(out, color);
+
+		out << prefix;
+
+		if(tty)
+			finishColor(out);
+
+		return out;
+	}
+
+	std::ostream& getNoopStream()
+	{
+		// a real noop implementation of an ostream might still be
+		// cheaper than this, but at least it doesn't involve system
+		// calls
+		//
+		// seek the start of the stringstream, to avoid the buffer
+		// growing too much
+		m_null.seekp( m_null.beg );
+		return m_null;
+	}
+
+	std::ostream& startColor(std::ostream &o, const Color &c);
+	std::ostream& finishColor(std::ostream &o);
+
+	/**
+	 * \brief
+	 * 	Returns whether the given ostream is associated with a
+	 * 	terminal or not
+	 **/
+	static bool isTTY(const std::ostream &o);
+	
+	void setStreams(
+		std::ostream &debug,
+		std::ostream &info,
+		std::ostream &warn,
+		std::ostream &error
+	);
+
 protected: // data
 
-	std::ostream *m_err;
-	std::ostream *m_warn;
-	std::ostream *m_info;
-	std::ostream *m_debug;
+	std::ostream *m_err = nullptr;
+	std::ostream *m_warn = nullptr;
+	std::ostream *m_info = nullptr;
+	std::ostream *m_debug = nullptr;
 
-	//! a null stream object to write to if a channel is disabled
-	std::ofstream m_null;
+	//! a noop stream object to write to if a channel is disabled
+	std::stringstream m_null;
 
-	bool m_err_enabled;
-	bool m_warn_enabled;
-	bool m_info_enabled;
-	bool m_debug_enabled;
+	bool m_err_enabled = true;
+	bool m_warn_enabled = true;
+	bool m_info_enabled = true;
+	bool m_debug_enabled = false;
+
+	bool m_err_is_tty = false;
+	bool m_warn_is_tty = false;
+	bool m_info_is_tty = false;
+	bool m_debug_is_tty = false;
 };
 
 } // end ns
