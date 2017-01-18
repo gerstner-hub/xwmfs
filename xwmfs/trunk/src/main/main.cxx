@@ -51,7 +51,8 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 
 			xwmfs::StdLogger::getInstance().setChannels(
 				channels[0], channels[1],
-				channels[2], channels[3]);
+				channels[2], channels[3]
+			);
 		}
 		else
 		{
@@ -82,10 +83,10 @@ int main(int argc, char *argv[])
 {
 	try
 	{
+		auto &logger = xwmfs::StdLogger::getInstance();
 		if( ! ::setlocale(LC_ALL, NULL) )
 		{
-			xwmfs::StdLogger::getInstance().error()
-				<< "Couldn't set locale\n";
+			logger.error() << "Couldn't set locale\n";
 		}
 
 		// early initialization logic for X11 must be called before
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 		{
 			std::cerr << "Error initializing XWMFS:\n"
 				<< e.what() << "\n";
-			std::cerr << "Probably your not running X or your "
+			std::cerr << "Probably you're not running X or your "
 				"window manager isn't supporting the EWMH "
 				"protocol\n\n";
 			return EXIT_FAILURE;

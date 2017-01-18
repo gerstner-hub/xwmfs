@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
 bin_PROGRAMS = xwmfs
-xwmfs_SOURCES = fuse/xwmfs_fuse_ops.c fuse/xwmfs_fuse_ops_impl.cxx fuse/xwmfs_fuse.cxx x11/XAtom.cxx x11/property.cxx x11/XWindow.cxx x11/RootWin.cxx main/Xwmfs.cxx main/main.cxx main/StdLogger.cxx main/terminate.cxx common/Helper.cxx
+xwmfs_SOURCES = fuse/xwmfs_fuse_ops.c fuse/xwmfs_fuse_ops_impl.cxx fuse/xwmfs_fuse.cxx x11/XAtom.cxx x11/property.cxx x11/XWindow.cxx x11/RootWin.cxx main/Xwmfs.cxx main/main.cxx main/StdLogger.cxx main/terminate.cxx common/Helper.cxx common/ILogger.cxx
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse
 # makes it possible to include headers from fuse or x11, to select a recent fuse API version

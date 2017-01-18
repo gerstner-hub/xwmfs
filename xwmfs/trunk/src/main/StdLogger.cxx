@@ -7,10 +7,7 @@ namespace xwmfs
 
 StdLogger::StdLogger()
 {
-	m_debug = static_cast<std::ostream*>(&std::cout);
-	m_info = static_cast<std::ostream*>(&std::cout);
-	m_warn = static_cast<std::ostream*>(&std::cout);
-	m_err = static_cast<std::ostream*>(&std::cerr);
+	setStreams(std::cout, std::cout, std::cout, std::cerr);
 }
 
 StdLogger::~StdLogger()
