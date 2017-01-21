@@ -8,7 +8,7 @@
 #include <iostream>
 #include <sstream>
 
-#define XWMFS_SRC_LOCATION xwmfs::Exception::SourceLocation(__FILE__, __LINE__)
+#define XWMFS_SRC_LOCATION xwmfs::Exception::SourceLocation(__FILE__, __LINE__, __FUNCTION__)
 
 namespace xwmfs
 {
@@ -32,26 +32,30 @@ public: // types
 
 	/**
 	 * \brief
-	 * 	Merged source file and source line information
+	 * 	Merged source file, source line and function information
 	 **/
 	struct SourceLocation
 	{
-		SourceLocation(const char *f, const int l) :
-			file(f), line(l) { }
+		SourceLocation(
+			const char *p_file, const int p_line, const char *p_func
+		) :
+			file(p_file), line(p_line), func(p_func) { }
 
 		SourceLocation(const SourceLocation &other) :
 			file(other.file),
-			line(other.line)
+			line(other.line),
+			func(other.func)
 		{ }
 
 		const char* getFile() const { return file; }
-
 		int getLine() const { return line; }
+		const char* getFunction() const { return func; }
 
-	private: // data
+	protected: // data
 
 		const char *file;
 		int line;
+		const char *func;
 	};
 
 public: // functions
@@ -59,29 +63,9 @@ public: // functions
 	Exception(const SourceLocation sl, const std::string &err) :
 		m_location(sl),
 		m_error(err)
-	{
-		m_error = err;
-	}
+	{}
 
-	std::string what(const uint32_t level=0) const
-	{
-		std::stringstream ret;
-
-		indent(level, ret);
-
-		ret << m_error << " @ " << m_location.getFile()
-			<< ":" << m_location.getLine() << "\n";
-
-		for(
-			std::vector<xwmfs::Exception>::size_type i = 0;
-			i < m_pre_errors.size();
-			i++ )
-		{
-			ret << m_pre_errors[i].what(level+1);
-		}
-
-		return ret.str();
-	}
+	std::string what(const uint32_t level=0) const;
 
 	void addError(const xwmfs::Exception &ex)
 	{
@@ -102,17 +86,7 @@ private: // functions
 	 * 	Creates the given indentation \c level on the given ostream \c
 	 * 	o
 	 **/
-	void indent(const uint32_t level, std::ostream &o) const
-	{
-		uint32_t level_left = level;
-		while( level_left )
-		{
-			o << "\t";
-			level_left--;
-		}
-
-		o << level << "): ";
-	}
+	void indent(const uint32_t level, std::ostream &o) const;
 
 private: // data
 
