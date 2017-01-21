@@ -1,6 +1,7 @@
 // C++
 #include <exception>
 #include <stdexcept>
+#include <iostream>
 
 // POSIX
 #include <signal.h>
