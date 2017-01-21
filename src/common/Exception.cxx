@@ -1,3 +1,6 @@
+// C++
+#include <sstream>
+
 // xwmfs
 #include "common/Exception.hxx"
 

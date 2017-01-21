@@ -4,6 +4,7 @@
 
 // C++
 #include <string>
+#include <iostream>
 
 // POSIX
 #include <unistd.h>

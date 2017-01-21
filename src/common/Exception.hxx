@@ -5,8 +5,6 @@
 
 #include <vector>
 #include <string>
-#include <iostream>
-#include <sstream>
 
 #define XWMFS_SRC_LOCATION xwmfs::Exception::SourceLocation(__FILE__, __LINE__, __FUNCTION__)
 
