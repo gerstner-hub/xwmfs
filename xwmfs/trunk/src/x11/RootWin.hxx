@@ -33,9 +33,9 @@ public: // types
 	{
 	public: // functions
 
-		QueryError(const SourceLocation sl, const std::string &s) :
-			Exception(sl, s)
-		{ }
+		QueryError(const std::string &s) : Exception(s) { }
+
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 	/**

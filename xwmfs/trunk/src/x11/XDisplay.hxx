@@ -36,15 +36,16 @@ public: // types
 	public: // functions
 
 		AtomMappingError(
-			const SourceLocation sl,
 			Display *dis,
 			const int errcode,
 			const std::string &s) :
-			X11Exception(sl, dis, errcode)	
+			X11Exception(dis, errcode)	
 		{
 			m_error += ". While trying to map " + \
 				s + " to a valid atom.";
 		}
+
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! Specialized Exception for errors regarding opening the Display
@@ -53,14 +54,16 @@ public: // types
 	{
 	public: // functions
 
-		DisplayOpenError( const SourceLocation sl ) :
-			Exception(sl, "Unable to open X11 display: \"")
+		DisplayOpenError() :
+			Exception("Unable to open X11 display: \"")
 		{
 			m_error += XDisplayName(NULL);
 			m_error += "\". ";
 			m_error += "Is X running? Is the DISPLAY environment "\
 				"variable correct?";
 		}
+
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 public: // functions
@@ -91,8 +94,7 @@ public: // functions
 		Atom ret = XInternAtom( m_dis, name, False );
 
 		if( ret == BadAlloc || ret == BadValue || ret == None )
-			throw AtomMappingError(
-				XWMFS_SRC_LOCATION, m_dis, ret, name);
+			xwmfs_throw(AtomMappingError(m_dis, ret, name));
 
 		return ret;
 	}
@@ -148,7 +150,7 @@ protected: // functions
 
 		if( ! m_dis )
 		{
-			throw DisplayOpenError(XWMFS_SRC_LOCATION);
+			xwmfs_throw(DisplayOpenError());
 		}
 	}
 

@@ -27,9 +27,8 @@ public: // functions
 	 * 	The string provided in \c err will be appended with the
 	 * 	errno description of the current thread
 	 **/
-	SystemException(const SourceLocation sl, const std::string &err) :
-		Exception(sl, err)
-	
+	SystemException(const std::string &err) :
+		Exception(err)
 	{
 		m_errno = errno;
 
@@ -50,6 +49,8 @@ private: // members
 
 	//! The errno that was seen during construction time
 	int m_errno;
+
+	XWMFS_EXCEPTION_IMPL;
 };
 
 } // end ns

@@ -35,16 +35,13 @@ public: // types
 	{
 	public: // functions
 
-		PropertyQueryError(
-			const SourceLocation sl,
-			Display *dis,
-			const int errcode) :
-			X11Exception(sl, dis, errcode)
+		PropertyQueryError(Display *dis, const int errcode) :
+			X11Exception(dis, errcode)
 		{
-			m_error = m_error + \
-				". While trying to get property.";
+			m_error += ". While trying to get property.";
 		}
 
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! Specialized X11Exception for property change errors
@@ -53,15 +50,13 @@ public: // types
 	{
 	public: // functions
 
-		PropertyChangeError(
-			const SourceLocation sl,
-			Display *dis,
-			const int errcode) :
-			X11Exception(sl, dis, errcode)
+		PropertyChangeError(Display *dis, const int errcode) :
+			X11Exception(dis, errcode)
 		{
-			m_error = m_error + \
-				". While trying to change property.";
+			m_error += ". While trying to change property.";
 		}
+		
+		XWMFS_EXCEPTION_IMPL;
 	};
 	
 	//! Specialized Exception for the case that property types don't match
@@ -70,12 +65,8 @@ public: // types
 	{
 	public: // functions
 
-		PropertyTypeMismatch(
-			const SourceLocation sl,
-			Atom expected,
-			Atom encountered) :
-			Exception(sl,
-				"Retrieved property has different type "\
+		PropertyTypeMismatch(Atom expected, Atom encountered) :
+			Exception("Retrieved property has different type "\
 				"than expected: ")
 		{
 			std::ostringstream s;
@@ -83,6 +74,8 @@ public: // types
 				<< encountered;
 			m_error += s.str();
 		}
+		
+		XWMFS_EXCEPTION_IMPL;
 	};
 	
 	//! \brief
@@ -93,10 +86,11 @@ public: // types
 	{
 	public: // functions
 
-		PropertyNotExisting(const SourceLocation sl) :
-			Exception(sl, "Requested property is not existing")
+		PropertyNotExisting() :
+			Exception("Requested property is not existing")
 		{ }
 
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! exception used in situations when an operation is not implemented
@@ -106,9 +100,11 @@ public: // types
 	{
 	public: // functions
 
-		NotImplemented(const SourceLocation sl) :
-			Exception(sl, "The operation is not implemented")
+		NotImplemented() :
+			Exception("The operation is not implemented")
 		{ }
+
+		XWMFS_EXCEPTION_IMPL;
 	};
 
 public: // functions
@@ -443,25 +439,18 @@ inline void XWindow::getProperty(
 	// use data as a c-string without copying it.
 	if ( res != Success )
 	{
-		throw PropertyQueryError(
-			XWMFS_SRC_LOCATION,
-			XDisplay::getInstance(),
-			res
-		);
+		xwmfs_throw(PropertyQueryError(XDisplay::getInstance(), res));
 	}
 
 	if( actual_type == None )
 	{
 		XFree(data);
-		throw PropertyNotExisting(XWMFS_SRC_LOCATION);
+		xwmfs_throw(PropertyNotExisting());
 	}
 	else if( x_type != actual_type )
 	{
 		XFree(data);
-		throw PropertyTypeMismatch(
-			XWMFS_SRC_LOCATION,
-			x_type,
-			actual_type);
+		xwmfs_throw(PropertyTypeMismatch(x_type, actual_type));
 	}
 
 	assert( actual_format == THIS_PROP::Traits::format );

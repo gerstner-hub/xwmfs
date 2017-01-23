@@ -94,7 +94,7 @@ void XWindow::destroy()
 	// helpful. See setProperty().
 	if( false /* || res != Success*/ )
 	{
-		throw X11Exception( XWMFS_SRC_LOCATION, display, res );
+		xwmfs_throw( X11Exception(display, res) );
 	}
 }
 
@@ -130,10 +130,7 @@ void XWindow::sendRequest(
 
 	if( len > sizeof(event.xclient.data) )
 	{
-		throw Exception(
-			XWMFS_SRC_LOCATION,
-			"XEvent data exceeds maximum"
-		);
+		xwmfs_throw( Exception("XEvent data exceeds maximum") );
 	}
 
 	auto &display = XDisplay::getInstance();
@@ -156,11 +153,7 @@ void XWindow::sendRequest(
 
 	if( s == BadValue || s == BadWindow )
 	{
-		throw X11Exception(
-			XWMFS_SRC_LOCATION,
-			XDisplay::getInstance(),
-			s
-		);
+		xwmfs_throw(X11Exception(XDisplay::getInstance(), s));
 	}
 
 	// make sure the event gets sent out

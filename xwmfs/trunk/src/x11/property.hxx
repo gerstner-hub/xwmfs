@@ -374,10 +374,7 @@ public: // functions
 	{
 		if( !m_data )
 		{
-			throw Exception(
-				XWMFS_SRC_LOCATION,
-				"No valid property stored"
-			); 
+			xwmfs_throw(Exception("No valid property stored")); 
 		}
 
 		return m_native;
