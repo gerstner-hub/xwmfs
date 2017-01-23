@@ -7,6 +7,10 @@
 #include <string>
 
 #define XWMFS_SRC_LOCATION xwmfs::Exception::SourceLocation(__FILE__, __LINE__, __FUNCTION__)
+//! helper macro to throw an arbitrary exception type while implicitly adding
+//! the current source code location
+#define xwmfs_throw(ex) (ex).setSourceLoc(xwmfs::Exception::SourceLocation(__FILE__, __LINE__, __FUNCTION__)).throwIt();
+#define XWMFS_EXCEPTION_IMPL public: [[ noreturn ]] void throwIt() const override { throw *this; }
 
 namespace xwmfs
 {
@@ -34,8 +38,10 @@ public: // types
 	 **/
 	struct SourceLocation
 	{
-		SourceLocation(
-			const char *p_file, const int p_line, const char *p_func
+		constexpr SourceLocation(
+			const char *p_file = nullptr,
+			const int p_line = -1,
+			const char *p_func = nullptr
 		) :
 			file(p_file), line(p_line), func(p_func) { }
 
@@ -58,10 +64,7 @@ public: // types
 
 public: // functions
 
-	Exception(const SourceLocation sl, const std::string &err) :
-		m_location(sl),
-		m_error(err)
-	{}
+	Exception(const std::string &err) : m_error(err) {}
 
 	std::string what(const uint32_t level=0) const;
 
@@ -69,6 +72,18 @@ public: // functions
 	{
 		m_pre_errors.push_back(ex);
 	}
+
+	Exception& setSourceLoc(const SourceLocation &location)
+	{
+		m_location = location;
+		return *this;
+	}
+
+	/**
+	 * \brief
+	 * 	Helper function to throw the most derived type of this object
+	 **/
+	[[ noreturn ]] virtual void throwIt() const { throw *this; }
 
 protected: // data
 

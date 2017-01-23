@@ -84,9 +84,9 @@ public: // functions
 		if( res )
 		{
 			m_state = DEAD;
-			throw xwmfs::SystemException(
-				XWMFS_SRC_LOCATION,
-				"Unable to create thread");
+			xwmfs_throw(
+				xwmfs::SystemException("Unable to create thread")
+			);
 		}
 	}
 

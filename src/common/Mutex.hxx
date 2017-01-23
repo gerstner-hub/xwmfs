@@ -40,8 +40,9 @@ public: // functions
 
 		if( attr_init_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error creating debug mutex attribute" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error creating debug mutex attribute")
+			);
 		}
 
 		const int settype_res = ::pthread_mutexattr_settype(
@@ -50,8 +51,9 @@ public: // functions
 
 		if( settype_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error setting debug mutex type" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error setting debug mutex type")
+			);
 		}
 
 		attr = &debug_attr;
@@ -62,8 +64,9 @@ public: // functions
 			attr);
 		if( mutex_init_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error creating mutex" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error creating mutex" )
+			);
 		}
 
 #ifndef NDEBUG
@@ -86,8 +89,9 @@ public: // functions
 
 		if( lock_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error locking mutex" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error locking mutex")
+			);
 		}
 	}
 
@@ -97,8 +101,9 @@ public: // functions
 
 		if( unlock_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error unlocking mutex" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error unlocking mutex" )
+			);
 		}
 	}
 

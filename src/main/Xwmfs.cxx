@@ -159,8 +159,8 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
 	}
 	else
 	{
-		throw xwmfs::Exception(
-			XWMFS_SRC_LOCATION, "invalid command encountered"
+		xwmfs_throw(
+			xwmfs::Exception("invalid command encountered")
 		);
 	}
 }
@@ -737,11 +737,9 @@ void Xwmfs::early_init()
 	// process otherwise it won't work!
 	if( ! ::XInitThreads() )
 	{
-		xwmfs::Exception main_error(
-			XWMFS_SRC_LOCATION,
-			"Error initialiizing X11 threads"
+		xwmfs_throw(
+			xwmfs::Exception("Error initialiizing X11 threads")
 		);
-		throw main_error;
 	}
 
 	XPropTraits<utf8_string>::init();
@@ -784,11 +782,11 @@ int Xwmfs::init()
 		catch( const xwmfs::RootWin::QueryError &ex )
 		{
 			xwmfs::Exception main_error(
-				XWMFS_SRC_LOCATION,
-				"Error querying window manager properties.");
+				"Error querying window manager properties."
+			);
 
 			main_error.addError(ex);
-			throw main_error;
+			xwmfs_throw(main_error);
 		}
 	}
 	catch( const xwmfs::Exception &ex )

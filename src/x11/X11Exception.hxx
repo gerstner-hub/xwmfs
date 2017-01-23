@@ -22,15 +22,17 @@ namespace xwmfs
 class X11Exception :
 	public Exception
 {
-public:
-	X11Exception(const SourceLocation sl, Display *dis, const int errcode) :
-		Exception(sl, "X11 operation failed: \"")
+public: // functions
+	X11Exception(Display *dis, const int errcode) :
+		Exception("X11 operation failed: \"")
 	{
 		char errtext[128];
 		(void)XGetErrorText(dis, errcode, errtext, 128);
 		m_error += errtext;
 		m_error += '"';
 	}
+
+	XWMFS_EXCEPTION_IMPL;
 };
 	
 	

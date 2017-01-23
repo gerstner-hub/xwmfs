@@ -38,8 +38,9 @@ public: // functions
 			&m_prwlock, NULL);
 		if( rwlock_init_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error creating rwlock" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error creating rwlock" )
+			);
 		}
 	}
 
@@ -56,8 +57,9 @@ public: // functions
 
 		if( lock_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error read-locking rwlock" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error read-locking rwlock")
+			);
 		}
 	}
 
@@ -67,8 +69,9 @@ public: // functions
 
 		if( lock_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error write-locking rwlock" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error write-locking rwlock")
+			);
 		}
 	}
 
@@ -78,8 +81,9 @@ public: // functions
 
 		if( unlock_res )
 		{
-			throw xwmfs::SystemException( XWMFS_SRC_LOCATION,
-				"Error unlocking mutex" );
+			xwmfs_throw(
+				xwmfs::SystemException("Error unlocking mutex" )
+			);
 		}
 	}
 protected: // functions
