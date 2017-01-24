@@ -23,6 +23,10 @@ class Mutex
 {
 public: // functions
 
+	// disallow copy/assignment
+	Mutex(const Mutex&) = delete;
+	Mutex& operator=(const Mutex&) = delete;
+
 	/**
 	 * \brief
 	 *	The only supported mutex type for the moment is non-recursive
@@ -31,50 +35,7 @@ public: // functions
 	 *	In NDEBUG is not set then additional error checks are in
 	 *	effect that allow detection of deadlocks etc.
 	 **/
-	Mutex()
-	{
-		::pthread_mutexattr_t* attr = NULL;
-#ifndef NDEBUG
-		::pthread_mutexattr_t debug_attr;
-		const int attr_init_res = ::pthread_mutexattr_init(&debug_attr);
-
-		if( attr_init_res )
-		{
-			xwmfs_throw(
-				xwmfs::SystemException("Error creating debug mutex attribute")
-			);
-		}
-
-		const int settype_res = ::pthread_mutexattr_settype(
-			&debug_attr,
-			PTHREAD_MUTEX_ERRORCHECK);
-
-		if( settype_res )
-		{
-			xwmfs_throw(
-				xwmfs::SystemException("Error setting debug mutex type")
-			);
-		}
-
-		attr = &debug_attr;
-#endif
-
-		const int mutex_init_res = ::pthread_mutex_init(
-			&m_pmutex,
-			attr);
-		if( mutex_init_res )
-		{
-			xwmfs_throw(
-				xwmfs::SystemException("Error creating mutex" )
-			);
-		}
-
-#ifndef NDEBUG
-		const int attr_destr_res = ::pthread_mutexattr_destroy(
-			&debug_attr);
-		assert( ! attr_destr_res );
-#endif
-	}
+	Mutex();
 
 	~Mutex()
 	{
@@ -107,19 +68,37 @@ public: // functions
 		}
 	}
 
-protected: // functions
-
-	// protected copy ctor. and assignment op. to avoid copies
-	Mutex(const Mutex&);
-	Mutex& operator=(const Mutex&);
-
-private: // data
+protected: // data
 
 	// make that mutable to make const lock/unlock semantics possible
 	mutable pthread_mutex_t m_pmutex;
 
 	// Condition needs access to our handle
 	friend class Condition;
+};
+
+/**
+ * \brief
+ * 	A mutex guard object that locks a Mutex until it's destroyed
+ **/
+class MutexGuard
+{
+public: // functions
+
+	MutexGuard(const Mutex &m) :
+		m_mutex(m)
+	{
+		m_mutex.lock();
+	}
+
+	~MutexGuard()
+	{
+		m_mutex.unlock();
+	}
+
+private: // data
+
+	const Mutex &m_mutex;
 };
 
 } // end ns
