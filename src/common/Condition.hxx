@@ -18,6 +18,10 @@ namespace xwmfs
  **/
 class Condition
 {
+	// forbid copy-assignment
+	Condition(const Condition&) = delete;
+	Condition& operator=(const Condition&) = delete;
+
 public: // functions
 
 	/**
@@ -32,9 +36,12 @@ public: // functions
 	Condition(Mutex &lock) :
 		m_lock(lock)
 	{
-		const int init_res = ::pthread_cond_init(&m_pcond, NULL);
-
-		assert( ! init_res );
+		if( ::pthread_cond_init(&m_pcond, nullptr) != 0 )
+		{
+			xwmfs_throw(
+				xwmfs::SystemException("Error creating condition" )
+			);
+		}
 	}
 
 	~Condition()
@@ -47,25 +54,26 @@ public: // functions
 	//! The associated lock must already be locked at entry
 	void wait()
 	{
-		const int wait_res = ::pthread_cond_wait(&m_pcond, &(m_lock.m_pmutex));
-
-		assert( ! wait_res );
+		if( ::pthread_cond_wait(&m_pcond, &(m_lock.m_pmutex)) != 0 )
+		{
+			xwmfs_throw(
+				xwmfs::SystemException("Error waiting on condition" )
+			);
+		}
 	}
 
 	void signal()
 	{
-		const int sig_res = ::pthread_cond_signal(&m_pcond);
-
-		assert( ! sig_res );
+		if( ::pthread_cond_signal(&m_pcond) != 0 )
+		{
+			xwmfs_throw(
+				xwmfs::SystemException("Error signaling condition" )
+			);
+		}
 	}
 
-protected: // functions
+protected: // data
 
-	// protected copy ctor. and assignment op. to avoid copies
-	Condition(const Condition&);
-	Condition& operator=(const Condition&);
-
-private: // data
 	pthread_cond_t m_pcond;
 	Mutex &m_lock;
 };

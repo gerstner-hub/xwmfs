@@ -3,7 +3,7 @@
 
 // xwmfs
 #include "common/Exception.hxx"
-
+#include "common/SystemException.hxx"
 
 namespace xwmfs
 {
@@ -29,6 +29,19 @@ std::string Exception::what(const uint32_t level) const
 void Exception::indent(const uint32_t level, std::ostream &o) const
 {
 	o << std::string(level, '\t') << level << "): ";
+}
+	
+SystemException::SystemException(const std::string &err) :
+	Exception(err)
+{
+	std::stringstream ss;
+	m_errno = errno;
+
+	char msg[256];
+
+	char *m = ::strerror_r(m_errno, msg, 256);
+	ss << " (\"" << m << "\", errno = " << m_errno << ")";
+	m_error.append( ss.str() );
 }
 
 } // end ns

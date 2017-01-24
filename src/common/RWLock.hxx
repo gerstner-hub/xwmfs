@@ -11,31 +11,28 @@ namespace xwmfs
 
 /**
  * \brief
- * 	A class to represent a pthread RWLock
+ * 	A class to represent a pthread read-write lock
  * \details
  *	A read-write lock can be locked in parallel for reading but only by
  *	one thread for writing. This is helpful if you got data that is
- *	updated rarely but often read.
+ *	updated rarely but read often.
  *
  * 	Only the most basic operations are provided by now. For more
  * 	information please refer to the POSIX man pages.
  **/
 class RWLock
 {
+	// forbid copy-assignment
+	RWLock(const RWLock&) = delete;
+	RWLock& operator=(const RWLock&) = delete;
 public: // functions
 
-	/**
-	 * \brief
-	 *	The only supported mutex type for the moment is non-recursive
-	 *	as others aren't needed
-	 * \details
-	 *	In NDEBUG is not set then additional error checks are in
-	 *	effect that allow detection of deadlocks etc.
-	 **/
 	RWLock()
 	{
 		const int rwlock_init_res = ::pthread_rwlock_init(
-			&m_prwlock, NULL);
+			&m_prwlock, nullptr
+		);
+
 		if( rwlock_init_res )
 		{
 			xwmfs_throw(
@@ -86,12 +83,8 @@ public: // functions
 			);
 		}
 	}
-protected: // functions
 
-	// protected copy ctor. and assignment op. to avoid copies
-	RWLock(const RWLock&);
-	RWLock& operator=(const RWLock&);
-private: // data
+protected: // data
 
 	// make that mutable to make const lock/unlock semantics possible
 	mutable pthread_rwlock_t m_prwlock;

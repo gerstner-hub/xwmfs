@@ -3,7 +3,6 @@
 
 #include <errno.h>
 #include <string.h>
-#include <sstream>
 
 #include "common/Exception.hxx"
 
@@ -27,23 +26,7 @@ public: // functions
 	 * 	The string provided in \c err will be appended with the
 	 * 	errno description of the current thread
 	 **/
-	SystemException(const std::string &err) :
-		Exception(err)
-	{
-		m_errno = errno;
-
-		char msg[256];
-
-		char *m = ::strerror_r(m_errno, msg, 256);
-		std::stringstream str_errno;
-		str_errno << m_errno;
-
-		m_error.append(" (\"");
-		m_error.append(m);
-		m_error.append("\", errno = ");
-		m_error.append(str_errno.str());
-		m_error.append(")");
-	}
+	SystemException(const std::string &err);
 
 private: // members
 
@@ -56,5 +39,4 @@ private: // members
 } // end ns
 
 #endif // inc. guard
-
 

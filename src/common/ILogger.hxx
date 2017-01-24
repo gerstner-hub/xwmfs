@@ -2,8 +2,7 @@
 #define XWMFS_ILOGGER_HXX
 
 // C++
-#include <ostream>
-#include <fstream>
+#include <iosfwd>
 #include <sstream>
 
 namespace xwmfs
@@ -14,12 +13,15 @@ namespace xwmfs
  * 	Abstract interface for a logging facility
  * \details
  * 	Applications can use this interface to log data to arbitrary places.
- * 	You need to dervice from this interface and decide what places these
+ * 	You need to derive from this interface and decide what places these
  * 	are.
  *
  * 	The base class writes data to std::ostream instances. So
  * 	implementation of this class need to provide some instance of
  * 	std::ostream for writing to.
+ *
+ * 	This base class additionally provides means to write colored text and
+ * 	detect whether an ostream is connected to a terminal.
  **/
 class ILogger
 {
