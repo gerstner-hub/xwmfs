@@ -112,6 +112,12 @@ protected: // functions
 	//! working loop for the event handling thread
 	virtual void threadEntry(const Thread &t);
 
+	/**
+	 * \brief
+	 * 	Handles a single X11 event received by the x11 event thread
+	 **/
+	void handleEvent(const XEvent &ev);
+
 	//! called from m_ev_thread if a window is to be removed from the FS
 	void removeWindow(const XWindow &win);
 

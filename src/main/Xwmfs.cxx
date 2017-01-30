@@ -903,144 +903,159 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 		// blocking
 		XNextEvent(dis, &ev);
 
+		try
+		{
+			handleEvent(ev);
+		}
+		catch(const xwmfs::Exception &ex)
+		{
+			logger.error()
+				<< "Failed to handle X11 event of type "
+				<< std::dec << ev.type << ": " << ex.what();
+		}
+	}
+}
+
+void Xwmfs::handleEvent(const XEvent &ev)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
 #if 0
-		logger.debug() << "Received event of type "
-			<< std::dec << ev.type << std::endl;
+	logger.debug() << "Received event of type "
+		<< std::dec << ev.type << std::endl;
 #endif
 
-		switch( ev.type )
-		{
-		// a new window came into existence
-		//
-		// NOTE: it might be better to look for MappedEvents instead
-		// of CreateEvents. In case there are strange hidden windows
-		// and such
-		case CreateNotify:
-		{
-			// Xlib manual says one should generally ignore these
-			// events as they come from popups
-			if( ev.xcreatewindow.override_redirect )
-				break;
-			// this is grand-kid or something. we could add these
-			// in a hierarchical manner as sub-windows but for now
-			// we ignore them
-			else if( ev.xcreatewindow.parent != m_root_win.id() )
-				break;
-				
-			XWindow w(ev.xcreatewindow.window);
+	switch( ev.type )
+	{
+	// a new window came into existence
+	//
+	// NOTE: it might be better to look for MappedEvents instead
+	// of CreateEvents. In case there are strange hidden windows
+	// and such
+	case CreateNotify:
+	{
+		// Xlib manual says one should generally ignore these
+		// events as they come from popups
+		if( ev.xcreatewindow.override_redirect )
+			break;
+		// this is grand-kid or something. we could add these
+		// in a hierarchical manner as sub-windows but for now
+		// we ignore them
+		else if( ev.xcreatewindow.parent != m_root_win.id() )
+			break;
 			
-			auto &debug_log = logger.debug();
+		XWindow w(ev.xcreatewindow.window);
+		
+		auto &debug_log = logger.debug();
 
-			debug_log
-				<< "Window "
-				<< w
-				<< " was created!" << std::endl;
+		debug_log
+			<< "Window "
+			<< w
+			<< " was created!" << std::endl;
 
+		debug_log
+			<< "\tParent: "
+			<< XWindow(ev.xcreatewindow.parent)
+			<< std::endl;
+
+		debug_log
+			<< "\twin name = ";
+
+		try
+		{
 			debug_log
-				<< "\tParent: "
-				<< XWindow(ev.xcreatewindow.parent)
+				<< w.getName()
 				<< std::endl;
-
+		}
+		catch( const xwmfs::Exception &ex )
+		{
 			debug_log
-				<< "\twin name = ";
-
-			try
-			{
-				debug_log
-					<< w.getName()
-					<< std::endl;
-			}
-			catch( const xwmfs::Exception &ex )
-			{
-				debug_log
-					<< "error getting win name: "
-					<< ex
-					<< std::endl;
-			}
-
-			try
-			{
-				this->addWindow(w);
-			}
-			catch( const xwmfs::Exception &ex )
-			{
-				debug_log
-					<< "\terror adding window: "
-					<< ex
-					<< std::endl;
-			}
-
-			break;
-		}
-		// a window was destroyed
-		case DestroyNotify:
-		{
-			XWindow w(ev.xdestroywindow.window);
-			logger.debug()
-				<< "Window " << w
-				<< " was destroyed!"
+				<< "error getting win name: "
+				<< ex
 				<< std::endl;
-			this->removeWindow(w);
-			break;
 		}
-		case PropertyNotify:
-		{
-			logger.debug() << "Property (atom = "
-				<< std::dec << ev.xproperty.atom
-				<< ") on window " << std::hex
-				<< "0x" << ev.xproperty.window << " changed"
-				<< std::dec << std::endl;
-			switch( ev.xproperty.state )
-			{
-			case PropertyNewValue:
-			{
-				XWindow w(ev.xproperty.window);
 
-				if( w == m_root_win )
-				{
-					this->updateRootWindow(ev.xproperty.atom);
-				}
-				else
-				{
-					this->updateWindow(w, ev.xproperty.atom);
-				}
-				break;
+		try
+		{
+			this->addWindow(w);
+		}
+		catch( const xwmfs::Exception &ex )
+		{
+			debug_log
+				<< "\terror adding window: "
+				<< ex
+				<< std::endl;
+		}
+
+		break;
+	}
+	// a window was destroyed
+	case DestroyNotify:
+	{
+		XWindow w(ev.xdestroywindow.window);
+		logger.debug()
+			<< "Window " << w
+			<< " was destroyed!"
+			<< std::endl;
+		this->removeWindow(w);
+		break;
+	}
+	case PropertyNotify:
+	{
+		logger.debug() << "Property (atom = "
+			<< std::dec << ev.xproperty.atom
+			<< ") on window " << std::hex
+			<< "0x" << ev.xproperty.window << " changed"
+			<< std::dec << std::endl;
+		switch( ev.xproperty.state )
+		{
+		case PropertyNewValue:
+		{
+			XWindow w(ev.xproperty.window);
+
+			if( w == m_root_win )
+			{
+				this->updateRootWindow(ev.xproperty.atom);
 			}
-			case PropertyDelete:
-			default:
-				break;
+			else
+			{
+				this->updateWindow(w, ev.xproperty.atom);
 			}
-		}
-		// called upon window size/appearance changes
-		case ConfigureNotify:
-		{
 			break;
 		}
-		case CirculateNotify:
-		{
-			break;
-		}
-		// called if parts of the window become
-		// visible/invisible
-		case UnmapNotify:
-		case MapNotify:
-		{
-			break;
-		}
-		case GravityNotify:
-		{
-			break;
-		}
-		case ReparentNotify:
-		{
-			break;
-		}
+		case PropertyDelete:
 		default:
-			logger.debug()
-				<< __FUNCTION__
-				<< ": Some unknown event received" << "\n";
 			break;
 		}
+	}
+	// called upon window size/appearance changes
+	case ConfigureNotify:
+	{
+		break;
+	}
+	case CirculateNotify:
+	{
+		break;
+	}
+	// called if parts of the window become
+	// visible/invisible
+	case UnmapNotify:
+	case MapNotify:
+	{
+		break;
+	}
+	case GravityNotify:
+	{
+		break;
+	}
+	case ReparentNotify:
+	{
+		break;
+	}
+	default:
+		logger.debug()
+			<< __FUNCTION__
+			<< ": Some unknown event received" << "\n";
+		break;
 	}
 }
 
