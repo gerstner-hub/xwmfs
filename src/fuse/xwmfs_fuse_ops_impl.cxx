@@ -9,11 +9,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-
-// for strchrnul
-//#define _GNU_SOURCE
 #include <string.h>
-
 #include <errno.h>
 #include <assert.h>
 
@@ -161,6 +157,11 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+/**
+ * \brief
+ * 	This is the counter part to xmwfs_open(), called as soon as a user of
+ * 	a given file object closes it's file descriptor
+ **/
 int xwmfs_release(const char *path, struct fuse_file_info *fi)
 {
 	(void)path;
@@ -234,6 +235,8 @@ int xwmfs_write(
 	// TODO: we don't modify the file system structure here, only the
 	// file. A file specific lock would be sufficient here to allow
 	// parallel operations to move on
+	// (okay, this only affects write operations, so it shouldn't be too
+	// tough)
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our entry pointer back from the file handle field

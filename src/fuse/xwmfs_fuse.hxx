@@ -8,7 +8,6 @@
 
 // xwmfs
 #include "common/RWLock.hxx"
-#include "main/StdLogger.hxx"
 
 /*
  * This header defines the data structures for the actual file system
