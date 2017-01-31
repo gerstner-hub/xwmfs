@@ -10,6 +10,7 @@ struct fuse_operations xwmfs_oper =
 	.getattr = xwmfs_getattr,
 	.readdir = xwmfs_readdir,
 	.open = xwmfs_open,
+	.release = xwmfs_release,
 	.read = xwmfs_read,
 	.write = xwmfs_write,
 	.truncate = xwmfs_truncate,

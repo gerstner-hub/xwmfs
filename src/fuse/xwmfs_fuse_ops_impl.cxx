@@ -21,14 +21,10 @@
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Xwmfs.hxx"
 
-// XXX maybe better move the file system instance in here such that FUSE
-// doesn't need to include XWMFS headers?
-
 namespace xwmfs
 {
 
-// XXX we should have a const variant of that thing?
-xwmfs::RootEntry *filesystem = NULL;
+xwmfs::RootEntry *filesystem = nullptr;
 
 }
 
@@ -52,6 +48,10 @@ int xwmfs_getattr(const char *path, struct stat *stbuf)
 			<< path << "\n";
 		return -ENOENT;
 	}
+	
+	xwmfs::StdLogger::getInstance().debug()
+		<< __FUNCTION__ << ": stat for path "
+		<< path << "\n";
 
 	entry->getStat(stbuf);
 
@@ -105,15 +105,12 @@ int xwmfs_readdir(
 		return -ENOTDIR;
 	}
 
-	// okay we found a valid directory to list the contents from
-	const xwmfs::DirEntry::NameEntryMap &entries = dir_entry->getEntries();
+	// okay we found a valid directory to list the contents of
+	const auto &entries = dir_entry->getEntries();
 
-	for(
-		xwmfs::DirEntry::NameEntryMap::const_iterator e = entries.begin();
-		e != entries.end();
-		e++ )
+	for( const auto &it: entries )
 	{
-		filler(buf, e->first, NULL, 0);
+		filler(buf, it.first, nullptr, 0);
 	}
 
 	return 0;
@@ -149,16 +146,39 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	else if((fi->flags & 3) != O_RDONLY && !entry->isWritable() )
 		return -EACCES;
 
-	// now we could store e.g. a pointer to entry in fi
+	// store the pointer to the entry in the file handle
 	fi->fh = (intptr_t)entry;
 
-	// XXX problem is: if updates of the xwmfs are added then entry may
-	// become invalid. Here we should act like most real filesystems: keep
-	// the "entry" existing somewhere until it is closed by clients
+	// NOTE: this race conditions only shows if fuse is mounted with the
+	// direct_io option, otherwise heavy caching is employed that avoids
+	// the SEGFAULT when somebody tries to read from an Entry that's
+	// already been deleted
 	//
-	// for this to work we need to add an open counter and a deleted flag
-	// or something like it.
+	// increase the reference count to avoid deletion while the file is
+	// opened
+	entry->ref();
 
+	return 0;
+}
+
+int xwmfs_release(const char *path, struct fuse_file_info *fi)
+{
+	(void)path;
+
+	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+
+	// get our entry pointer back from the file handle field
+	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
+
+	// deleting this entry should not required a write guard, because
+	// we're the last user of the file nobody else should know about it
+	// ...
+	if( entry->unref() )
+	{
+		delete entry;
+	}
+
+	// return value is ignored by FUSE
 	return 0;
 }
 
@@ -178,6 +198,13 @@ int xwmfs_read(
 	// reading a directory via read doesn't make much sense
 	if( entry->type() == xwmfs::Entry::DIRECTORY )
 		return -EISDIR;
+	else if( entry->isDeleted() )
+		// difficult to say what the correct errno for "file
+		// disappeared" is. This one seems suitable. It would also be
+		// valid to succeed in reading but then the application can't
+		// detect the case that the represented object has vanished
+		// ...
+		return -ENXIO;
 
 	assert( entry->type() == xwmfs::Entry::REG_FILE );
 
@@ -204,8 +231,9 @@ int xwmfs_write(
 {
 	(void)path;
 
-	// XXX we don't modify the file system structure here, only the file.
-	// the file needs it's own lock at that point
+	// TODO: we don't modify the file system structure here, only the
+	// file. A file specific lock would be sufficient here to allow
+	// parallel operations to move on
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our entry pointer back from the file handle field
@@ -216,6 +244,9 @@ int xwmfs_write(
 	// writing a directory via write doesn't make much sense
 	if( entry->type() == xwmfs::Entry::DIRECTORY )
 		return -EISDIR;
+	else if( entry->isDeleted() )
+		// see xwmfs_read()
+		return -ENXIO;
 
 	assert( entry->type() == xwmfs::Entry::REG_FILE );
 
@@ -323,6 +354,6 @@ void xwmfs_destroy(void* data)
 
 	xwmfs::Xwmfs::getInstance().exit();
 	
-	xwmfs::filesystem = NULL;
+	xwmfs::filesystem = nullptr;
 }
 
