@@ -163,7 +163,7 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time)
 	assert(e);
 
 	/*
-	 * we optimize here by not allocating a copy of the entries
+	 * we optimize here by not allocating a copy of the entry's
 	 * name but instead use a flat copy of that entries name as a
 	 * key. we need to be very careful about that, however, when
 	 * it comes to deleting entries again.
@@ -214,19 +214,27 @@ void DirEntry::removeEntry(const char* s)
 	
 void DirEntry::clear()
 {
+	std::vector<Entry*> to_delete;
+
 	// we need to be careful here as our keys are kept in the
-	// mapped values. If we delete an entry then its key becomes
-	// invalid. This is a pretty grey zone ...
+	// mapped values. If we delete an entry then its key in the map
+	// becomes invalid.
+
 	for( auto it: m_objs )
 	{
 		auto entry = it.second;
 		if( entry->markDeleted() )
 		{
-			delete entry;
+			to_delete.push_back(entry);
 		}
 	}
 
 	m_objs.clear();
+	
+	for( auto &entry: to_delete )
+	{
+		delete entry;
+	}
 }
 
 } // end ns
