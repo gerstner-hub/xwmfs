@@ -1,12 +1,8 @@
 #ifndef XWMFS_FUSE_HXX
 #define XWMFS_FUSE_HXX
 
-// C
-#include <errno.h>
-
 // C++
 #include <cstring>
-#include <cassert>
 #include <sstream>
 #include <map>
 
@@ -18,10 +14,10 @@
  * This header defines the data structures for the actual file system
  * information
  * 
- * I found it would be best to compile the many X-related objects into a
- * format that is defined by the fuse part of the code. The main reason is
- * that we need to be able to quickly traverse the virtual file system such
- * that we can e.g. lookup specific paths and list their contents.
+ * I found it would be best to cache the information from the many X-related
+ * objects in a format that is defined by the fuse part of the code. The main
+ * reason is that we need to be able to quickly traverse the virtual file
+ * system such that we can e.g. lookup specific paths and list their contents.
  * 
  * This would become costly if for each lookup the information needed first to
  * be gathered from complex objects and requiring a lot of checks etc.
@@ -56,11 +52,9 @@ struct FileEntry;
  * \brief
  * 	Base class for file system entries
  * \details
- * 	The file system tree will be made of instances of this base type. I
- * 	still use an enumration for differentiation of specific types to avoid
- * 	too high performance penalties due to RTTI. When traversing the file
- * 	system we need to quickly find out the type of each entity. Thus the
- * 	enumeration seems safer.
+ * 	The file system tree will consist of instances of this base type. I
+ * 	use an enumeration for differentiation of specific types to avoid too
+ * 	high performance penalties due to RTTI.
  **/
 struct Entry
 {
@@ -73,10 +67,14 @@ public: // types
 	enum Type
 	{
 		DIRECTORY,
-		REG_FILE
+		REG_FILE,
+		INVAL_TYPE
 	};
 
 public: // functions
+
+	// make sure entries are never flat-copied
+	Entry(const Entry &other) = delete;
 
 	//! makes sure derived class's destructors are always called
 	virtual ~Entry() { }
@@ -85,12 +83,12 @@ public: // functions
 	 * \brief
 	 * 	casts entry to a DirEntry, if the type matches
 	 * \return
-	 * 	A pointer of to the entry object with the DirEntry type or
-	 * 	nullptr if the entry is no DirEntry or nullptr itself
+	 * 	A DirEntry pointer to \c entry or nullptr if the entry is no
+	 * 	DirEntry or nullptr itself
 	 **/
 	static DirEntry* tryCastDirEntry(Entry* entry)
 	{
-		if( entry && entry->type() == DIRECTORY )
+		if( entry && entry->isDir() )
 			return reinterpret_cast<DirEntry*>(entry);
 
 		return nullptr;
@@ -100,12 +98,12 @@ public: // functions
 	 * \brief
 	 * 	casts entry to a FileEntry, if the type matches
 	 * \return
-	 * 	A pointer of to the entry object with the FileEntry type or
-	 * 	nullptr if the entry is no FileEntry
+	 * 	A FileEntry pointer to \c entry or nullptr if the entry is no
+	 * 	FileEntry or nullptr itself
 	 **/
 	static FileEntry* tryCastFileEntry(Entry *entry)
 	{
-		if( entry && entry->type() == REG_FILE )
+		if( entry && entry->isRegular() )
 			return reinterpret_cast<FileEntry*>(entry);
 
 		return nullptr;
@@ -145,6 +143,16 @@ public: // functions
 	 **/
 	virtual void getStat(struct stat *s);
 
+	//! increases the reference count
+	void ref() { m_refcount++; }
+	//! decreases the reference count and returns whether the entry must
+	//! be deleted
+	bool unref() { return --m_refcount == 0; }
+	//! marks the entry for deletion and unreferences it, returns unref()
+	virtual bool markDeleted() { m_deleted = true; return unref(); }
+	//! returns whether this entry is pending deletion
+	bool isDeleted() const { return m_deleted; }
+
 protected: // functions
 
 	/**
@@ -175,7 +183,7 @@ protected: // functions
 	 * 	integer representation
 	 * \details
 	 * 	The string in \c data can be octal, hexadecimal or decimal
-	 * 	using the typical syntax.
+	 * 	using the typical syntaxes.
 	 * \return
 	 * 	< 0 if an error occured. This will then be the error code to
 	 * 	return to FUSE. >= 0 is an integer could be parsed. This will
@@ -187,19 +195,43 @@ protected: // functions
 protected: // data
 	
 	const std::string m_name;
-	const Type m_type;
-	const bool m_writable;
+	const Type m_type = INVAL_TYPE;
+	const bool m_writable = false;
 
 	//! set to the last write/creation event
-	time_t m_modify_time;
+	time_t m_modify_time = 0;
 	//! set to the creation time, metadata isn't changed afterwards any
 	//! more
-	time_t m_status_time;
+	time_t m_status_time = 0;
 
 	//! the user id we're running as
 	static const uid_t m_uid;
 	//! the group id we're running as
 	static const gid_t m_gid;
+
+	//! whether the file system entry was removed and is pending deletion
+	bool m_deleted = false;
+	/**
+	 * \brief
+	 * 	Reference count of the file system entry
+	 * \details
+	 * 	This counter is one upon construction and is increased for
+	 * 	each open file description on the FUSE side, decreased again
+	 * 	for each closed file description.
+	 *
+	 * 	Entries a typically not removed from the FUSE side but from
+	 * 	the X11 side, because a Window disappears or alike. In this
+	 * 	case the initial single reference is decremented. Whoever
+	 * 	drops the count to zero needs to delete the entry memory.
+	 *
+	 * 	This complex handling is necessary, because multiple clients
+	 * 	can open a file at the same time and also, because the
+	 * 	removals originate from external events in the X server. When
+	 * 	somebody still has a file opened then the data structure needs
+	 * 	to remain valid until all file descriptors to it have been
+	 * 	closed.
+	 **/
+	size_t m_refcount = 1;
 };
 
 /**
@@ -216,9 +248,9 @@ protected: // data
  * 	when writing to it is possible and has a sensible effect on whatever
  * 	it represents.
  *
- * 	The data to be read is always considered to be present in the
- * 	inherited stringstream. Write calls, however, need to be handled via
- * 	spezializations of FileEntry that overwrite the write-function
+ * 	The data to be returned on read is always considered to be present in
+ * 	the inherited stringstream. Write calls, however, need to be handled
+ * 	via specializations of FileEntry that overwrite the write-function
  * 	accordingly to do something sensible.
  **/
 struct FileEntry :
@@ -233,9 +265,8 @@ struct FileEntry :
 	FileEntry(
 		const std::string &n,
 		const bool writable = false,
-		const time_t &t = 0) :
-			Entry(n, REG_FILE, writable, t)
-	{ }
+		const time_t &t = 0
+	) : Entry(n, REG_FILE, writable, t) { }
 
 	/**
 	 * \brief
@@ -245,7 +276,7 @@ struct FileEntry :
 	 * \note
 	 *	Calling this function should never happen. Objects that aren't
 	 *	writable should be covered at open() time with EACCES.
-	 *	Writeable files should overwrite this function appropriately.
+	 *	Writable files should overwrite this function appropriately.
 	 *
 	 *	If it is still called then "invalid argument" will be
 	 *	returned.
@@ -272,7 +303,7 @@ struct FileEntry :
  * 	Entry base type.
  *
  * 	For now DirEntries are always read-only as we can't create new files
- * 	in the XWMFS yet.
+ * 	in the XWMFS (yet).
  **/
 struct DirEntry :
 	public Entry
@@ -302,36 +333,39 @@ public: // functions
 
 	/**
 	 * \brief
-	 * 	Once a DirEntry is destroyed it deletes all it contained
+	 * 	When a DirEntry is destroyed it deletes all its contained
 	 * 	objects
 	 * \details
 	 * 	Due to this behaviour the file system can recursively delete
 	 * 	itself. As our file system won't get very deep nest levels we
 	 * 	don't need to fear a stack overflow.
 	 **/
-	~DirEntry()
-	{
-		this->clear();
-	}
+	~DirEntry() { this->clear(); }
 
 	/**
 	 * \brief
-	 * 	Deletes and removes all contained file system objects
+	 * 	Removes all contained file system objects and marks them for
+	 * 	deletion
 	 **/
-	void clear()
+	void clear();
+	
+	/**
+	 * \brief
+	 * 	Template wrapper around addEntry(Entry*, const bool) that
+	 * 	returns the concrete type added
+	 * \details
+	 * 	This template allows us to return the exact type added from
+	 * 	the function call. This way some statements are written more
+	 * 	easily (e.g. creating a new directory entry directly like
+	 * 	this:
+	 *
+	 * 	DirEntry *new_subdir = dir->addEntry( new DirEntry(...) )
+	 **/
+	template <typename ENTRY>
+	ENTRY* addEntry(ENTRY * const e, const bool inherit_time = true)
 	{
-		// we need to be careful here as our keys are kept in the
-		// mapped values. If we delete an entry then its key becomes
-		// invalid. This is a pretty grey zone ...
-		for(
-			std::map<const char*, Entry*>::iterator i = m_objs.begin();
-			i != m_objs.end();
-			i++ )
-		{
-			delete i->second;
-		}
-
-		m_objs.clear();
+		addEntry(static_cast<Entry*>(e), inherit_time);
+		return e;
 	}
 
 	/**
@@ -342,41 +376,8 @@ public: // functions
 	 * 	the current DirEntry object. If \c inherit_time is set then
 	 * 	the modification and status time of \c e will be set to the
 	 * 	respective values of the current DirEntry object.
-	 * \note
-	 * 	This function is a template as it allows us to return the
-	 * 	exact type added from the function. This way some statements
-	 * 	are written more easy (e.g. creating a new directory entry
-	 * 	directly like this:
-	 *
-	 * 	DirEntry *new_subdir = dir->addEntry( new DirEntry(...) )
 	 **/
-	template <typename ENTRY>
-	ENTRY* addEntry(ENTRY * const e, const bool inherit_time = true)
-	{
-		assert(e);
-
-		/*
-		 * we optimize here by not allocating a copy of the entries
-		 * name but instead use a flat copy of that entries name as a
-		 * key. we need to be very careful about that, however, when
-		 * it comes to deleting entries again.
-		 */
-		std::pair< NameEntryMap::iterator, bool > res =
-			m_objs.insert( std::make_pair(e->name().c_str(), e) );
-
-		// TODO prevent double-add, with exception maybe?
-		assert( res.second );
-
-		// we inherit our own time info to the new entry, if none has
-		// been specified
-		if( inherit_time )
-		{
-			e->setModifyTime(m_modify_time);
-			e->setStatusTime(m_status_time);
-		}
-
-		return e;
-	}
+	Entry* addEntry(Entry * const e, const bool inherit_time = true);
 
 	//! wrapper for getEntry(const char*) using a std::string
 	Entry* getEntry(const std::string &s) const
@@ -389,11 +390,32 @@ public: // functions
 	 * 	A pointer to the contained entry or nullptr if there is no
 	 * 	entry with that name contained in the current DirEntry.
 	 **/
-	Entry* getEntry(const char* n) const
+	Entry* getEntry(const char *n) const
 	{
-		NameEntryMap::const_iterator obj_it = m_objs.find(n);
+		auto obj_it = m_objs.find(n);
 
 		return ( obj_it == m_objs.end() ) ? nullptr : obj_it->second;
+	}
+	
+	//! retrieve an entry in the directory with name \c n, but only if of
+	//! type \c t
+	Entry* getEntry(const char *n, const Entry::Type &t)
+	{
+		Entry *ret = this->getEntry(n);
+		if( ret && ret->type() != t )
+			return nullptr;
+
+		return ret;
+	}
+
+	DirEntry* getDirEntry(const char *n)
+	{
+		return reinterpret_cast<DirEntry*>(getEntry(n, Entry::Type::DIRECTORY));
+	}
+
+	FileEntry* getFileEntry(const char *n)
+	{
+		return reinterpret_cast<FileEntry*>(getEntry(n, Entry::Type::REG_FILE));
 	}
 
 	//! wrapper for removeEntry(const char*) using a std::string
@@ -403,48 +425,26 @@ public: // functions
 	/**
 	 * \brief
 	 * 	Removes the contained entry with the name \c s
+	 * \details
+	 * 	Throws an Exception if no such entry is existing
 	 **/
-	void removeEntry(const char* s)
-	{
-		NameEntryMap::iterator entry = m_objs.find(s);
-
-		if( entry == m_objs.end() )
-		{
-			// TODO throw exception
-			xwmfs::StdLogger::getInstance().warn()
-				<< "removeEntry: No such entry \""
-				<< s << "\"" << std::endl;
-			return;
-		}
-
-		xwmfs::StdLogger::getInstance().debug()
-			<< "removeEntry: Removing \""
-			<< s << "\"" << std::endl;
-
-		m_objs.erase(entry);
-
-		delete entry->second;
-	}
+	void removeEntry(const char* s);
 
 	//! Retrieves the constant map of all contained entries
-	const NameEntryMap& getEntries() const
-	{ return m_objs; }
+	const NameEntryMap& getEntries() const { return m_objs; }
 
-#if 0
-	//! retrieve an entry in the directory with name \c n, but only if of type \c t
-	DirEntry* getDirEntry(const char* n, const Entry::Type t)
+	bool markDeleted() override
 	{
-		Entry *ret = this->getEntry(n);
-		if( ret && ret->type != t )
-			return nullptr;
-
-		return reinterpret_cast<DirEntry*>(ret);
+		// make sure all child entries get marked as deleted right
+		// away as well
+		clear();
+		return Entry::markDeleted();
 	}
-#endif
 
 protected: // data
 
-	//! contains all objects that the directory contains with their names as keys
+	//! contains all objects that the directory contains with their names
+	//! as keys
 	NameEntryMap m_objs;
 };
 
@@ -456,7 +456,7 @@ protected: // data
  * 	for the file system on a global scale. The operations are:
  *
  * 	- looking up entries in the file system, recursively (this operation
- * 	could actually also be part of the DirEntry itself)
+ * 	could actually also be part of the DirEntry itself?)
  * 	- a file system global read-write lock for safe access to its
  * 	structure. For XWMFS purposes this is good enough. For a large file
  * 	system we'd need a more fine-grained approach
@@ -501,10 +501,7 @@ public: // functions
 	 * 	can't change. It can be obtained in parallel by multiple
 	 * 	threads.
 	 **/
-	void readlock() const
-	{
-		m_lock.readlock();
-	}
+	void readlock() const { m_lock.readlock(); }
 
 	/**
 	 * \brief
@@ -513,26 +510,18 @@ public: // functions
 	 * 	This lock can only be obtained by one exclusive thread. It
 	 * 	allows alteration of the file system structure.
 	 **/
-	void writelock()
-	{
-		m_lock.writelock();
-	}
+	void writelock() { m_lock.writelock(); }
 
 	/**
 	 * \brief
 	 * 	Returns a previously obtained read- or write-lock
 	 **/
-	void unlock() const
-	{
-		m_lock.unlock();
-	}
+	void unlock() const { m_lock.unlock(); }
 
-private: // data
+protected: // data
 
 	//! the read-write lock protecting the file system
 	xwmfs::RWLock m_lock;
-
-	int m_find_error;
 };
 
 /**
@@ -542,16 +531,12 @@ private: // data
 class FileSysReadGuard
 {
 public:
-	FileSysReadGuard( const RootEntry &root ) :
-		m_root(root)
+	FileSysReadGuard( const RootEntry &root ) : m_root(root)
 	{
 		root.readlock();
 	}
 
-	~FileSysReadGuard()
-	{
-		m_root.unlock();
-	}
+	~FileSysReadGuard() { m_root.unlock(); }
 private:
 	const RootEntry &m_root;
 };
@@ -563,16 +548,12 @@ private:
 class FileSysWriteGuard
 {
 public:
-	FileSysWriteGuard( RootEntry &root ) :
-		m_root(root)
+	FileSysWriteGuard( RootEntry &root ) : m_root(root)
 	{
 		root.writelock();
 	}
 
-	~FileSysWriteGuard()
-	{
-		m_root.unlock();
-	}
+	~FileSysWriteGuard() { m_root.unlock(); }
 private:
 	RootEntry &m_root;
 };
