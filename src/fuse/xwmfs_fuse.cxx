@@ -199,7 +199,7 @@ void DirEntry::removeEntry(const char* s)
 		xwmfs_throw( Exception(ss.str()) );
 	}
 
-	auto &entry = it->second;
+	auto entry = it->second;
 
 	m_objs.erase(it);
 
