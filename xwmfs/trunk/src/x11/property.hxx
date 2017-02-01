@@ -1,7 +1,6 @@
 #ifndef XWMFS_PROPERTY
 #define XWMFS_PROPERTY
 
-#include <stdio.h>
 #include <cstring>
 #include <vector>
 
@@ -18,7 +17,8 @@ namespace xwmfs
  * 	This is a generic template class for getting and setting X properties.
  *
  * 	This generic template is not intended for use but only explicit
- * 	template specialications for concrete types.
+ * 	template specialications for concrete types should be used. This
+ * 	generic template merely serves the purpose of documentation.
  *
  * 	The purpose of the traits are to be used together with the
  * 	Property class to smartly send/receive data of a certain format
@@ -37,15 +37,6 @@ namespace xwmfs
  * 	Property class together with the traits types know internally how to
  * 	transform the local data into data the X server understands and vice
  * 	versa.
- * \note
- * 	This generic template declaration contains intentionally ridiculous
- * 	constants such that nothing sensible can be done with it if
- * 	accidentally instantiatied.
- * \todo
- * 	XXX
- * 	This whole property business needs a serious work over. It was started
- * 	with a "getting data from the server" approach. And the "sending data
- * 	to the server" was not very well thought off.
  **/
 template <typename PROPTYPE>
 class XPropTraits
@@ -57,24 +48,32 @@ public: // constants
 	//! passed to the X functions for identification
 	static const Atom x_type = XA_CARDINAL;
 	//! \brief
-	//! if PROPTYPE has got a fixed size then this constants denotes that
+	//! if PROPTYPE has got a fixed size then this constant denotes that
 	//! size in bytes, otherwise set to zero
-	static const unsigned long fixed_size = 5;
+	static const unsigned long fixed_size = 0;
 	//! \brief
 	//! A pointer to PROPTYPE that can be passed to the X functions
 	//! for retrieving / passing data
-	typedef float* NativePtrType;
+	typedef float* XPtrType;
 	//! \brief
 	//! the format in X terms, determines the width of a single sequence
 	//! item in bits (e.g. for arrays of 8-bit, 16-bit or 32-bit items)
-	static const char format = 31;
+	static const char format = 0;
 
 public: // functions
+
+	/**
+	 * \brief
+	 * 	Returns the number of elements the given property has in X
+	 * 	terms
+	 **/
+	static
+	int getNumElements(const PROPTYPE &val) { return 0; }
 	
 	/**
 	 * \brief
-	 * 	Assign a new value to the native PROPTYPE from the given raw X
-	 * 	data
+	 * 	Set the current value of the native PROPTYPE from the given
+	 * 	raw X data
 	 * \details
 	 * 	The contract of this function is as follows:
 	 *
@@ -87,16 +86,21 @@ public: // functions
 	 * 	parameter determines the number of sequence items that can be
 	 * 	found in the second parameter, if applicable.
 	 **/
-	static void assignNative(int &i, NativePtrType data, unsigned int count)
-	{ 
-		// if you reach this code, you're screwed. No traits for your
-		// type...
-		class no_traits_for_your_type;
-		int s;
-
-		no_traits_for_your_type *f =
-			static_cast<no_traits_for_your_type*>(&s);
-	}
+	static
+	void x2native(PROPTYPE &i, XPtrType data, unsigned int count)
+	{}
+	
+	/**
+	 * \brief
+	 * 	Transform the current value of the native PROPTYPE into raw X
+	 * 	data
+	 **/
+	static
+	void native2x(const PROPTYPE &s, XPtrType &data)
+	{}
+	
+	// never instantiate this type
+	XPropTraits() = delete;
 };
 
 template <>
@@ -107,46 +111,32 @@ public: // constants
 
 	static const Atom x_type = XA_CARDINAL;
 	static const unsigned long fixed_size = 4;
-	typedef long* NativePtrType;
+	typedef long* XPtrType;
 	static const char format = 32;
 
 public: // functions
-
-	static void assignNative(
-		int &i,
-		NativePtrType data,
-		unsigned int count
-	)
-	{
-		i = static_cast<int>(*data);
-		(void)count;
-	}
-
-	//! determines whether \c data points to \c native
-	static bool samePtrs(int &native, long *&data)
-	{
-		return &native == (int*&)data;
-	}
 	
-	//! \brief
-	//! returns the number of elements present in \c s (in X terminology,
-	//! acc. to format)
-	static int getNumElements(const int &s)
+	static
+	int getNumElements(const int &s)
 	{
 		(void)s;
 		return 1;
 	}
 
-	/**
-	 * \brief
-	 * 	Fills the given raw X data \c data from the current value in
-	 * 	the native PROPTYPE
-	 **/
-	static void assignData(const int &s, NativePtrType &data)
+
+	static
+	void x2native(int &i, const XPtrType data, unsigned int count)
+	{
+		i = static_cast<int>(*data);
+		(void)count;
+	}
+
+	static
+	void native2x(const int &s, XPtrType &data)
 	{
 		// We simply set the pointer to the PROPTYPE item as a flat
 		// copy.
-		data = (NativePtrType)&s;
+		data = (XPtrType)&s;
 	}
 };
 
@@ -159,32 +149,29 @@ public: // constants
 	static const Atom x_type = XA_STRING;
 	static const unsigned long fixed_size = 0;
 	static const char format = 8;
-	typedef const char* NativePtrType;
+	typedef const char* XPtrType;
 
 public: // functions
 
-	static void assignNative(
-		const char * & s, NativePtrType data, unsigned int count)
+	static
+	void x2native(const char *&s, XPtrType data, unsigned int count)
 	{
 		(void)count;
 		s = data;
 	}
 
-	static void assignData(const char * & s, NativePtrType &data)
+	static
+	void native2x(const char * & s, XPtrType &data)
 	{
 		data = s;
 	}
 
-	static bool samePtrs(const char * &native, const char * &data)
-	{
-		return native == data;
-	}
-	
-	static int getNumElements(const char* const s)
+	static
+	int getNumElements(const char* const s)
 	{
 		// strings in X are transferred without null terminator, the
 		// library always provides a terminating null byte in
-		// transferred data
+		// transferred data, however
 		return s ? std::strlen(s) : 0;
 	}
 };
@@ -198,20 +185,15 @@ public: // constants
 	static const Atom x_type = XA_WINDOW;
 	static const unsigned long fixed_size = 4;
 	static const char format = 32;
-	typedef long* NativePtrType;
+	typedef long* XPtrType;
 
 public: // functions
 
-	static void assignNative(
-		Window &w, NativePtrType data, unsigned int count)
+	static
+	void x2native(Window &w, XPtrType data, unsigned int count)
 	{
 		(void)count;
 		w = static_cast<Window>(*data);
-	}
-
-	static bool samePtrs(Window &native, long *data)
-	{
-		return &native == (Window*)data;
 	}
 };
 
@@ -224,25 +206,17 @@ public: // constants
 	static const Atom x_type = XA_WINDOW;
 	static const unsigned long fixed_size = 0;
 	static const char format = 32;
-	typedef long* NativePtrType;
+	typedef long* XPtrType;
 
 public: // functions
 		
-	static void assignNative(
-		std::vector<Window> &w,
-		NativePtrType data,
-		unsigned int count)
+	static
+	void x2native(std::vector<Window> &w, XPtrType data, unsigned int count)
 	{
 		for( unsigned int e = 0; e < count; e++ )
 		{
 			w.push_back(data[e]);
 		}
-	}
-	
-	static bool samePtrs(
-		std::vector<Window> &native, long *data)
-	{
-		return native.data() == (Window*)data;
 	}
 };
 
@@ -265,14 +239,7 @@ public: // functions
  **/
 struct utf8_string
 {
-public: // functions
-
-	utf8_string() : data()
-	{ };
-
-public: // data
-
-	char *data;
+	char *data = nullptr;
 };
 
 template <>
@@ -284,32 +251,31 @@ public: // constants
 	static XAtom x_type;
 	static const unsigned long fixed_size = 0;
 	static const char format = 8;
-	typedef char* NativePtrType;
+	typedef char* XPtrType;
 
 public: // functions
 
-	static void init()
+	static
+	void init()
 	{
 		// this XLib property type atom is not available as a constant
 		// in the Xlib headers but needs to be queried at runtime.
 		x_type = StandardProps::instance().atom_ewmh_utf8_string;
 	}
 
-	static void assignNative(
-		utf8_string &s, NativePtrType data, unsigned int count)
+	static
+	void x2native(utf8_string &s, XPtrType data, unsigned int count)
 	{
 		(void)count;
 		s.data = data;
 	}
 
-	static int getNumElements(utf8_string &s)
+	static
+	int getNumElements(utf8_string &s)
 	{
+		// I suppose this is just for the X protocol the number of
+		// bytes, not the number unicode characters
 		return s.data ? std::strlen(s.data) : 0;
-	}
-	
-	static bool samePtrs( utf8_string &native, char *data)
-	{
-		return native.data == data;
 	}
 };
 
@@ -321,10 +287,6 @@ public: // functions
  * 	have C++ Property objects that can get and set data
  * 	transparently from/to the X server and transform the data from
  * 	the native C++ world into the X world and vice versa.
- * \todo
- * 	XXX we need to check what happens if a Property instance is copied.
- * 	Due to checkDelete() handling we might end up with invalid references.
- * 	Either introduce reference counting or restrict copying.
  **/
 template <typename PROPTYPE>
 class Property
@@ -338,20 +300,18 @@ public: // types
 	//! the matching traits for our property type
 	typedef XPropTraits<PROPTYPE> Traits;
 	//! The correct pointer type for our property type
-	typedef typename XPropTraits<PROPTYPE>::NativePtrType NativePtrType;
+	typedef typename XPropTraits<PROPTYPE>::XPtrType XPtrType;
 
 public: // functions
 
 	//! construct an empty/default property value
-	Property() :
-		m_native(),
-		m_data(nullptr)
-	{ }
+	Property() : m_native() { }
+
+	//! forbid copying to avoid trouble with memory mgm.
+	Property(const Property&) = delete;
 
 	//! construct a property holding the value from \c p
-	Property(const PROPTYPE &p) :
-		m_native(),
-		m_data()
+	Property(const PROPTYPE &p) : m_native()
 	{
 		// our own assignment operator knows how to deal with this
 		*this = p;
@@ -385,16 +345,10 @@ public: // functions
 	 * 	Retrieves a pointer to the raw data associated with the
 	 * 	property
 	 **/
-	typename Traits::NativePtrType getRawData() const
-	{
-		return m_data;
-	}
+	typename Traits::XPtrType getRawData() const { return m_data; }
 
 	//! returns whether valid property data is set
-	bool valid() const
-	{
-		return m_data != NULL;
-	}
+	bool valid() const { return m_data != nullptr; }
 
 	/**
 	 * \brief
@@ -405,7 +359,7 @@ public: // functions
 		checkDelete();
 
 		m_native = p;
-		Traits::assignData( m_native, m_data );
+		Traits::native2x( m_native, m_data );
 
 		return *this;
 	}
@@ -431,8 +385,9 @@ protected: // functions
 			assert( size == Traits::fixed_size );
 		}
 
-		m_data = reinterpret_cast<NativePtrType>(data);
-		Traits::assignNative(
+		m_data = reinterpret_cast<XPtrType>(data);
+
+		Traits::x2native(
 			m_native,
 			m_data,
 			size / (Traits::format / 8)
@@ -440,7 +395,7 @@ protected: // functions
 	}
 	
 	//! Retrieves the associated XAtom type from the traits of PROPTYPE
-	Atom getXType() const { return Traits::x_type; }
+	static Atom getXType() { return Traits::x_type; }
 
 	/**
 	 * \brief
@@ -449,27 +404,43 @@ protected: // functions
 	 **/
 	void checkDelete()
 	{
-		// second condition checks that m_data really is allocated by
-		// X and not a pointer to m_native
-		if( m_data && !Traits::samePtrs(m_native, m_data) )
+		// checks that m_data really is allocated by X and not a
+		// pointer to m_native
+		if( m_data && isDataFromX() )
 		{
 			// note: XFree returns strange codes ...
 
 			/*const int res = */XFree( (void*)m_data);
-			// what is that res ?!
-			//std::cout << "Xfree res = " << res << std::endl;
-			//assert( res == Success );
-
 			m_data = nullptr;
 		}
 	}
-private:
+
+	bool isDataFromX() const
+	{
+		return !sameData(m_native, m_data);
+	}
+
+	template <typename T>
+	static bool sameData(const T &native, const void *data)
+	{
+		return &native == data;
+	}
+
+	// specialization for correct compare of property traits with
+	// std::vector as container
+	template <typename T>
+	static bool sameData(const std::vector<T> &native, const void *data)
+	{
+		return (void*)native.data() == data;
+	}
+
+private: // data
+
 	//! The native property type
 	PROPTYPE m_native;
-	//! \brief
 	//! Either a pointer to m_native that can be fed to Xlib or a pointer
 	//! to data received from Xlib, from which m_native is build from
-	typename Traits::NativePtrType m_data;
+	typename Traits::XPtrType m_data = nullptr;
 };
 
 } // end ns
