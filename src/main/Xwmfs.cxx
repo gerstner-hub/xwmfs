@@ -186,7 +186,7 @@ struct WinManagerEntry :
 		if( offset )
 			return -EOPNOTSUPP;
 
-		auto root_win = xwmfs::Xwmfs::getInstance().getRootWin();
+		auto &root_win = xwmfs::Xwmfs::getInstance().getRootWin();
 		auto &logger = xwmfs::StdLogger::getInstance();
 
 		try
