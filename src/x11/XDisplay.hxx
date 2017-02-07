@@ -1,12 +1,15 @@
 #ifndef XWMFS_XDISPLAY_HXX
 #define XWMFS_XDISPLAY_HXX
 
+// C
 #include <stdint.h>
 
+// xlib
 // main xlib header, provides Display declaration
 #include "X11/Xlib.h"
 #include "X11/Xatom.h"
 
+// xwmfs
 #include "x11/X11Exception.hxx"
 
 namespace xwmfs
@@ -35,15 +38,7 @@ public: // types
 	{
 	public: // functions
 
-		AtomMappingError(
-			Display *dis,
-			const int errcode,
-			const std::string &s) :
-			X11Exception(dis, errcode)	
-		{
-			m_error += ". While trying to map " + \
-				s + " to a valid atom.";
-		}
+		AtomMappingError(Display *dis, const int errcode, const std::string &s);
 
 		XWMFS_EXCEPTION_IMPL;
 	};
@@ -54,31 +49,20 @@ public: // types
 	{
 	public: // functions
 
-		DisplayOpenError() :
-			Exception("Unable to open X11 display: \"")
-		{
-			m_error += XDisplayName(NULL);
-			m_error += "\". ";
-			m_error += "Is X running? Is the DISPLAY environment "\
-				"variable correct?";
-		}
+		DisplayOpenError();
 
 		XWMFS_EXCEPTION_IMPL;
 	};
 
 public: // functions
 
-	~XDisplay()
-	{
-		XCloseDisplay(m_dis);
-		m_dis = NULL;
-	}
+	~XDisplay();
 
 	/**
 	 * \brief
 	 *	Creates an X atom for the given string and returns it
 	 * \details
-	 *	The function always returns valid Atom, even if it first
+	 *	The function always returns a valid Atom, even if it first
 	 *	needs to be created by X11.
 	 *
 	 *	Can throw AtomMappingError.
@@ -94,7 +78,9 @@ public: // functions
 		Atom ret = XInternAtom( m_dis, name, False );
 
 		if( ret == BadAlloc || ret == BadValue || ret == None )
+		{
 			xwmfs_throw(AtomMappingError(m_dis, ret, name));
+		}
 
 		return ret;
 	}
@@ -105,7 +91,7 @@ public: // functions
 	 * \details
 	 * 	Xlib, if not running in synchronous mode, assumes that an X
 	 * 	application is frequently sending some X commands to the
-	 * 	server and thus buffers command according to some
+	 * 	server and thus buffers commands according to some
 	 * 	implementation defined strategy.
 	 *
 	 * 	To make sure that any recently issued communication to the X
@@ -117,42 +103,22 @@ public: // functions
 	}
 
 	//! transparently casts the instance to the Xlib Display primitive
-	operator Display*()
-	{
-		// TODO: check against any side effects through implicit casts
-		return m_dis;
-	}
+	operator Display*() { return m_dis; }
 
 	/**
 	 * \brief
 	 * 	Returns a reference to the single XDisplay instance
 	 * \note
-	 * 	The first access to this function can generat errors that
-	 * 	will be indicated by means of exceptions.
+	 * 	The first access to this function (construction) can generate
+	 * 	errors that will be indicated by means of exceptions.
 	 **/
-	static XDisplay& getInstance()
-	{
-		static XDisplay dis;
-
-		return dis;
-	}
+	static XDisplay& getInstance();
 
 protected: // functions
 
-	//! \brief
 	//! Opens the default display, protected due to singleton
 	//! pattern
-	XDisplay()
-	{
-		// if NULL is specified, then the value of DISPLAY environment
-		// will be used
-		m_dis = XOpenDisplay(NULL);
-
-		if( ! m_dis )
-		{
-			xwmfs_throw(DisplayOpenError());
-		}
-	}
+	XDisplay();
 
 	// disallow copy of the singleton XDisplay
 	XDisplay(const XDisplay &other) = delete;
@@ -160,7 +126,7 @@ protected: // functions
 protected:
 
 	//! The Xlib primitive for the Display
-	Display *m_dis;
+	Display *m_dis = nullptr;
 };
 
 } // end ns

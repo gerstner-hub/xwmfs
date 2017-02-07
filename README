@@ -130,6 +130,12 @@ necessary to get things as far as they are now.
 A good source of information about how things can be done is the 'wmctrl'
 program that allows to query and alter some state of X11 windows.
 
+TIPS AND TRICKS
+---------------
+
+  * You can get the window ID of the current window in most terminal emulators
+    from the $WINDOWID environment variable
+
 FUTURE DIRECTIONS
 -----------------
 

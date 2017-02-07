@@ -46,9 +46,7 @@ class XAtom
 {
 public: // functions
 
-	XAtom() :
-		m_atom(None)
-	{ }
+	XAtom() {}
 
 	XAtom( const XAtom &atom ) : m_atom(atom.m_atom) { }
 
@@ -74,7 +72,7 @@ public: // functions
 
 protected: // data
 
-	Atom m_atom;
+	Atom m_atom = None;
 };
 
 /**
@@ -85,9 +83,9 @@ protected: // data
  * 	retrieved in the future. If a mapping is not cached already then it is
  * 	retrieved via Xlib.
  *
- * 	This class is thread safe. Read-access can occur in parallel, write
- * 	access (due to cache misses) can only occur when one client is
- * 	presently accessing the cache.
+ * 	This class is thread safe by means of a read-write lock. Read-access
+ * 	can occur in parallel, write accesses (due to cache misses) are
+ * 	exclusive.
  *
  * 	This class is currently implemented as a singleton type. Get the
  * 	global instance of the mapper via the getInstance() function.
@@ -107,12 +105,7 @@ class XAtomMapper
 public: // functions
 
 	//! Retrieves the global mapper instance
-	static XAtomMapper& getInstance()
-	{
-		static XAtomMapper inst;
-
-		return inst;
-	}
+	static XAtomMapper& getInstance();
 
 	/**
 	 * \brief
@@ -135,9 +128,7 @@ public: // functions
 protected: // functions
 
 	//! protected constructor to enforce singleton usage
-	XAtomMapper() :
-		m_mappings()
-	{ }
+	XAtomMapper() {};
 
 protected: // types
 
@@ -154,7 +145,7 @@ protected: // data
 
 /**
  * \brief
- * 	A struct-like class to hold a number of default property names
+ * 	A struct-like class to hold a number of default property name atoms
  * \details
  * 	These properties are statically referenced in the code. We don't want
  * 	to write them redundantly time and again so we rather use these global
@@ -207,6 +198,10 @@ private:
 
 } // end ns
 
+/**
+ * \brief
+ * 	Output operator that prints the human readable name of an atom
+ **/
 std::ostream& operator<<(std::ostream &o, const xwmfs::XAtom &atom);
 
 #endif // inc. guard

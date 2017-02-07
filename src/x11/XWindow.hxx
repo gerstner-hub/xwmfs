@@ -1,8 +1,7 @@
 #ifndef XWMFS_WINDOW
 #define XWMFS_WINDOW
 
-#include <sstream>
-#include <iomanip>
+#include <iosfwd>
 
 #include <unistd.h> // pid_t
 
@@ -24,6 +23,9 @@ namespace xwmfs
 /**
  * \brief
  *	Wrapper for the X Window primitive
+ * \details
+ * 	This class stores an XWindow identifier and provides operation on X
+ * 	Window objects, like retrieving and setting window properties.
  **/
 class XWindow
 {
@@ -35,11 +37,7 @@ public: // types
 	{
 	public: // functions
 
-		PropertyQueryError(Display *dis, const int errcode) :
-			X11Exception(dis, errcode)
-		{
-			m_error += ". While trying to get property.";
-		}
+		PropertyQueryError(Display *dis, const int errcode);
 
 		XWMFS_EXCEPTION_IMPL;
 	};
@@ -50,11 +48,7 @@ public: // types
 	{
 	public: // functions
 
-		PropertyChangeError(Display *dis, const int errcode) :
-			X11Exception(dis, errcode)
-		{
-			m_error += ". While trying to change property.";
-		}
+		PropertyChangeError(Display *dis, const int errcode);
 		
 		XWMFS_EXCEPTION_IMPL;
 	};
@@ -65,15 +59,7 @@ public: // types
 	{
 	public: // functions
 
-		PropertyTypeMismatch(Atom expected, Atom encountered) :
-			Exception("Retrieved property has different type "\
-				"than expected: ")
-		{
-			std::ostringstream s;
-			s << "Expected " << expected << " but encountered " \
-				<< encountered;
-			m_error += s.str();
-		}
+		PropertyTypeMismatch(Atom expected, Atom encountered);
 		
 		XWMFS_EXCEPTION_IMPL;
 	};
@@ -219,10 +205,11 @@ public: // functions
 	 *	and stored in \c p.
 	 *
 	 *	On error an exception is thrown.
+	 *
+	 *	The PROPTYPE type must match the property's type.
 	 **/
 	template <typename PROPTYPE>
-	inline void getProperty(
-		const std::string &name, Property<PROPTYPE> &p) const
+	void getProperty(const std::string &name, Property<PROPTYPE> &p) const
 	{
 		getProperty( XDisplay::getInstance().getAtom(name), p );
 	}
@@ -233,9 +220,7 @@ public: // functions
 	 *	for the case when you already have an atom mapping
 	 **/
 	template <typename PROPTYPE>
-	inline void getProperty(
-		const Atom name_atom, Property<PROPTYPE> &p
-	) const;
+	void getProperty(const Atom name_atom, Property<PROPTYPE> &p) const;
 
 	/**
 	 * \brief
@@ -247,27 +232,27 @@ public: // functions
 	 * 	On error an exception is thrown.
 	 **/
 	template <typename PROPTYPE>
-	inline void setProperty(
-		const std::string &name, const Property<PROPTYPE> &p)
+	void setProperty(const std::string &name, const Property<PROPTYPE> &p)
 	{
 		setProperty( XDisplay::getInstance().getAtom(name), p );
 	}
 	
 	/**
 	 * \brief
-	 * 	The same as setProperty(const std::string&, const
-	 * 	Property<PROPTYPE>&) but for the ase when you already have an
-	 * 	atom mapping
+	 * 	The same as
+	 * 
+	 * 	setProperty(const std::string&, const Property<PROPTYPE>&)
+	 *
+	 * 	but for the case when you already have an atom mapping for the
+	 * 	property name
 	 **/
 	template <typename PROPTYPE>
-	inline void setProperty(
-		const Atom name_atom, const Property<PROPTYPE> &p
-	);
+	void setProperty(const Atom name_atom, const Property<PROPTYPE> &p);
 	
 	//! compares the Xlib Window primitive for equality
 	bool operator==(const XWindow &o) const { return m_win == o.m_win; }
 	
-	//! opposive of operator==(const XWindow&) const
+	//! opposite of operator==(const XWindow&) const
 	bool operator!=(const XWindow &o) const { return !operator==(o); }
 
 	/**
@@ -283,10 +268,12 @@ public: // functions
 		// This is the only way to get CreateNotify events from the X
 		// server.
 		//
-		// This gets us all the child windows like menus, too.
+		// This gets us events for all the child windows like menus,
+		// too.
 		//
 		// Thus if we don't want grandchildren Windows of the root
 		// window then we need to filter on the event receiving side
+		// within our process
 		selectEvent(SubstructureNotifyMask);
 	}
 
@@ -308,8 +295,8 @@ public: // functions
 	 * 	Inform the X server that we want to be notified if properties
 	 * 	of the current window change
 	 * \details
-	 * 	This enables you to get events if at the current window
-	 * 	properties are added, changed or deleted.
+	 * 	This enables you to get events if properties of the current
+	 * 	window are added, changed or deleted.
 	 **/
 	void selectPropertyNotifyEvent() const
 	{
@@ -329,7 +316,7 @@ protected: // functions
 	/**
 	 * \brief
 	 * 	Adds the given event(s) to the set of events we want to be
-	 * 	notified if properties of the current window change
+	 * 	notified if they occur for the current window
 	 **/
 	void selectEvent(const long new_event) const;
 
@@ -385,7 +372,7 @@ protected: // functions
 protected: // data
 
 	//! The X11 window ID this object represents
-	Window m_win;
+	Window m_win = 0;
 
 	//! The X11 input event mask currently associated with this window
 	mutable long m_input_event_mask = 0;
@@ -395,139 +382,12 @@ protected: // data
 	const StandardProps &m_std_props;
 };
 
-
-template <typename PROPTYPE>
-inline void XWindow::getProperty(
-	const Atom name_atom, Property<PROPTYPE> &prop) const
-{
-	// shorthand for our concrete property object
-	typedef Property<PROPTYPE> THIS_PROP;
-
-	Atom x_type = prop.getXType();
-	assert( x_type != None );
-
-	Atom actual_type;
-	// if 8, 16, or 32-bit format was actually read
-	int actual_format;
-	unsigned long ret_items;
-	unsigned long remaining_bytes;
-	unsigned char *data;
-
-	const int res = XGetWindowProperty(
-		XDisplay::getInstance(),
-		m_win,
-		name_atom,
-		// offset into the property data
-		0,
-		// maximum length of the property to read in 32-bit items
-		4096 / 4,
-		// delete request
-		False,
-		// our expected type
-		x_type,
-		// actually present type, format, numbr of items
-		&actual_type,
-		&actual_format,
-		&ret_items,
-		&remaining_bytes,
-		// where data is stored
-		&data
-	);
-
-	// note: on success data is memory allocated by Xlib. data always
-	// contains one excess byte that is set to zero thus its possible to
-	// use data as a c-string without copying it.
-	if ( res != Success )
-	{
-		xwmfs_throw(PropertyQueryError(XDisplay::getInstance(), res));
-	}
-
-	if( actual_type == None )
-	{
-		XFree(data);
-		xwmfs_throw(PropertyNotExisting());
-	}
-	else if( x_type != actual_type )
-	{
-		XFree(data);
-		xwmfs_throw(PropertyTypeMismatch(x_type, actual_type));
-	}
-
-	assert( actual_format == THIS_PROP::Traits::format );
-	assert( ! remaining_bytes );
-
-	// ret_items gives the number of items acc. to actual_format that have
-	// been returned
-	prop.takeData(data, ret_items * (actual_format / 8));
-}
-
-template <typename PROPTYPE>
-inline void XWindow::setProperty(
-	const Atom name_atom, const Property<PROPTYPE> &prop
-)
-{
-	/*
-	 * NOTE: currently only performs mode PropModeReplace
-	 *
-	 * I don't think that prepend or append are very common use cases.
-	 */
-	// shorthand for our concrete Property object
-	typedef Property<PROPTYPE> THIS_PROP;
-
-	Atom x_type = prop.getXType();
-	assert( x_type != None );
-
-	const int siz = THIS_PROP::Traits::getNumElements( prop.get() );
-
-	const int res = XChangeProperty(
-		XDisplay::getInstance(),
-		m_win,
-		name_atom,
-		x_type,
-		THIS_PROP::Traits::format,
-		PropModeReplace,
-		(unsigned char*)prop.getRawData(),
-		siz
-	);
-
-	// XChangeProperty returns constantly 1 which would result in
-	// "BadRequest".
-	// Actual errors are dispatched asynchronously via the functions set
-	// at XSetErrorHandler. Not very helpful as hard to process
-	// asynchronously and inefficient to synchronize to the asynchronous
-	// result.
-	(void)res;
-
-	// requests to the server are not dispatched immediatly thus we need
-	// to flush once
-	XDisplay::getInstance().flush();
-
-	// note: on success data is memory allocated by Xlib. data always
-	// contains one excess byte
-	// that is set to zero thus its possible to use data as a c-string
-	// without copying it.
-}
-
 } // end ns
 
 //! \brief
 //! output operator that prints out the X11 window ID associated with \c
 //! w onto the stream in hex and dec
-inline std::ostream& operator<<(std::ostream &o, const xwmfs::XWindow &w)
-{
-	const std::ostream::fmtflags f = o.flags();
-
-	o << std::setw(8)
-		<< std::hex << std::setfill('0')
-		<< std::showbase
-		<< w.id()
-		<< std::dec << " (" << w.id() << ")";
-
-	o.flags(f);
-	o << std::dec;
-
-	return o;
-}
+std::ostream& operator<<(std::ostream &o, const xwmfs::XWindow &w);
 
 #endif // inc. guard
 

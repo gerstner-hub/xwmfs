@@ -239,7 +239,10 @@ public: // functions
  **/
 struct utf8_string
 {
-	char *data = nullptr;
+	const char *data = nullptr;
+
+	utf8_string() {}
+	explicit utf8_string(const char *s) : data(s) {}
 };
 
 template <>
@@ -251,7 +254,7 @@ public: // constants
 	static XAtom x_type;
 	static const unsigned long fixed_size = 0;
 	static const char format = 8;
-	typedef char* XPtrType;
+	typedef const char* XPtrType;
 
 public: // functions
 
@@ -271,7 +274,13 @@ public: // functions
 	}
 
 	static
-	int getNumElements(utf8_string &s)
+	void native2x(const utf8_string &s, XPtrType &data)
+	{
+		data = s.data;
+	}
+
+	static
+	int getNumElements(const utf8_string &s)
 	{
 		// I suppose this is just for the X protocol the number of
 		// bytes, not the number unicode characters
@@ -385,6 +394,7 @@ protected: // functions
 			assert( size == Traits::fixed_size );
 		}
 
+		m_data_is_from_x = true;
 		m_data = reinterpret_cast<XPtrType>(data);
 
 		Traits::x2native(
@@ -404,42 +414,24 @@ protected: // functions
 	 **/
 	void checkDelete()
 	{
-		// checks that m_data really is allocated by X and not a
-		// pointer to m_native
-		if( m_data && isDataFromX() )
+		// frees the m_data ptr if it comes from xlib
+		if( m_data_is_from_x )
 		{
 			// note: XFree returns strange codes ...
 
 			/*const int res = */XFree( (void*)m_data);
-			m_data = nullptr;
+			m_data_is_from_x = false;
 		}
-	}
-
-	bool isDataFromX() const
-	{
-		return !sameData(m_native, m_data);
-	}
-
-	template <typename T>
-	static bool sameData(const T &native, const void *data)
-	{
-		return &native == data;
-	}
-
-	// specialization for correct compare of property traits with
-	// std::vector as container
-	template <typename T>
-	static bool sameData(const std::vector<T> &native, const void *data)
-	{
-		return (void*)native.data() == data;
 	}
 
 private: // data
 
 	//! The native property type
 	PROPTYPE m_native;
-	//! Either a pointer to m_native that can be fed to Xlib or a pointer
-	//! to data received from Xlib, from which m_native is build from
+	//! determines whether the pointer m_data is from Xlib and needs to be
+	//! freed
+	bool m_data_is_from_x = false;
+	//! A pointer to m_native that can be fed to Xlib
 	typename Traits::XPtrType m_data = nullptr;
 };
 

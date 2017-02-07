@@ -8,6 +8,13 @@
 
 namespace xwmfs
 {
+	
+XAtomMapper& XAtomMapper::getInstance()
+{
+	static XAtomMapper inst;
+
+	return inst;
+}
 
 const StandardProps& StandardProps::instance()
 {
