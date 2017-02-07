@@ -6,8 +6,11 @@ namespace xwmfs
 {
 
 RootWin::RootWin() :
-	XWindow( DefaultRootWindow(
-		static_cast<Display*>(XDisplay::getInstance()) ) ),
+	XWindow(
+		DefaultRootWindow(
+			static_cast<Display*>(XDisplay::getInstance())
+		)
+	),
 	m_wm_name(),
 	m_wm_class(),
 	m_windows()
@@ -38,9 +41,9 @@ void RootWin::queryWMWindow()
 	auto &logger = xwmfs::StdLogger::getInstance();
 
 	/*
-	 *	I hope I got this stuff right. This part is about checking for
-	 *	the presence of a compatible window manager. Both variants
-	 *	work the same but have different properties to check for.
+	 *	This part is about checking for the presence of a compatible
+	 *	window manager. Both variants work the same but have different
+	 *	properties to check for.
 	 *
 	 *	_WIN_SUPPORTING_WM_CHECK seems to be according to some pretty
 	 *	deprecated gnome WM specifications. This is expected to be an
@@ -54,7 +57,7 @@ void RootWin::queryWMWindow()
 	 *	then its value is the identifier for a valid child window
 	 *	created by the window manager.
 	 *
-	 *	If the case of _NET_SUPPORTING_WM_CHECK the child window must
+	 *	In the case of _NET_SUPPORTING_WM_CHECK the child window must
 	 *	also define the _NET_WM_NAME property which should contain the
 	 *	name of the window manager. In the other case the child only
 	 *	contains the same property as in the root window again with
@@ -68,7 +71,10 @@ void RootWin::queryWMWindow()
 	{
 		Property<Window> child_window_prop;
 
-		this->getProperty(m_std_props.atom_ewmh_support_check, child_window_prop);
+		this->getProperty(
+			m_std_props.atom_ewmh_support_check,
+			child_window_prop
+		);
 
 		m_ewmh_child = XWindow( child_window_prop.get() );
 
@@ -87,7 +93,8 @@ void RootWin::queryWMWindow()
 		 */
 		m_ewmh_child.getProperty(
 			m_std_props.atom_ewmh_support_check,
-			child_window_prop);
+			child_window_prop
+		);
 
 		xwmfs::XWindow child2 = XWindow( child_window_prop.get() );
 
@@ -259,101 +266,57 @@ void RootWin::updateShowingDesktop()
 	 * 	zero or one (thus a boolean value). The property is to be
 	 * 	found on the root window, not the m_ewmh_child window.
 	 */
-	try
-	{
-		Property<int> wm_sdm;
-
-		m_ewmh_child.getProperty(m_std_props.atom_ewmh_wm_desktop_shown, wm_sdm);
-
-		m_wm_showing_desktop = wm_sdm.get();
-
-		xwmfs::StdLogger::getInstance().debug()
-			<< "showing desktop mode acquired: "
-			<< m_wm_showing_desktop << "\n";
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query \"showing desktop mode\": "
-			<< ex.what();
-	}
+	updateProperty(
+		m_std_props.atom_ewmh_wm_desktop_shown,
+		m_wm_showing_desktop
+	);
 }
 
 void RootWin::updateActiveDesktop()
 {
-	try
-	{
-		Property<int> wm_desktop;
-
-		this->getProperty(
-			m_std_props.atom_ewmh_wm_cur_desktop,
-			wm_desktop
-		);
-
-		m_wm_active_desktop = wm_desktop.get();
-
-		xwmfs::StdLogger::getInstance().debug()
-			<< "active desktop acquired: "
-			<< m_wm_active_desktop << "\n";
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't determine active desktop: "
-			<< ex.what();
-	}
+	updateProperty(
+		m_std_props.atom_ewmh_wm_cur_desktop,
+		m_wm_active_desktop
+	);
 }
 
-// TODO: write a template function that can update arbitrary properties
-// like
-// updateProperty<PRIMITIVE>(const XAtom &, PRIMITIVE &member) ...
 void RootWin::updateActiveWindow()
 {
-	try
-	{
-		Property<Window> active_window;
-
-		this->getProperty(
-			m_std_props.atom_ewmh_wm_active_window,
-			active_window
-		);
-
-		m_wm_active_window = active_window.get();
-
-		xwmfs::StdLogger::getInstance().debug()
-			<< "active window acquired: "
-			<< m_wm_active_window << "\n";
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't determine active window: "
-			<< ex.what();
-	}
+	updateProperty(
+		m_std_props.atom_ewmh_wm_active_window,
+		m_wm_active_window
+	);
 }
 
 void RootWin::updateNumberOfDesktops()
 {
+	updateProperty(
+		m_std_props.atom_ewmh_wm_nr_desktops,
+		m_wm_num_desktops
+	);
+}
+
+
+template <typename TYPE>
+void RootWin::updateProperty(const XAtom &atom, TYPE &property)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+
 	try
 	{
-		Property<int> wm_desks;
+		Property<TYPE> tmp;
 
-		this->getProperty(
-			m_std_props.atom_ewmh_wm_nr_desktops,
-			wm_desks
-		);
+		this->getProperty(atom, tmp);
 
-		m_wm_num_desktops = wm_desks.get();
+		property = tmp.get();
 
-		xwmfs::StdLogger::getInstance().debug()
-			<< "number of desktops acquired: "
-			<< m_wm_num_desktops << "\n";
+		logger.debug() << "Property update acquired for "
+			<< atom << ": " << property << "\n";
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't determine number of desktops: "
-			<< ex.what();
+		logger.warn() << "Couldn't update property " << atom
+			<< ": " << ex.what()  << std::endl;
 	}
 }
 
@@ -384,14 +347,11 @@ void RootWin::queryWindows()
 		xwmfs::StdLogger::getInstance().debug()
 			<< "window list acquired:\n";
 
-		for(
-			std::vector<Window>::const_iterator win = wins.begin();
-			win != wins.end();
-			win++ )
+		for( const auto &win: wins )
 		{
-			m_windows.push_back( xwmfs::XWindow( *win ) );
+			m_windows.push_back( xwmfs::XWindow( win ) );
 			xwmfs::StdLogger::getInstance().debug()
-				<< "- " << *win << "\n";
+				<< "- " << win << "\n";
 		}
 
 	}

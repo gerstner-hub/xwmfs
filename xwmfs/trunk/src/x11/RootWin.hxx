@@ -1,7 +1,6 @@
 #ifndef XWMFS_ROOTWINDOW_HXX
 #define XWMFS_ROOTWINDOW_HXX
 
-#include <sstream>
 #include <vector>
 
 // display representation class
@@ -87,7 +86,7 @@ public: // functions
 	//! returns whether the currently active desktop was found
 	bool hasWM_ActiveDesktop() const { return m_wm_active_desktop != -1; }
 	
-	//! returns whether the currently active desktop was found
+	//! returns whether the currently active window was found
 	bool hasWM_ActiveWindow() const { return m_wm_active_window != 0; }
 
 	//! returns whether the current number of desktops was found
@@ -100,7 +99,7 @@ public: // functions
 	int getWM_Pid() const { return m_wm_pid; }
 
 	//! returns the window manager class, if found
-	char* getWM_Class() const { return m_wm_class.get().data; }
+	const char* getWM_Class() const { return m_wm_class.get().data; }
 
 	//! returns the show the desktop mode, if found
 	bool getWM_ShowDesktopMode() const { return m_wm_showing_desktop == 1; }
@@ -127,8 +126,12 @@ public: // functions
 	void setWM_ActiveWindow(const XWindow &win);
 
 	//! Returns the list of windows managed by the window manager
-	const std::vector<XWindow>& getWindowList() const
-	{ return m_windows; }
+	const std::vector<XWindow>& getWindowList() const { return m_windows; }
+
+	/*
+	 * These are called from the event thread when property changes have
+	 * been reported
+	 */
 
 	void updateShowingDesktop();
 	void updateActiveDesktop();
@@ -154,7 +157,7 @@ protected: // functions
 
 	/**
 	 * \brief
-	 *	Queries direct properties of the WM like it's name, class, pid
+	 *	Queries direct properties of the WM like its name, class, pid
 	 *	and show desktop mode
 	 **/
 	void queryBasicWMProperties();
@@ -171,6 +174,10 @@ protected: // functions
 	 * 	m_windows
 	 **/
 	void queryWindows();
+
+	//! generic update function for property members
+	template <typename TYPE>
+	void updateProperty(const XAtom &atom, TYPE &property);
 
 private: // data
 

@@ -2,7 +2,6 @@
 #define XWMFS_X11EXCEPTION_HXX
 
 #include <stdint.h>
-#include <assert.h>
 
 // main xlib header, provides Display declaration
 #include "X11/Xlib.h"
@@ -34,7 +33,6 @@ public: // functions
 
 	XWMFS_EXCEPTION_IMPL;
 };
-	
 	
 } // end ns
 
