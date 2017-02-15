@@ -13,27 +13,27 @@
 bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 {
 	bool ret = false;
-	// TODO: obtaining the XWMFS instance in this context is not so good.
-	// It causes initialization of the XDisplay and such. If this fails
-	// then our operation fails before we were even able to handle command
-	// line parsing.
-	xwmfs::Options &opts = xwmfs::Options::getInstance();
+	auto &opts = xwmfs::Options::getInstance();
 
 	for(int i = 0; i < argc; i++)
 	{
-		if( ::strcmp(argv[i], "--xsync") == 0 )
+		const auto &arg = argv[i];
+
+		if( ::strcmp(arg, "--xsync") == 0 )
 		{
 			opts.xsync(true);
 		}
-		else if( ::strncmp(argv[i], "--logger=",
+		else if( ::strncmp(arg, "--logger=",
 			sizeof("--logger=") - 1 ) == 0 )
 		{
-			std::string logger_opts = argv[i] +
+			std::string logger_opts = arg +
 				sizeof("--logger=") - 1;
 
-			bool channels[4] = { true, true, true, false };
+			const size_t NUM_CHANNELS = 4;
+			bool channels[NUM_CHANNELS] = { true, true, true, false };
 
-			for( size_t channel = 0;
+			for(
+				size_t channel = 0;
 				// if there are too few channels or too many
 				// then the missing channels are set to
 				// default or the superfluous data is ignored.
@@ -41,8 +41,9 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 				// if characters different then '0', '1' are
 				// encountered then '1' is assumend.
 				channel < logger_opts.length() &&
-					channel < 4;
-				channel ++ )
+					channel < NUM_CHANNELS;
+				channel ++
+			)
 			{
 				channels[channel] =
 					(logger_opts[channel] == '0' ?
@@ -56,13 +57,15 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 		}
 		else
 		{
-			if( (::strcmp(argv[i], "--help") == 0) ||
-				(::strcmp(argv[i], "-h") == 0) )
+			if(
+				(::strcmp(arg, "--help") == 0) ||
+				(::strcmp(arg, "-h") == 0)
+			)
 			{
 				ret = true;
 			}
 
-			fuse_opt_add_arg(&fuse_args, argv[i]);
+			fuse_opt_add_arg(&fuse_args, arg);
 		}
 	}
 
@@ -84,6 +87,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		auto &logger = xwmfs::StdLogger::getInstance();
+
 		if( ! ::setlocale(LC_ALL, NULL) )
 		{
 			logger.error() << "Couldn't set locale\n";
@@ -95,7 +99,6 @@ int main(int argc, char *argv[])
 		
 		struct fuse_args fuse_args = FUSE_ARGS_INIT(0, NULL);
 
-		
 		bool print_xwmfs_help = false;
 		
 		try
