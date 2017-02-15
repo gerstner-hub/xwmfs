@@ -70,6 +70,8 @@ public: // functions
 
 	Atom get() const { return m_atom; }
 
+	bool valid() const { return m_atom != None; }
+
 protected: // data
 
 	Atom m_atom = None;
