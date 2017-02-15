@@ -42,6 +42,14 @@ XWindow::XWindow(Window win) :
 	m_std_props(StandardProps::instance())
 {
 }
+
+std::string XWindow::idStr() const
+{
+	std::stringstream id;
+	id << this->id();
+
+	return id.str();
+}
 	
 std::string XWindow::getName() const
 {

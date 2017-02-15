@@ -113,6 +113,9 @@ public: // functions
 	//! returns the Xlib primitive Window identifier
 	Window id() const { return m_win; }
 
+	//! string representation of id()
+	std::string idStr() const;
+
 	/**
 	 * \brief
 	 *	Retrieve the name of the represented window via EWMH property
