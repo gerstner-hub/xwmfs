@@ -9,9 +9,10 @@
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 
-
 namespace xwmfs
 {
+
+class WinManagerDirEntry;
 
 /**
  * \brief
@@ -68,7 +69,7 @@ public: // functions
 		return w;
 	}
 
-	//! Returns the root window hold in the Xwmfs
+	//! Returns the root window held in the Xwmfs
 	xwmfs::RootWin& getRootWin() { return m_root_win; }
 
 	//! returns the file system structure root entry
@@ -79,6 +80,9 @@ public: // functions
 
 	//! returns the umask of the current process
 	static mode_t getUmask() { return m_umask; }
+
+	//! returns the current time (update for each new X event)
+	time_t getCurrentTime() const { return m_current_time; }
 
 protected: // functions
 
@@ -110,7 +114,7 @@ protected: // functions
 	static int XIOErrorHandler(Display *disp);
 	
 	//! working loop for the event handling thread
-	virtual void threadEntry(const Thread &t);
+	void threadEntry(const Thread &t) override;
 
 	/**
 	 * \brief
@@ -118,36 +122,17 @@ protected: // functions
 	 **/
 	void handleEvent(const XEvent &ev);
 
+	/**
+	 * \brief
+	 * 	Handles a window CreateNotify event
+	 **/
+	void handleCreateEvent(const XEvent &ev);
+
 	//! called from m_ev_thread if a window is to be removed from the FS
 	void removeWindow(const XWindow &win);
 
 	//! called from m_ev_thread if a window is to be added to the FS
 	void addWindow(const XWindow &win);
-
-	/**
-	 * \brief
-	 * 	Adds an entry for the name of \c win into win_dir
-	 **/
-	void addWindowName(DirEntry &win_dir, const XWindow &win);
-
-	/**
-	 * \brief
-	 * 	Adds an entry for the desktop number of \c win into win_dir
-	 **/
-	void addDesktopNumber(DirEntry &win_dir, const XWindow &win);
-	
-	/**
-	 * \brief
-	 * 	Adds an entry for the PID of the window owner of \c win into
-	 * 	win_dir
-	 **/
-	void addPID(DirEntry &win_dir, const XWindow &win);
-
-	/**
-	 * \brief
-	 * 	Adds an entry for the command control file of a window
-	 **/
-	void addCommandControl(DirEntry &win_dir, const XWindow &win);
 
 	/**
 	 * \brief
@@ -202,7 +187,7 @@ private: // data
 	//! directory node containing all windows
 	DirEntry *m_win_dir = nullptr;
 	//! directory node containing global wm information
-	DirEntry *m_wm_dir = nullptr;
+	WinManagerDirEntry *m_wm_dir = nullptr;
 
 	//! the active umask of the current process
 	static mode_t m_umask;

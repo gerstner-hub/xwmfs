@@ -39,9 +39,8 @@ private: // functions
 		m_xsync(false)
 	{ }
 
-	//! \see Options()
-	Options(const Options &)
-	{ }
+	// singleton pattern
+	Options(const Options &) = delete;
 
 private: // data
 	bool m_xsync;

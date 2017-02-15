@@ -1,21 +1,27 @@
+// C++
 #include <iostream>
 #include <iomanip>
 #include <string>
 #include <map>
 #include <functional>
 
-// EXIT_*
-#include <stdlib.h>
+// C
+#include <stdlib.h> // EXIT_*
 #include <stdio.h>
 
+// POSIX
 #include <unistd.h> // pipe
 #include <sys/select.h>
 #include <sys/stat.h>
 
+// xwmfs
 #include "main/Xwmfs.hxx"
-#include "fuse/xwmfs_fuse.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
+#include "main/WindowFileEntry.hxx"
+#include "main/WindowDirEntry.hxx"
+#include "main/WinManagerDirEntry.hxx"
+#include "fuse/xwmfs_fuse.hxx"
 #include "common/Helper.hxx"
 
 namespace xwmfs
@@ -23,233 +29,8 @@ namespace xwmfs
 
 mode_t Xwmfs::m_umask = 0777;
 			
-/**
- * \brief
- * 	A FileEntry that is associated with an XWindow object
- * \details
- * 	This type is used for all files found within windows directories in
- * 	the file system. Depending on the actual file called the right
- * 	operations are performed at the associated window.
- **/
-struct WindowFileEntry :
-	public FileEntry
-{
-	//! Creates a WindowFileEntry associated with \c win
-	WindowFileEntry(
-		const std::string &n,
-		const XWindow& win,
-		const time_t &t = 0,
-		const bool writable = true
-	) :
-		FileEntry(n, writable, t),
-		m_win(win)
-	{ }
-
-	/**
-	 * \brief
-	 * 	Implementation of write() that updates window properties
-	 * 	according to the file that is being written
-	 **/
-	int write(const char *data, const size_t bytes, off_t offset) override
-	{
-		// we don't support writing at offsets
-		if( offset )
-			return -EOPNOTSUPP;
-		
-		try
-		{
-			auto it = m_write_member_function_map.find(m_name);
-
-			if( it == m_write_member_function_map.end() )
-			{
-				xwmfs::StdLogger::getInstance().error()
-					<< __FUNCTION__
-					<< ": Write call for window file"
-					" entry of unknown type: \""
-					<< this->m_name
-					<< "\"\n";
-				return -ENXIO;
-			}
-
-			auto mem_fn = it->second;
-
-			(this->*(mem_fn))(data, bytes);
-		}
-		catch( const xwmfs::Exception &e )
-		{
-			xwmfs::StdLogger::getInstance().error()
-				<< __FUNCTION__
-				<< ": Error operating on window (node '"
-				<< this->m_name << "'): "
-				<< e.what() << std::endl;
-			return -EINVAL;
-		}
-			
-		return bytes;
-	}
-
-	void writeName(const char *data, const size_t bytes)
-	{
-		std::string name(data, bytes);
-		m_win.setName( name );
-	}
-
-	void writeDesktop(const char *data, const size_t bytes)
-	{
-		int the_num;
-		const auto parsed = parseInteger(
-			data, bytes, the_num
-		);
-
-		if( parsed >= 0 )
-		{
-			m_win.setDesktop( the_num );
-		}
-	}
-
-	void writeCommand(const char *data, const size_t bytes);
-
-	/**
-	 * \brief
-	 * 	Compares this file system entries against the given window
-	 * \details
-	 * 	If this file system entry is associated with \c w then \c true
-	 * 	is returned. \c false otherwise.
-	 **/
-	bool operator==(const XWindow &w) const { return m_win == w; }
-	bool operator!=(const XWindow &w) const { return !((*this) == w); }
-
-	/**
-	 * \brief
-	 * 	Casts the object to its associated XWindow type
-	 **/
-	operator XWindow&() { return m_win; }
-
-protected: // types
-
-	typedef void (WindowFileEntry::*WriteMemberFunction)(const char*, const size_t);
-	typedef std::map<std::string, WriteMemberFunction> WriteMemberFunctionMap;
-
-protected: // data
-
-	//! XWindow associated with this FileEntry
-	XWindow m_win; // XXX currently a flat copy
-
-	// a mapping of file system names to their associated write functions
-	static const WriteMemberFunctionMap m_write_member_function_map;
-};
-
-const WindowFileEntry::WriteMemberFunctionMap WindowFileEntry::m_write_member_function_map = {
-	{ "name", &WindowFileEntry::writeName },
-	{ "desktop", &WindowFileEntry::writeDesktop },
-	{ "command", &WindowFileEntry::writeCommand }
-};
-
-void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
-{
-	const auto command = tolower(stripped(std::string(data, bytes)));
-
-	if( command == "destroy" )
-	{
-		m_win.destroy();
-	}
-	else if( command == "delete" )
-	{
-		m_win.sendDeleteRequest();
-	}
-	else
-	{
-		xwmfs_throw(
-			xwmfs::Exception("invalid command encountered")
-		);
-	}
-}
-
-/**
- * \brief
- * 	A FileEntry that is associated with a global window manager entry
- * \details
- * 	This is a specialized FileEntry for particular global entries relating
- * 	to the window manager. Mostly this is only used for writable files to
- * 	relay the write request correctly.
- **/
-struct WinManagerEntry : 
-	public FileEntry
-{
-	WinManagerEntry(const std::string &n, const time_t &t = 0) :
-		FileEntry(n, true, t)
-	{}
-
-	int write(const char *data, const size_t bytes, off_t offset) override
-	{
-		// we don't support writing at offsets
-		if( offset )
-			return -EOPNOTSUPP;
-
-		auto &root_win = xwmfs::Xwmfs::getInstance().getRootWin();
-		auto &logger = xwmfs::StdLogger::getInstance();
-
-		try
-		{
-			int the_num = 0;
-			const auto parsed = parseInteger(data, bytes, the_num);
-
-			if( this->m_name == "active_desktop" )
-			{
-				if( parsed >= 0 )
-				{
-					root_win.setWM_ActiveDesktop(the_num);
-				}
-			}
-			else if( this->m_name == "number_of_desktops" )
-			{
-				if( parsed >= 0 )
-				{
-					root_win.setWM_NumDesktops(the_num);
-				}
-			}
-			else if( this->m_name == "active_window" )
-			{
-				if( parsed >= 0 )
-				{
-					root_win.setWM_ActiveWindow(
-						XWindow(the_num)
-					);
-				}
-			}
-			else
-			{
-				logger.warn()
-					<< __FUNCTION__
-					<< ": Write call for win manager file of unknown type: \""
-					<< this->m_name
-					<< "\"\n";
-				return -ENXIO;
-			}
-		}
-		catch( const xwmfs::XWindow::NotImplemented &e )
-		{
-			return -ENOSYS;
-		}
-		catch( const xwmfs::Exception &e )
-		{
-			logger.error()
-				<< __FUNCTION__ << ": Error setting window manager property ("
-				<< this->m_name << "): " << e.what() << std::endl;
-			return -EINVAL;
-		}
-
-
-		// claim we wrote all content. This "eats up" things like
-		// newlines passed with 'echo'.  Otherwise programs may try to
-		// write the "missing" bytes which turns into an offset write
-		// than which we don't support
-		return bytes;
-	}
-};
-
 /*
- *	Upon destroy event for a window this function is called for the
+ *	Upon a destroy event for a window this function is called for the
  *	according window.
  *
  *	It is possible that the given window isn't existing in the filesystem
@@ -275,9 +56,6 @@ void Xwmfs::updateTime()
 /*
  *	Upon create event for a window this function is called for the
  *	according window
- *
- *	XXX create class for filesystem that has member functions add/remove
- *	for reuse of code
  */
 void Xwmfs::addWindow(const XWindow &win)
 {
@@ -285,213 +63,36 @@ void Xwmfs::addWindow(const XWindow &win)
 	updateTime();
 	FileSysWriteGuard write_guard(m_fs_root);
 
-	std::stringstream id;
-	id << win.id();
-
 	// we want to get any structure change events
 	win.selectDestroyEvent();
 	win.selectPropertyNotifyEvent();
 
 	// the window directories are named after their IDs
-	DirEntry *win_dir = m_win_dir->addEntry(
-		new xwmfs::DirEntry(id.str(), m_current_time), false );
-
-	// add an ID file (when symlinks point there then it's easier this way
-	// to find out the ID of the window
-	FileEntry *win_id = win_dir->addEntry(
-		new xwmfs::FileEntry("id", false, m_current_time),
-		false
-	);
-
-	// the content for the ID file is the ID, of course
-	*win_id << id.rdbuf() << '\n';
-		
-	xwmfs::StdLogger::getInstance().debug()
-		<< "New window " << win.id() << std::endl;
-
-	addWindowName(*win_dir, win);
-	addDesktopNumber(*win_dir, win);
-	addPID(*win_dir, win);
-	addCommandControl(*win_dir, win);
-}
-
-void Xwmfs::addWindowName(DirEntry &win_dir, const XWindow &win)
-{
-	try
-	{
-		std::string name_str = win.getName();
-		FileEntry *win_name = win_dir.addEntry(
-			new xwmfs::WindowFileEntry("name", win, m_current_time),
-			false
-		);
-		*win_name << name_str << '\n';
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		// this can happen legally. It is a race condition. We've been
-		// so fast to register the window but it hasn't got a name
-		// yet.
-		//
-		// The name will be noticed later on via a property update.
-		xwmfs::StdLogger::getInstance().debug()
-			<< "Couldn't get name for window " << win.id()
-			<< " right away" << std::endl;
-	}
-}
+	m_win_dir->addEntry(new xwmfs::WindowDirEntry(win), false);
 	
-void Xwmfs::addDesktopNumber(DirEntry &win_dir, const XWindow &win)
-{
-	try
-	{
-		const int desktop_num = win.getDesktop();
-		FileEntry *win_desktop = win_dir.addEntry(
-			new xwmfs::WindowFileEntry("desktop", win, m_current_time),
-			false
-		);
-		*win_desktop << desktop_num << '\n';
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		xwmfs::StdLogger::getInstance().debug()
-			<< "Couldn't get desktop nr. for window right away"
-			<< std::endl;
-	}
-}
-
-void Xwmfs::addPID(DirEntry &win_dir, const XWindow &win)
-{
-	try
-	{
-		const int pid = win.getPID();
-		FileEntry *win_pid = win_dir.addEntry(
-			new xwmfs::WindowFileEntry("pid", win, m_current_time, false),
-			false
-		);
-		*win_pid << pid << '\n';
-	}
-	catch( const xwmfs::Exception &ex )
-	{
-		xwmfs::StdLogger::getInstance().debug()
-			<< "Couldn't get pid for window right away"
-			<< std::endl;
-	}
-}
-
-void Xwmfs::addCommandControl(DirEntry &win_dir, const XWindow &win)
-{
-	auto entry = win_dir.addEntry(
-		new xwmfs::WindowFileEntry("command", win, m_current_time, true)
-	);
-
-	for( const auto command: { "destroy", "delete" } )
-	{
-		// provide the available commands as read content
-		*entry << command << " ";
-	}
-
-	entry->seekp(-1, entry->cur);
-	(*entry) << "\n";
+	auto &logger = xwmfs::StdLogger::getInstance().debug();
+	logger << "New window " << win.id() << std::endl;
 }
 
 void Xwmfs::updateRootWindow(Atom changed_atom)
 {
-	updateTime();
 	FileSysWriteGuard write_guard(m_fs_root);
 	
-	auto &logger = xwmfs::StdLogger::getInstance();
-	auto std_props = StandardProps::instance();
-
-	FileEntry *entry = nullptr;
-	
-	if( std_props.atom_ewmh_wm_nr_desktops == changed_atom )
-	{
-		m_root_win.updateNumberOfDesktops();
-
-		entry = (FileEntry*)m_wm_dir->getEntry("number_of_desktops");
-		if( ! entry )
-			// shouldn't happen
-			return;
-
-		entry->str("");
-
-		try
-		{
-			*entry << m_root_win.getWM_NumDesktops() << "\n";
-		}
-		catch(...)
-		{
-			logger.error()
-				<< "Error udpating number_of_desktops property"
-				<< std::endl;
-		}
-	}
-	else if( std_props.atom_ewmh_wm_cur_desktop == changed_atom )
-	{
-		m_root_win.updateActiveDesktop();
-
-		entry = (FileEntry*)m_wm_dir->getEntry("active_desktop");
-		if( ! entry )
-			// shouldn't happen
-			return;
-
-		entry->str("");
-
-		try
-		{
-			*entry << m_root_win.getWM_ActiveDesktop() << "\n";
-		}
-		catch(...)
-		{
-			logger.error()
-				<< "Error udpating number_of_desktops property"
-				<< std::endl;
-		}
-
-	}
-	else if( std_props.atom_ewmh_wm_active_window == changed_atom )
-	{
-		m_root_win.updateActiveWindow();
-
-		entry = (FileEntry*)m_wm_dir->getEntry("active_window");
-		if( ! entry )
-			// shouldn't happen
-			return;
-
-		entry->str("");
-
-		try
-		{
-			*entry << m_root_win.getWM_ActiveWindow() << "\n";
-		}
-		catch(...)
-		{
-			logger.error()
-				<< "Error updating active_window property"
-				<< std::endl;
-		}
-	}
-	else
-	{
-		logger.warn()
-			<< "Root window unknown property "
-			<< "0x" << changed_atom << ") changed" << std::endl;
-	}
-
-	if( entry )
-	{
-		entry->setModifyTime(m_current_time);
-	}
+	m_wm_dir->update(changed_atom);
 }
 
 void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
 {
-	updateTime();
 	FileSysWriteGuard write_guard(m_fs_root);
 
 	std::stringstream id;
 	id << win.id();
 
-	DirEntry* win_dir = (DirEntry*)m_win_dir->getEntry(id.str());
+	// TODO: this is an unsafe cast, because we have no type information
+	// for WindowDirEntry ... :-/
+	WindowDirEntry* win_dir = reinterpret_cast<WindowDirEntry*>(
+		m_win_dir->getDirEntry(id.str().c_str())
+	);
 
 	if( !win_dir )
 	{
@@ -500,74 +101,7 @@ void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
 		return;
 	}
 
-	auto std_props = StandardProps::instance();
-
-	/*
-	 * TODO: make a table like
-	 *
-	 * atom_id -> (parent_dir, file, update_func)
-	 *
-	 * to make this code more compact
-	 */
-
-	WindowFileEntry *entry = nullptr;
-
-	if( std_props.atom_icccm_window_name == changed_atom )
-	{
-		entry = (WindowFileEntry*)win_dir->getEntry("name");
-		if( ! entry )
-		{
-			// the window name was not available during creation
-			// but now here it is
-			addWindowName(*win_dir, win);
-			return;
-		}
-
-		entry->str("");
-
-		try
-		{
-			*entry << win.getName() << "\n";
-		}
-		catch(...)
-		{
-			xwmfs::StdLogger::getInstance().error() <<
-				"Error udpating name property" << std::endl;
-		}
-	}
-	else if( std_props.atom_ewmh_desktop_nr == changed_atom )
-	{
-		try
-		{
-			const int desktop_num = win.getDesktop();
-
-			xwmfs::StdLogger::getInstance().debug()
-				<< "Got desktop nr. update: "
-				<< desktop_num << std::endl;
-		
-			entry = (WindowFileEntry*)win_dir->getEntry("desktop");
-			if( ! entry )
-			{
-				// the desktop number was not available during
-				// creation but now here it is
-				addDesktopNumber(*win_dir, win);
-				return;
-			}
-
-			entry->str("");
-			*entry << desktop_num << "\n";
-		}
-		catch( ... )
-		{
-			xwmfs::StdLogger::getInstance().error() <<
-				"Error udpating desktop property" << std::endl;
-		}
-	}
-			
-	if( entry )
-	{
-		entry->setModifyTime(m_current_time);
-	}
+	win_dir->update(changed_atom);
 }
 
 void Xwmfs::createFS()
@@ -579,99 +113,20 @@ void Xwmfs::createFS()
 
 	// window manager (wm) directory that contains files for wm
 	// information
-	m_wm_dir = new xwmfs::DirEntry("wm");
-
+	m_wm_dir = new xwmfs::WinManagerDirEntry(m_root_win);
 	m_fs_root.addEntry( m_wm_dir );
-		
-	// create pid entry in wm dir
-	FileEntry *wm_pid = m_wm_dir->addEntry( new xwmfs::FileEntry("pid") );
-
-	if( m_root_win.hasWM_Pid() )
-		*wm_pid << m_root_win.getWM_Pid() << '\n';
-	else
-		*wm_pid << "-1" << '\n';
-
-	// add name entry in wm dir
-	FileEntry *wm_name =
-		m_wm_dir->addEntry( new xwmfs::FileEntry("name", false) );
-
-	*wm_name << (m_root_win.hasWM_Name() ?
-		m_root_win.getWM_Name() : "N/A") << '\n';
-
-	// add "show desktop mode" entry in wm dir
-	FileEntry *wm_sdm = m_wm_dir->addEntry(
-		new xwmfs::FileEntry("show_desktop_mode") );
-	if( m_root_win.hasWM_ShowDesktopMode() )
-		*wm_sdm << m_root_win.getWM_ShowDesktopMode() << '\n';
-	else
-		*wm_sdm << "-1" << '\n';
-
-	FileEntry *wm_nr_desktops = m_wm_dir->addEntry(
-		new xwmfs::WinManagerEntry("number_of_desktops")
-	);
-
-	*wm_nr_desktops << m_root_win.getWM_NumDesktops() << '\n';
-
-	// add wm class entry in wm dir
-	FileEntry *wm_class = m_wm_dir->addEntry(
-		new xwmfs::FileEntry("class") );
-	*wm_class << (m_root_win.hasWM_Class() ?
-		m_root_win.getWM_Class() : "N/A" ) << '\n';
-
-	// add an entry reflecting the active desktop and also allowing to
-	// change it
-	FileEntry *wm_active_desktop = m_wm_dir->addEntry(
-		new xwmfs::WinManagerEntry("active_desktop")
-	);
-	*wm_active_desktop << (m_root_win.hasWM_ActiveDesktop() ?
-		m_root_win.getWM_ActiveDesktop() : -1 ) << '\n';
-
-	FileEntry *wm_active_window = m_wm_dir->addEntry(
-		new xwmfs::WinManagerEntry("active_window")
-	);
-
-	*wm_active_window << (m_root_win.hasWM_ActiveWindow() ?
-		m_root_win.getWM_ActiveWindow() : Window(0) ) << '\n';
 
 	// now add a directory that contains each window
 	m_win_dir = new xwmfs::DirEntry("windows");
 	m_fs_root.addEntry( m_win_dir );
 
 	// add each window there
-	const std::vector<xwmfs::XWindow> &windows = m_root_win.getWindowList();
-	std::stringstream id;
-	for(
-		std::vector<xwmfs::XWindow>::const_iterator win =
-			windows.begin();
-		win != windows.end();
-		win++ )
+	const auto &windows = m_root_win.getWindowList();
+
+	for( const auto &win: windows )
 	{
-		addWindow( *win );
+		addWindow( win );
 	}
-
-#if 0
-	// test the findEntry function or RootEntry
-	Entry * found_entry;
-
-	const char* const DIRS[] = { "/", "/wm", "/wm/", "/wm/name", "/wm/name/" };
-	
-	for( size_t dir_index = 0; dir_index < 5; dir_index++ )
-	{
-		std::cout << "looking up " << DIRS[dir_index] << std::endl;
-		found_entry = xwmfs::filesystem->findEntry(DIRS[dir_index]);
-
-		if( found_entry )
-		{
-			std::cout << "Found it! It's a " <<
-				(found_entry->type() == Entry::DIRECTORY ?
-				"Directory" : "File") << std::endl;
-		}
-		else
-		{
-			std::cout << "Not found!" << std::endl;
-		}
-	}
-#endif
 }
 
 void Xwmfs::exit()
@@ -693,9 +148,7 @@ void Xwmfs::exit()
 	}
 }
 	
-int Xwmfs::XErrorHandler(
-	Display *disp,
-	XErrorEvent *error)
+int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
 {
 	(void)disp;
 	(void)error;
@@ -774,10 +227,8 @@ int Xwmfs::init()
 			m_root_win.selectPropertyNotifyEvent();
 
 			createFS();
+
 			m_ev_thread.start();
-#if 0
-			printWmInfo();
-#endif
 		}
 		catch( const xwmfs::RootWin::QueryError &ex )
 		{
@@ -806,34 +257,6 @@ int Xwmfs::init()
 	return res;
 }
 
-#if 0
-void Xwmfs::printWMInfo()
-{
-	std::cout << "Global window manager information:\n\n";
-	std::cout << "Name: " << (m_root_win.hasWM_Name() ? m_root_win.getWM_Name() : "N/A") << "\n";
-	std::cout << "PID: ";
-	if( m_root_win.hasWM_Pid() )
-		std::cout << m_root_win.getWM_Pid();
-	else
-		std::cout << "N/A";
-	std::cout << "\n";
-	std::cout << "Class: " << (m_root_win.hasWM_Class() ? m_root_win.getWM_Class() : "N/A") << "\n";
-	std::cout << "ShowingDesktop: ";
-	if( m_root_win.hasWM_ShowDesktopMode() )
-		std::cout << m_root_win.getWM_ShowDesktopMode();
-	else
-		std::cout << "N/A";
-
-	std::cout << "\nWindow list:\n";
-	const std::vector<xwmfs::XWindow> &windows = m_root_win.getWindowList();
-	for( std::vector<xwmfs::XWindow>::const_iterator win = windows.begin(); win != windows.end(); win++ )
-	{
-		std::cout << "ID = " << win->id() << ", Name = \"" << win->getName() << "\"\n";
-	}
-	std::cout << "\n\n";
-}
-#endif
-
 Xwmfs::Xwmfs() :
 	m_ev_thread(*this, "x11_event_thread"),
 	m_opts( xwmfs::Options::getInstance() )
@@ -849,9 +272,7 @@ Xwmfs::Xwmfs() :
 
 	if( pipe_res != 0 )
 	{
-		// TODO: exception
-		::perror("unable to create wakeup pipe");
-		abort();
+		xwmfs_throw( SystemException("Unable to create wakeup pipe") );
 	}
 }
 	
@@ -933,69 +354,14 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	// and such
 	case CreateNotify:
 	{
-		// Xlib manual says one should generally ignore these
-		// events as they come from popups
-		if( ev.xcreatewindow.override_redirect )
-			break;
-		// this is grand-kid or something. we could add these
-		// in a hierarchical manner as sub-windows but for now
-		// we ignore them
-		else if( ev.xcreatewindow.parent != m_root_win.id() )
-			break;
-			
-		XWindow w(ev.xcreatewindow.window);
-		
-		auto &debug_log = logger.debug();
-
-		debug_log
-			<< "Window "
-			<< w
-			<< " was created!" << std::endl;
-
-		debug_log
-			<< "\tParent: "
-			<< XWindow(ev.xcreatewindow.parent)
-			<< std::endl;
-
-		debug_log
-			<< "\twin name = ";
-
-		try
-		{
-			debug_log
-				<< w.getName()
-				<< std::endl;
-		}
-		catch( const xwmfs::Exception &ex )
-		{
-			debug_log
-				<< "error getting win name: "
-				<< ex
-				<< std::endl;
-		}
-
-		try
-		{
-			this->addWindow(w);
-		}
-		catch( const xwmfs::Exception &ex )
-		{
-			debug_log
-				<< "\terror adding window: "
-				<< ex
-				<< std::endl;
-		}
-
+		handleCreateEvent(ev);
 		break;
 	}
 	// a window was destroyed
 	case DestroyNotify:
 	{
 		XWindow w(ev.xdestroywindow.window);
-		logger.debug()
-			<< "Window " << w
-			<< " was destroyed!"
-			<< std::endl;
+		logger.debug() << "Window " << w << " was destroyed!" << std::endl;
 		this->removeWindow(w);
 		break;
 	}
@@ -1011,6 +377,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		case PropertyNewValue:
 		{
 			XWindow w(ev.xproperty.window);
+			updateTime();
 
 			if( w == m_root_win )
 			{
@@ -1056,6 +423,45 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			<< __FUNCTION__
 			<< ": Some unknown event received" << "\n";
 		break;
+	}
+}
+	
+void Xwmfs::handleCreateEvent(const XEvent &ev)
+{
+	// Xlib manual says one should generally ignore these
+	// events as they come from popups
+	if( ev.xcreatewindow.override_redirect )
+		return;
+	// this is grand-kid or something. we could add these
+	// in a hierarchical manner as sub-windows but for now
+	// we ignore them
+	else if( ev.xcreatewindow.parent != m_root_win.id() )
+		return;
+		
+	XWindow w(ev.xcreatewindow.window);
+	
+	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
+
+	debug_log << "Window " << w << " was created!" << std::endl;
+	debug_log << "\tParent: " << XWindow(ev.xcreatewindow.parent) << std::endl;
+	debug_log << "\twin name = ";
+
+	try
+	{
+		debug_log << w.getName() << std::endl;
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		debug_log << "error getting win name: " << ex << std::endl;
+	}
+
+	try
+	{
+		this->addWindow(w);
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		debug_log << "\terror adding window: " << ex << std::endl;
 	}
 }
 
