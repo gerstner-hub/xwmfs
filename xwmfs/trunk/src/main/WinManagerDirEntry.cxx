@@ -132,7 +132,7 @@ void WinManagerDirEntry::updateActiveWindow(FileEntry &entry)
 
 void WinManagerDirEntry::updateShowDesktopMode(FileEntry &entry)
 {
-	entry << (m_root_win.hasWM_Name() ? m_root_win.getWM_Name() : "N/A");
+	entry << (m_root_win.hasWM_ShowDesktopMode() ? m_root_win.getWM_ShowDesktopMode() : -1);
 }
 
 void WinManagerDirEntry::updateName(FileEntry &entry)
