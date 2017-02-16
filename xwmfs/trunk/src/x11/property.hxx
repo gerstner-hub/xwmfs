@@ -110,7 +110,7 @@ class XPropTraits<int>
 public: // constants
 
 	static const Atom x_type = XA_CARDINAL;
-	static const unsigned long fixed_size = 4;
+	static const unsigned long fixed_size = sizeof(int);
 	typedef long* XPtrType;
 	static const char format = 32;
 
@@ -183,7 +183,7 @@ class XPropTraits<Window>
 public: // constants
 
 	static const Atom x_type = XA_WINDOW;
-	static const unsigned long fixed_size = 4;
+	static const unsigned long fixed_size = sizeof(Window);
 	static const char format = 32;
 	typedef long* XPtrType;
 
@@ -391,7 +391,7 @@ protected: // functions
 
 		if( Traits::fixed_size )
 		{
-			assert( size == Traits::fixed_size );
+			assert( size <= Traits::fixed_size );
 		}
 
 		m_data_is_from_x = true;
