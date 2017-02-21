@@ -1,5 +1,5 @@
 INTRODUCTION
-------------
+============
 
 This is xwmfs (X window manager file system), a userspace filesystem based on
 fuse that allows interaction with an EWMH compliant X11 window manager
@@ -41,7 +41,7 @@ xwmfs is currently in a beta release status. Thus it is far from feature
 complete, not well or broadly tested and thus not necessarily very stable.
 
 USAGE
------
+=====
 
 xwmfs consists of a single executable named 'xwmfs'. Currently no configuration
 files of any kind are used. The xwmfs program behaves like a standard fuse
@@ -73,10 +73,11 @@ To unmount the xwmfs file system the command
 can be used.
 
 FILE SYSTEM STRUCTURE
----------------------
+=====================
 
 Once mounted the xwmfs file system presents the following hierarchy:
 
+<pre>
 -windows: A subdirectory containing further directories that represent all
  |        windows managed by the window manager on the current display.
  |
@@ -121,9 +122,10 @@ Should the window manager not support some of the properties like
 "show_desktop_mode" then a value of -1 is contained in the file if the file
 represents an integer value or the value "N/A" if the file represents a string
 value.
+</pre>
 
 CURRENT STATE OF DEVELOPMENT
-----------------------------
+============================
 
 xwmfs conforms to the EWMH and ICCCM specifications regarding the name, type
 and meaning of X window properties used for representing the state of window
@@ -147,13 +149,13 @@ A good source of information about how things can be done is the 'wmctrl'
 program that allows to query and alter some state of X11 windows.
 
 TIPS AND TRICKS
----------------
+===============
 
-  * You can get the window ID of the current window in most terminal emulators
-    from the $WINDOWID environment variable
+- You can get the window ID of the current window in most terminal emulators
+  from the $WINDOWID environment variable
 
 FUTURE DIRECTIONS
------------------
+=================
 
 The feature set I initially intended for xwmfs is roughly the following:
 
