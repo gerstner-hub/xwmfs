@@ -173,6 +173,9 @@ public: // functions
 	 **/
 	void setDesktop(const int num);
 
+	//! returns the client machine the window is associated with
+	std::string getClientMachine() const;
+
 	/**
 	 * \brief
 	 * 	Requests the X server to destroy the represented window and

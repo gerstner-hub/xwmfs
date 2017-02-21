@@ -190,6 +190,8 @@ struct StandardProps
 	XAtom atom_icccm_wm_protocols;
 	//! a WM_PROTOCOLS request to delete a window
 	XAtom atom_icccm_wm_delete_window;
+	//! contains the name of the machine a window is running on
+	XAtom atom_icccm_wm_client_machine;
 
 	static const StandardProps& instance();
 

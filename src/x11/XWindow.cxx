@@ -133,6 +133,15 @@ void XWindow::setDesktop(const int num)
 	);
 }
 
+std::string XWindow::getClientMachine() const
+{
+	xwmfs::Property<const char *> name;
+
+	this->getProperty(m_std_props.atom_icccm_wm_client_machine, name);
+
+	return name.get();
+}
+
 void XWindow::destroy()
 {
 	auto &display = XDisplay::getInstance();
