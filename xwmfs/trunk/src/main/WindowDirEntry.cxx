@@ -36,7 +36,8 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_ewmh_desktop_nr),
 		EntrySpec("pid", &WindowDirEntry::updatePID, false,
 			std_props.atom_ewmh_wm_pid),
-		EntrySpec("command", &WindowDirEntry::updateCommandControl, true)
+		EntrySpec("command", &WindowDirEntry::updateCommandControl, true),
+		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false)
 	} );
 }
 
@@ -151,7 +152,11 @@ void WindowDirEntry::updateCommandControl(FileEntry &entry)
 {
 	entry << getCommandInfo();
 }
-	
+
+void WindowDirEntry::updateClientMachine(FileEntry &entry)
+{
+	entry << m_win.getClientMachine();
+}
 
 } // end ns
 

@@ -58,6 +58,9 @@ protected: // functions
 
 	//! Adds an entry for the command control file of a window
 	void updateCommandControl(FileEntry &entry);
+
+	//! Adds an entry for the client machine a window is running on
+	void updateClientMachine(FileEntry &entry);
 	
 protected: // data
 
