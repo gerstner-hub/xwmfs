@@ -6,7 +6,7 @@
 #include <vector>
 
 // xwmfs
-#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/DirEntry.hxx"
 
 namespace xwmfs
 {

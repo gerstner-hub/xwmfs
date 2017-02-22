@@ -2,7 +2,7 @@
 #define XWMFS_WINDOWDIR_HXX
 
 // xwmfs
-#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/FileEntry.hxx"
 #include "x11/XWindow.hxx"
 
 namespace xwmfs

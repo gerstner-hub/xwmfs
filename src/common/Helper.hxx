@@ -3,6 +3,7 @@
 
 // C++
 #include <string>
+#include <cstring>
 
 namespace xwmfs
 {
@@ -21,6 +22,13 @@ inline std::string stripped(const std::string &s)
 	strip(ret);
 	return ret;
 }
+
+//! for comparison in maps with char pointers as keys
+struct compare_cstring
+{
+	bool operator()(const char *a, const char *b) const
+	{ return std::strcmp(a, b) < 0; }
+};
 
 } // end ns
 

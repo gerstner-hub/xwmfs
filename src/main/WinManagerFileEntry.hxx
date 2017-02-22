@@ -1,8 +1,11 @@
 #ifndef XWMFS_WINMANAGERFILEENTRY_HXX
 #define XWMFS_WINMANAGERFILEENTRY_HXX
 
+// C++
+#include <map>
+
 // xwmfs
-#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/FileEntry.hxx"
 
 namespace xwmfs
 {

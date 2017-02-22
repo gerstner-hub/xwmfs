@@ -4,7 +4,6 @@
 #include <locale.h>
 
 #include "fuse/xwmfs_fuse_ops.h"
-#include "fuse/xwmfs_fuse.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 #include "main/Xwmfs.hxx"

@@ -5,7 +5,7 @@
 
 #include "common/Thread.hxx"
 #include "x11/RootWin.hxx"
-#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 

@@ -14,6 +14,8 @@
 #include <assert.h>
 
 #include "fuse/xwmfs_fuse.hxx"
+#include "fuse/Entry.hxx"
+#include "fuse/FileEntry.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Xwmfs.hxx"
 

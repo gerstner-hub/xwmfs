@@ -2,7 +2,7 @@
 #define XWMFS_WINDOWDIRENTRY_HXX
 
 // xwmfs
-#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/DirEntry.hxx"
 #include "x11/XWindow.hxx"
 #include "main/UpdateableDir.hxx"
 
