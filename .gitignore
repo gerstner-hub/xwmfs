@@ -1,0 +1,7 @@
+*.swp
+tags
+*.in
+*.cache
+config_aux
+*.m4
+configure
