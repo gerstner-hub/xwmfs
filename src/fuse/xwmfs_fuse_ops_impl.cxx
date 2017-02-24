@@ -18,6 +18,7 @@
 #include "fuse/FileEntry.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Xwmfs.hxx"
+#include "common/Exception.hxx"
 
 namespace xwmfs
 {
@@ -46,7 +47,7 @@ int xwmfs_getattr(const char *path, struct stat *stbuf)
 			<< path << "\n";
 		return -ENOENT;
 	}
-	
+
 	xwmfs::StdLogger::getInstance().debug()
 		<< __FUNCTION__ << ": stat for path "
 		<< path << "\n";
@@ -129,10 +130,10 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	xwmfs::Entry *entry = xwmfs::filesystem->findEntry( path );
-	
+
 	// if entry is a directory then we allow the open call but during any
 	// read/writes we return EISDIR
-	
+
 	// if entry not there at all
 	if( ! entry )
 	{
@@ -147,13 +148,13 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	// store the pointer to the entry in the file handle
 	fi->fh = (intptr_t)entry;
 
+	// increase the reference count to avoid deletion while the file is
+	// opened
+	//
 	// NOTE: this race conditions only shows if fuse is mounted with the
 	// direct_io option, otherwise heavy caching is employed that avoids
 	// the SEGFAULT when somebody tries to read from an Entry that's
 	// already been deleted
-	//
-	// increase the reference count to avoid deletion while the file is
-	// opened
 	entry->ref();
 
 	return 0;
@@ -190,46 +191,30 @@ int xwmfs_read(
 	off_t offset, struct fuse_file_info *fi)
 {
 	(void)path;
-	
+
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our entry pointer back from the file handle field
 	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
 
 	assert(entry);
-	
-	// reading a directory via read doesn't make much sense
-	if( entry->type() == xwmfs::Entry::DIRECTORY )
-		return -EISDIR;
-	else if( entry->isDeleted() )
-		// difficult to say what the correct errno for "file
-		// disappeared" is. This one seems suitable. It would also be
-		// valid to succeed in reading but then the application can't
-		// detect the case that the represented object has vanished
-		// ...
-		return -ENXIO;
 
-	assert( entry->type() == xwmfs::Entry::REG_FILE );
+	try
+	{
+		auto res = entry->isOperationAllowed();
 
-	xwmfs::FileEntry &file = *(xwmfs::Entry::tryCastFileEntry(entry));
-
-	// position to the required offset in the file (to beginning of file, if no offset)
-	file.seekg( offset, xwmfs::FileEntry::beg );
-
-	// read data into fuse buffer
-	file.read( buf, size );
-
-	const int ret = file.gcount();
-
-	// remove any possible error or EOF states from stream
-	file.clear();
-
-	// return number of bytes actually retrieved
-	return ret;
+		return res ? res : entry->read(buf, size, offset);
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().error()
+			<< "Failed to read from " << path << ": " << ex.what() << "\n";
+		return -EFAULT;
+	}
 }
 
 int xwmfs_write(
-	const char *path, const char *data, size_t size,
+	const char *path, const char *buf, size_t size,
 	off_t offset, struct fuse_file_info *fi)
 {
 	(void)path;
@@ -244,20 +229,18 @@ int xwmfs_write(
 	// get our entry pointer back from the file handle field
 	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
 
-	assert(entry);
-	
-	// writing a directory via write doesn't make much sense
-	if( entry->type() == xwmfs::Entry::DIRECTORY )
-		return -EISDIR;
-	else if( entry->isDeleted() )
-		// see xwmfs_read()
-		return -ENXIO;
+	try
+	{
+		auto res = entry->isOperationAllowed();
 
-	assert( entry->type() == xwmfs::Entry::REG_FILE );
-
-	xwmfs::FileEntry &file = *(xwmfs::Entry::tryCastFileEntry)(entry);
-
-	return file.write(data, size, offset);
+		return res ? res : entry->write(buf, size, offset);
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().error()
+			<< "Failed to write to " << path << ": " << ex.what() << "\n";
+		return -EFAULT;
+	}
 }
 
 int xwmfs_truncate(const char *path, off_t size)
@@ -358,7 +341,7 @@ void xwmfs_destroy(void* data)
 	(void)data;
 
 	xwmfs::Xwmfs::getInstance().exit();
-	
+
 	xwmfs::filesystem = nullptr;
 }
 

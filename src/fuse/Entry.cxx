@@ -62,7 +62,20 @@ void Entry::getStat(struct stat *s)
 	s->st_mode &= ~(Xwmfs::getUmask());
 }
 
+int Entry::isOperationAllowed() const
+{
+	if( isDeleted() )
+	{
+		// difficult to say what the correct errno for "file
+		// disappeared" is. This one seems suitable. It would also be
+		// valid to succeed in reading but then the application can't
+		// detect the case that the represented object has vanished
+		// ...
+		return -ENXIO;
+	}
 
+	return 0;
+}
 
 } // end ns
 

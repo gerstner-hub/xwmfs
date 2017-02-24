@@ -38,7 +38,7 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time)
 
 	return e;
 }
-	
+
 void DirEntry::removeEntry(const char* s)
 {
 	auto it = m_objs.find(s);
@@ -62,7 +62,7 @@ void DirEntry::removeEntry(const char* s)
 		delete entry;
 	}
 }
-	
+
 void DirEntry::clear()
 {
 	std::vector<Entry*> to_delete;
@@ -81,11 +81,28 @@ void DirEntry::clear()
 	}
 
 	m_objs.clear();
-	
+
 	for( auto &entry: to_delete )
 	{
 		delete entry;
 	}
+}
+
+int DirEntry::read(char *buf, const size_t size, off_t offset)
+{
+	(void)buf;
+	(void)size;
+	(void)offset;
+	// reading a directory via read doesn't make much sense
+	return -EISDIR;
+}
+
+int DirEntry::write(const char *buf, const size_t size, off_t offset)
+{
+	(void)buf;
+	(void)size;
+	(void)offset;
+	return -EISDIR;
 }
 
 } // end ns

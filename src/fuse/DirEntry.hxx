@@ -65,7 +65,7 @@ public: // functions
 	 * 	deletion
 	 **/
 	void clear();
-	
+
 	/**
 	 * \brief
 	 * 	Template wrapper around addEntry(Entry*, const bool) that
@@ -113,7 +113,7 @@ public: // functions
 
 		return ( obj_it == m_objs.end() ) ? nullptr : obj_it->second;
 	}
-	
+
 	//! retrieve an entry in the directory with name \c n, but only if of
 	//! type \c t
 	Entry* getEntry(const char *n, const Entry::Type &t)
@@ -157,6 +157,9 @@ public: // functions
 		clear();
 		return Entry::markDeleted();
 	}
+
+	int read(char *buf, size_t size, off_t offset) override;
+	int write(const char *buf, size_t size, off_t offset) override;
 
 protected: // data
 

@@ -75,13 +75,9 @@ struct FileEntry :
 	 *	If it is still called then "invalid argument" will be
 	 *	returned.
 	 **/
-	virtual int write(const char *data, const size_t bytes, off_t offset)
-	{
-		(void)data;
-		(void)bytes;
-		(void)offset;
-		return -EINVAL;
-	}
+	int write(const char *data, size_t size, off_t offset) override;
+
+	int read(char *buf, size_t size, off_t offset) override;
 
 	void getStat(struct stat*) override;
 };

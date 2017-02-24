@@ -119,6 +119,39 @@ public: // functions
 	//! returns whether this entry is pending deletion
 	bool isDeleted() const { return m_deleted; }
 
+	/**
+	 * \brief
+	 * 	Read data from the file
+	 * \details
+	 * 	A request to read data from the file object into the given
+	 * 	buf of size bytes size, starting at the relative offset.
+	 *
+	 * 	The integer return value is the negative errno in case of
+	 * 	error, or the number of bytes read on success.
+	 **/
+	virtual int read(char *buf, size_t size, off_t offset) = 0;
+
+	/**
+	 * \brief
+	 * 	Write data to the file
+	 * \details
+	 * 	A request to write data from the given buf of size bytes size
+	 * 	into the file object, starting at the relative offset.
+	 *
+	 * 	The integer return value is the negative errno in case of
+	 * 	error, or the number of bytes written on success
+	 **/
+	virtual int write(const char *buf, size_t size, off_t offset) = 0;
+
+	/**
+	 * \brief
+	 * 	Returns whether a file operation is currenctly allowed
+	 * \return
+	 * 	zero if it is allowed, otherwise a FUSE error code to return
+	 * 	for any file operations
+	 **/
+	int isOperationAllowed() const;
+
 protected: // functions
 
 	/**
@@ -159,7 +192,7 @@ protected: // functions
 	int parseInteger(const char *data, const size_t bytes, int &result) const;
 
 protected: // data
-	
+
 	const std::string m_name;
 	const Type m_type = INVAL_TYPE;
 	const bool m_writable = false;
