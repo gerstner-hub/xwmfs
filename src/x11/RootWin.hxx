@@ -73,7 +73,7 @@ public: // functions
 
 	//! returns whether a window manager name was found
 	bool hasWM_Name() const { return !m_wm_name.empty(); }
-	
+
 	//! returns whether a window manager PID was found
 	bool hasWM_Pid() const { return m_wm_pid != -1; }
 
@@ -85,7 +85,7 @@ public: // functions
 
 	//! returns whether the currently active desktop was found
 	bool hasWM_ActiveDesktop() const { return m_wm_active_desktop != -1; }
-	
+
 	//! returns whether the currently active window was found
 	bool hasWM_ActiveWindow() const { return m_wm_active_window != 0; }
 

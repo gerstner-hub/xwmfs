@@ -8,7 +8,7 @@ static const bool DEBUG_MUTEX = true;
 #else
 static const bool DEBUG_MUTEX = false;
 #endif
-	
+
 Mutex::Mutex()
 {
 	::pthread_mutexattr_t* attr = nullptr;

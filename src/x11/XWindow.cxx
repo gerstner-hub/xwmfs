@@ -20,7 +20,7 @@ XWindow::PropertyTypeMismatch::PropertyTypeMismatch(
 		<< encountered;
 	m_error += s.str();
 }
-		
+
 XWindow::PropertyChangeError::PropertyChangeError(
 	Display *dis, const int errcode
 ) :
@@ -28,7 +28,7 @@ XWindow::PropertyChangeError::PropertyChangeError(
 {
 	m_error += ". While trying to change property.";
 }
-		
+
 XWindow::PropertyQueryError::PropertyQueryError(
 	Display *dis, const int errcode
 ) :
@@ -50,7 +50,7 @@ std::string XWindow::idStr() const
 
 	return id.str();
 }
-	
+
 std::string XWindow::getName() const
 {
 	try
@@ -111,7 +111,7 @@ void XWindow::setName(const std::string &name)
 	catch( ... )
 	{
 	}
-	
+
 	xwmfs::Property<const char*> name_prop( name.c_str() );
 
 	this->setProperty( m_std_props.atom_icccm_window_name, name_prop );

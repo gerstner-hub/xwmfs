@@ -36,7 +36,7 @@ protected: // types
 	typedef std::map<std::string, SetIntFunction> SetIntFunctionMap;
 	typedef void (RootWin::*SetWindowFunction)(const XWindow&);
 	typedef std::map<std::string, SetWindowFunction> SetWindowFunctionMap;
-	
+
 	// a mapping of file system names to their associated set int functions
 	static const SetIntFunctionMap m_set_int_function_map;
 	static const SetWindowFunctionMap m_set_window_function_map;

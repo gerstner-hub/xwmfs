@@ -20,7 +20,7 @@ RootWin::RootWin() :
 		<< std::hex << std::showbase << this->id() << std::dec
 		<< std::endl;
 	this->getInfo();
-		
+
 	// the event mask influences which X clients will receive the event.
 	// For the root window to react to our requests these masks seem to be
 	// helpful. 0 value doesn't work. I'm not sure if this is not too
@@ -138,7 +138,7 @@ RootWin::WindowManager RootWin::detectWM(const std::string &name)
 		return WindowManager::UNKNOWN;
 	}
 }
-	
+
 void RootWin::queryPID()
 {
 	/*
@@ -373,7 +373,7 @@ void RootWin::setWM_ActiveDesktop(const int &num)
 
 	this->sendRequest(m_std_props.atom_ewmh_wm_cur_desktop, num);
 }
-	
+
 void RootWin::setWM_ActiveWindow(const XWindow &win)
 {
 	if( ! hasWM_ActiveWindow() )
@@ -404,7 +404,7 @@ void RootWin::setWM_ActiveWindow(const XWindow &win)
 		&win
 	);
 }
-	
+
 void RootWin::setWM_NumDesktops(const int &num)
 {
 	if( ! hasWM_NumDesktops() )

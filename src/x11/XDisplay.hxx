@@ -84,7 +84,7 @@ public: // functions
 
 		return ret;
 	}
-	
+
 	/**
 	 * \brief
 	 *	Flushes any commands not yet issued to the server

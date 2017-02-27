@@ -55,7 +55,7 @@ protected: // functions
 	void updateModifyTime();
 
 	AtomSpecMap getUpdateMap() const;
-	
+
 protected: // data
 
 	const SpecVector m_specs;

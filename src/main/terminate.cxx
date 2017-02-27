@@ -71,7 +71,7 @@ public:
 			std::cerr << "Unknown exception type\n";
 		}
 	}
-	
+
 	bool isExceptionActive()
 	{
 		// NOTE: std::uncaught_exception doesn't work here, because it

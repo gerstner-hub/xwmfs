@@ -2,13 +2,13 @@
 
 namespace xwmfs
 {
-	
+
 XDisplay::~XDisplay()
 {
 	XCloseDisplay(m_dis);
 	m_dis = nullptr;
 }
-	
+
 XDisplay::XDisplay()
 {
 	// if nullptr is specified, then the value of DISPLAY
@@ -20,14 +20,14 @@ XDisplay::XDisplay()
 		xwmfs_throw(DisplayOpenError());
 	}
 }
-	
+
 XDisplay& XDisplay::getInstance()
 {
 	static XDisplay dis;
 
 	return dis;
 }
-		
+
 XDisplay::AtomMappingError::AtomMappingError(
 	Display *dis, const int errcode, const std::string &s
 ) :
@@ -36,7 +36,7 @@ XDisplay::AtomMappingError::AtomMappingError(
 	m_error += ". While trying to map " + \
 		s + " to a valid atom.";
 }
-		
+
 XDisplay::DisplayOpenError::DisplayOpenError() :
 	Exception("Unable to open X11 display: \"")
 {

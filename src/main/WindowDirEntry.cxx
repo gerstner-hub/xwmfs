@@ -15,7 +15,7 @@ WindowDirEntry::WindowDirEntry(const XWindow &win) :
 {
 	addEntries();
 }
-	
+
 void WindowDirEntry::addEntries()
 {
 	for( const auto &spec: m_specs )

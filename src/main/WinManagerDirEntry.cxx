@@ -6,7 +6,7 @@
 
 namespace xwmfs
 {
-	
+
 WinManagerDirEntry::WinManagerDirEntry(RootWin &root_win) :
 	UpdateableDir("wm", getSpecVector()),
 	m_root_win(root_win)
@@ -41,7 +41,7 @@ void WinManagerDirEntry::addEntries()
 		addSpecEntry(spec);
 	}
 }
-	
+
 void WinManagerDirEntry::addSpecEntry(
 	const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec
 )
@@ -89,11 +89,11 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 			<< " not existing?" << std::endl;
 		return;
 	}
-	
+
 	this->updateModifyTime();
 
 	entry->str("");
-		
+
 	try
 	{
 		(this->*(update_spec.member_func))(*entry);
@@ -106,7 +106,7 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 			<< std::endl;
 		return;
 	}
-	
+
 	entry->setModifyTime(m_modify_time);
 }
 
@@ -139,7 +139,7 @@ void WinManagerDirEntry::updateName(FileEntry &entry)
 {
 	entry << (m_root_win.hasWM_Name() ? m_root_win.getWM_Name() : "N/A");
 }
-		
+
 void WinManagerDirEntry::updateClass(FileEntry &entry)
 {
 	entry << (m_root_win.hasWM_Class() ?  m_root_win.getWM_Class() : "N/A");

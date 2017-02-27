@@ -136,7 +136,7 @@ protected: // functions
 	 * 	terminal or not
 	 **/
 	static bool isTTY(const std::ostream &o);
-	
+
 	void setStreams(
 		std::ostream &debug,
 		std::ostream &info,

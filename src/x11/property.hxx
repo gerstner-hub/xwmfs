@@ -69,7 +69,7 @@ public: // functions
 	 **/
 	static
 	int getNumElements(const PROPTYPE &val) { return 0; }
-	
+
 	/**
 	 * \brief
 	 * 	Set the current value of the native PROPTYPE from the given
@@ -89,7 +89,7 @@ public: // functions
 	static
 	void x2native(PROPTYPE &i, XPtrType data, unsigned int count)
 	{}
-	
+
 	/**
 	 * \brief
 	 * 	Transform the current value of the native PROPTYPE into raw X
@@ -98,7 +98,7 @@ public: // functions
 	static
 	void native2x(const PROPTYPE &s, XPtrType &data)
 	{}
-	
+
 	// never instantiate this type
 	XPropTraits() = delete;
 };
@@ -115,7 +115,7 @@ public: // constants
 	static const char format = 32;
 
 public: // functions
-	
+
 	static
 	int getNumElements(const int &s)
 	{
@@ -209,7 +209,7 @@ public: // constants
 	typedef long* XPtrType;
 
 public: // functions
-		
+
 	static
 	void x2native(std::vector<Window> &w, XPtrType data, unsigned int count)
 	{
@@ -403,7 +403,7 @@ protected: // functions
 			size / (Traits::format / 8)
 		);
 	}
-	
+
 	//! Retrieves the associated XAtom type from the traits of PROPTYPE
 	static Atom getXType() { return Traits::x_type; }
 

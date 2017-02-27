@@ -8,7 +8,7 @@
 
 namespace xwmfs
 {
-	
+
 XAtomMapper& XAtomMapper::getInstance()
 {
 	static XAtomMapper inst;
@@ -55,7 +55,7 @@ StandardProps::StandardProps()
 		std::exit( EXIT_FAILURE );
 	}
 }
-	
+
 XAtom XAtomMapper::getAtom(const std::string &s)
 {
 	XAtom ret;
@@ -70,9 +70,9 @@ XAtom XAtomMapper::getAtom(const std::string &s)
 	else
 	{
 		m_mappings_lock.unlock();
-		
+
 		ret = XDisplay::getInstance().getAtom(s);
-		
+
 		auto &logger = xwmfs::StdLogger::getInstance();
 		logger.debug() << "Resolved atom id for '"
 			<< s << "' is " << std::dec << ret.get() << std::endl;
@@ -81,7 +81,7 @@ XAtom XAtomMapper::getAtom(const std::string &s)
 
 		m_mappings.insert( std::make_pair( s, (Atom)ret ) );
 	}
-		
+
 	m_mappings_lock.unlock();
 
 	return ret;
@@ -98,7 +98,7 @@ const std::string& XAtomMapper::getName(const XAtom &atom) const
 			return pair.first;
 		}
 	}
-	
+
 	static std::string empty;
 	return empty;
 }

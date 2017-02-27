@@ -80,7 +80,7 @@ void printXWMFSHelp()
 		"\t\tset logger output for error (E), warning(W), info (I)\n"
 		"\t\tand debug (D) to on ('1') or off ('0'), i.e. a row of four bits\n");
 }
-		
+
 int main(int argc, char *argv[])
 {
 	try
@@ -95,11 +95,11 @@ int main(int argc, char *argv[])
 		// early initialization logic for X11 must be called before
 		// any other X11 stuff happens
 		xwmfs::Xwmfs::early_init();
-		
+
 		struct fuse_args fuse_args = FUSE_ARGS_INIT(0, NULL);
 
 		bool print_xwmfs_help = false;
-		
+
 		try
 		{
 			print_xwmfs_help = parseXWMFSOptions(
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 			fuse_args.argc, fuse_args.argv,
 			&xwmfs_oper, NULL
 		);
-					
+
 		if( print_xwmfs_help )
 		{
 			printXWMFSHelp();

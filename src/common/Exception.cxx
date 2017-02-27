@@ -25,12 +25,12 @@ std::string Exception::what(const uint32_t level) const
 
 	return ret.str();
 }
-	
+
 void Exception::indent(const uint32_t level, std::ostream &o) const
 {
 	o << std::string(level, '\t') << level << "): ";
 }
-	
+
 SystemException::SystemException(const std::string &err) :
 	Exception(err)
 {

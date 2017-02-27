@@ -109,7 +109,7 @@ protected: // functions
 	//! POSIX / C entry function for thread. From here the virtual
 	//! threadEntry() will be called
 	static void* posixEntry(void *par);
-	
+
 private: // data
 	//! POSIX thread handle
 	pthread_t m_pthread;

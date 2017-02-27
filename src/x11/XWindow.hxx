@@ -49,10 +49,10 @@ public: // types
 	public: // functions
 
 		PropertyChangeError(Display *dis, const int errcode);
-		
+
 		XWMFS_EXCEPTION_IMPL;
 	};
-	
+
 	//! Specialized Exception for the case that property types don't match
 	class PropertyTypeMismatch :
 		public xwmfs::Exception
@@ -60,10 +60,10 @@ public: // types
 	public: // functions
 
 		PropertyTypeMismatch(Atom expected, Atom encountered);
-		
+
 		XWMFS_EXCEPTION_IMPL;
 	};
-	
+
 	//! \brief
 	//! Specialized Exception for the case that a requested property
 	//! doesn't exist
@@ -106,7 +106,7 @@ public: // functions
 	 * 	Create an object representing \c win on the current Display
 	 **/
 	explicit XWindow(Window win);
-	
+
 	//! returns true if the object holds a valid XWindow
 	bool valid() const { return m_win != 0; }
 
@@ -219,7 +219,7 @@ public: // functions
 	{
 		getProperty( XDisplay::getInstance().getAtom(name), p );
 	}
-	
+
 	/**
 	 * \brief
 	 *	The same as getProperty(std::string, Property<PROPTYPE>&) but
@@ -242,7 +242,7 @@ public: // functions
 	{
 		setProperty( XDisplay::getInstance().getAtom(name), p );
 	}
-	
+
 	/**
 	 * \brief
 	 * 	The same as
@@ -254,10 +254,10 @@ public: // functions
 	 **/
 	template <typename PROPTYPE>
 	void setProperty(const Atom name_atom, const Property<PROPTYPE> &p);
-	
+
 	//! compares the Xlib Window primitive for equality
 	bool operator==(const XWindow &o) const { return m_win == o.m_win; }
-	
+
 	//! opposite of operator==(const XWindow&) const
 	bool operator!=(const XWindow &o) const { return !operator==(o); }
 
@@ -316,7 +316,7 @@ public: // functions
 		m_send_event_mask = other.m_send_event_mask;
 		return *this;
 	}
-	
+
 protected: // functions
 
 	/**
@@ -344,7 +344,7 @@ protected: // functions
 			window
 		);
 	}
-	
+
 	/**
 	 * \brief
 	 * 	Sends a request to the window

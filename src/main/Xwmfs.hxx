@@ -58,7 +58,7 @@ public: // functions
 	 *	This function is called by FUSE for cleanup
 	 **/
 	void exit();
-	
+
 	~Xwmfs();
 
 	//! returns the global XWMFS instance
@@ -102,7 +102,7 @@ protected: // functions
 	 * 	without exiting.
 	 **/
 	static int XErrorHandler(Display *disp, XErrorEvent *error);
-	
+
 	/**
 	 * \brief
 	 * 	Called from Xlib on fatal error conditions
@@ -112,7 +112,7 @@ protected: // functions
 	 * 	exit()
 	 **/
 	static int XIOErrorHandler(Display *disp);
-	
+
 	//! working loop for the event handling thread
 	void threadEntry(const Thread &t) override;
 
@@ -144,7 +144,7 @@ protected: // functions
 	 * 	The atom at the window that changed
 	 **/
 	void updateWindow(const XWindow &win, Atom changed_atom);
-	
+
 	/**
 	 * \brief
 	 * 	called from m_ev_thread if the root window in the file system

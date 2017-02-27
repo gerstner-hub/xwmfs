@@ -37,7 +37,7 @@ protected: // functions
 	void addEntries();
 
 	SpecVector getSpecVector() const;
-	
+
 	void addSpecEntry(
 		const UpdateableDir<WindowDirEntry>::EntrySpec &spec
 	);
@@ -49,10 +49,10 @@ protected: // functions
 
 	//! adds/updates an entry for the desktop nr the window is on
 	void updateDesktop(FileEntry &entry);
-	
+
 	//! adds/updates an entry for the ID for the window
 	void updateId(FileEntry &entry);
-	
+
 	//! adds/updates an entry for the PID of the window owner
 	void updatePID(FileEntry &entry);
 
@@ -61,7 +61,7 @@ protected: // functions
 
 	//! Adds an entry for the client machine a window is running on
 	void updateClientMachine(FileEntry &entry);
-	
+
 protected: // data
 
 	//! the window we're representing with this directory

@@ -41,7 +41,7 @@ int WinManagerFileEntry::write(const char *data, const size_t bytes, off_t offse
 				<< this->m_name << "\n";
 			return parsed;
 		}
-	
+
 		MutexGuard g(m_parent->getLock());
 
 		auto int_it = m_set_int_function_map.find(m_name);

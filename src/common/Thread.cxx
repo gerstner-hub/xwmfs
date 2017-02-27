@@ -5,7 +5,7 @@
 
 namespace xwmfs
 {
-	
+
 Thread::Thread(IThreadEntry &entry, const char *name) :
 	m_state(READY),
 	m_state_condition(m_state_lock),
@@ -47,7 +47,7 @@ Thread::~Thread()
 		assert("destroy_success" == nullptr);
 	}
 }
-	
+
 void* Thread::posixEntry(void *par)
 {
 	auto &thread = *(reinterpret_cast<Thread*>(par));
@@ -62,7 +62,7 @@ void* Thread::posixEntry(void *par)
 			thread.m_state_condition.wait();
 		}
 	}
-		
+
 	if( thread.getState() == RUN )
 	{
 		try
@@ -88,7 +88,7 @@ void* Thread::posixEntry(void *par)
 
 	return nullptr;
 }
-	
+
 void Thread::join()
 {
 	this->setState( EXIT );

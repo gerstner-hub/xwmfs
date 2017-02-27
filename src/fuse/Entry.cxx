@@ -90,7 +90,7 @@ int Entry::isOperationAllowed() const
 
 	return 0;
 }
-	
+
 void Entry::setParent(DirEntry *dir)
 {
 	m_parent = dir;

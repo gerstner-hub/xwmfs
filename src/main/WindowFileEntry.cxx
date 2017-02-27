@@ -34,7 +34,7 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
 		);
 	}
 }
-	
+
 int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
 {
 	if( ! m_writable )
@@ -42,7 +42,7 @@ int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
 	// we don't support writing at offsets
 	if( offset )
 		return -EOPNOTSUPP;
-	
+
 	try
 	{
 		auto it = m_write_member_function_map.find(m_name);
@@ -58,7 +58,7 @@ int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
 		}
 
 		auto mem_fn = it->second;
-	
+
 		MutexGuard g(m_parent->getLock());
 
 		(this->*(mem_fn))(data, bytes);
@@ -72,7 +72,7 @@ int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
 			<< e.what() << std::endl;
 		return -EINVAL;
 	}
-		
+
 	return bytes;
 }
 

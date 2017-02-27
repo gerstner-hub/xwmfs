@@ -10,7 +10,7 @@
 
 namespace xwmfs
 {
-	
+
 /**
  * \brief
  * 	Exception type for X11 errors
@@ -33,7 +33,7 @@ public: // functions
 
 	XWMFS_EXCEPTION_IMPL;
 };
-	
+
 } // end ns
 
 #endif // inc. guard
