@@ -174,7 +174,7 @@ int xwmfs_release(const char *path, struct fuse_file_info *fi)
 	// get our entry pointer back from the file handle field
 	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
 
-	// deleting this entry should not required a write guard, because
+	// deleting this entry should not require a write guard, because
 	// we're the last user of the file nobody else should know about it
 	// ...
 	if( entry->unref() )
@@ -219,11 +219,6 @@ int xwmfs_write(
 {
 	(void)path;
 
-	// TODO: we don't modify the file system structure here, only the
-	// file. A file specific lock would be sufficient here to allow
-	// parallel operations to move on
-	// (okay, this only affects write operations, so it shouldn't be too
-	// tough)
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our entry pointer back from the file handle field

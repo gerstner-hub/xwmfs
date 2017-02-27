@@ -36,6 +36,8 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time)
 		e->setStatusTime(m_status_time);
 	}
 
+	e->setParent( this );
+
 	return e;
 }
 

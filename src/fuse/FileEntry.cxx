@@ -3,6 +3,7 @@
 
 // xwmfs
 #include "fuse/FileEntry.hxx"
+#include "fuse/DirEntry.hxx"
 
 namespace xwmfs
 {
@@ -10,6 +11,7 @@ namespace xwmfs
 void FileEntry::getStat(struct stat *s)
 {
 	Entry::getStat(s);
+	MutexGuard g(m_parent->getLock());
 
 	// determine size of stream and return it in stat structure
 	this->seekg( 0, xwmfs::FileEntry::end );
@@ -26,8 +28,7 @@ int FileEntry::write(const char *data, size_t size, off_t offset)
 
 int FileEntry::read(char *buf, size_t size, off_t offset)
 {
-	// TODO: this is not multithreading safe, even with the global read
-	// lock
+	MutexGuard g(m_parent->getLock());
 
 	// position to the required offset in the file (to beginning of file, if no offset)
 	seekg( offset, xwmfs::FileEntry::beg );

@@ -2,6 +2,7 @@
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
 #include "common/Helper.hxx"
+#include "fuse/DirEntry.hxx"
 
 namespace xwmfs
 {
@@ -57,6 +58,8 @@ int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
 		}
 
 		auto mem_fn = it->second;
+	
+		MutexGuard g(m_parent->getLock());
 
 		(this->*(mem_fn))(data, bytes);
 	}

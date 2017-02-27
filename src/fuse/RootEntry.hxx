@@ -37,7 +37,10 @@ public: // functions
 	 **/
 	RootEntry(const time_t &t = 0) :
 		DirEntry("/", t)
-	{ }
+	{
+		//! root is his own parent
+		this->setParent(this);
+	}
 
 	//! a wrapper for findEntry(const char*) using std::string
 	Entry* findEntry(const std::string &path)

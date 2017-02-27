@@ -28,7 +28,7 @@ namespace xwmfs
 {
 
 mode_t Xwmfs::m_umask = 0777;
-			
+
 /*
  *	Upon a destroy event for a window this function is called for the
  *	according window.
@@ -69,7 +69,7 @@ void Xwmfs::addWindow(const XWindow &win)
 
 	// the window directories are named after their IDs
 	m_win_dir->addEntry(new xwmfs::WindowDirEntry(win), false);
-	
+
 	auto &logger = xwmfs::StdLogger::getInstance().debug();
 	logger << "New window " << win.id() << std::endl;
 }
@@ -77,7 +77,7 @@ void Xwmfs::addWindow(const XWindow &win)
 void Xwmfs::updateRootWindow(Atom changed_atom)
 {
 	FileSysWriteGuard write_guard(m_fs_root);
-	
+
 	m_wm_dir->update(changed_atom);
 }
 
@@ -147,12 +147,12 @@ void Xwmfs::exit()
 		m_ev_thread.join();
 	}
 }
-	
+
 int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
 {
 	(void)disp;
 	(void)error;
-	
+
 	char err_msg[512];
 
 	XGetErrorText(disp, error->error_code, &err_msg[0], 512);
@@ -166,7 +166,7 @@ int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
 int Xwmfs::XIOErrorHandler(Display *disp)
 {
 	(void)disp;
-	
+
 	StdLogger::getInstance().error()
 		<< "A fatal X error occured. Exiting." << std::endl;
 
@@ -175,7 +175,7 @@ int Xwmfs::XIOErrorHandler(Display *disp)
 	// unexpected states
 	::_exit(1);
 }
-	
+
 void Xwmfs::early_init()
 {
 	// to get the current umask we need to temporarily change the umask.
@@ -275,7 +275,7 @@ Xwmfs::Xwmfs() :
 		xwmfs_throw( SystemException("Unable to create wakeup pipe") );
 	}
 }
-	
+
 Xwmfs::~Xwmfs()
 {
 	FD_ZERO(&m_select_set);
@@ -290,7 +290,7 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 {
 	XEvent ev;
 	Display *dis = XDisplay::getInstance();
-			
+
 	auto &logger = xwmfs::StdLogger::getInstance();
 
 	while( t.getState() == xwmfs::Thread::RUN )
@@ -425,7 +425,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		break;
 	}
 }
-	
+
 void Xwmfs::handleCreateEvent(const XEvent &ev)
 {
 	// Xlib manual says one should generally ignore these
@@ -437,9 +437,9 @@ void Xwmfs::handleCreateEvent(const XEvent &ev)
 	// we ignore them
 	else if( ev.xcreatewindow.parent != m_root_win.id() )
 		return;
-		
+
 	XWindow w(ev.xcreatewindow.window);
-	
+
 	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 
 	debug_log << "Window " << w << " was created!" << std::endl;

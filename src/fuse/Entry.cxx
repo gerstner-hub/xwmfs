@@ -16,6 +16,20 @@ namespace xwmfs
 const uid_t Entry::m_uid = ::getuid();
 const gid_t Entry::m_gid = ::getgid();
 
+
+Entry::~Entry()
+{
+	if( !m_parent || m_parent == this )
+		// no distict parent
+		return;
+
+	if( m_parent->unref() )
+	{
+		delete m_parent,
+		m_parent = nullptr;
+	}
+}
+
 int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 {
 	size_t endpos = 0;
@@ -75,6 +89,18 @@ int Entry::isOperationAllowed() const
 	}
 
 	return 0;
+}
+	
+void Entry::setParent(DirEntry *dir)
+{
+	m_parent = dir;
+
+	if( this == dir )
+		// it's ourselves, no need for reference handling
+		return;
+
+	// make sure the parent exists at least as long as us
+	m_parent->ref();
 }
 
 } // end ns

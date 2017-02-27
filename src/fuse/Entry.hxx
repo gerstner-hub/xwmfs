@@ -45,8 +45,8 @@ public: // functions
 	// make sure entries are never flat-copied
 	Entry(const Entry &other) = delete;
 
-	//! makes sure derived class's destructors are always called
-	virtual ~Entry() { }
+	//! unref()s parent entry if necessary
+	virtual ~Entry();
 
 	/**
 	 * \brief
@@ -148,6 +148,12 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Sets the parent directory for this entry
+	 **/
+	void setParent(DirEntry *dir);
+
+	/**
+	 * \brief
 	 * 	Returns whether a file operation is currenctly allowed
 	 * \return
 	 * 	zero if it is allowed, otherwise a FUSE error code to return
@@ -235,6 +241,9 @@ protected: // data
 	 * 	closed.
 	 **/
 	std::atomic_size_t m_refcount;
+
+	//! pointer to the parent directory
+	DirEntry *m_parent = nullptr;
 };
 
 } // end ns

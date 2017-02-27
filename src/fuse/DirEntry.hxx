@@ -6,6 +6,7 @@
 
 // xwmfs
 #include "fuse/Entry.hxx"
+#include "common/Mutex.hxx"
 
 namespace xwmfs
 {
@@ -161,11 +162,28 @@ public: // functions
 	int read(char *buf, size_t size, off_t offset) override;
 	int write(const char *buf, size_t size, off_t offset) override;
 
+	Mutex& getLock() { return m_lock; }
+
 protected: // data
 
 	//! contains all objects that the directory contains with their names
 	//! as keys
 	NameEntryMap m_objs;
+
+	/**
+	 * \brief
+	 * 	A look for this directory and all its direct children
+	 * \details
+	 * 	For serializing parallel access to individual fs entries we
+	 * 	need some kind of locking strategy. A global lock would
+	 * 	unnecessarily serialize unrelated operations on different
+	 * 	files. One lock per entry seems waste of ressources if we have
+	 * 	many files. Thus I've settled for one lock per directory and
+	 * 	all its direct non-directory children. A middle way of saving
+	 * 	resources and still allowing parallel operations in many
+	 * 	situations.
+	 **/
+	Mutex m_lock;
 };
 
 } // end ns
