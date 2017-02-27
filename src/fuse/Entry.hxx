@@ -1,6 +1,9 @@
 #ifndef XWMFS_ENTRY_HXX
 #define XWMFS_ENTRY_HXX
 
+// C++
+#include <atomic>
+
 // xwmfs
 #include "common/Helper.hxx"
 
@@ -173,7 +176,8 @@ protected: // functions
 		const time_t &time = 0
 	) :
 		m_name(n), m_type(t), m_writable(writable),
-		m_modify_time(time), m_status_time(time)
+		m_modify_time(time), m_status_time(time),
+		m_refcount(1)
 	{ };
 
 	/**
@@ -230,7 +234,7 @@ protected: // data
 	 * 	to remain valid until all file descriptors to it have been
 	 * 	closed.
 	 **/
-	size_t m_refcount = 1;
+	std::atomic_size_t m_refcount;
 };
 
 } // end ns
