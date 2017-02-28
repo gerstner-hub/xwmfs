@@ -7,6 +7,9 @@
 namespace xwmfs
 {
 
+// fwd. decl.
+struct EventOpenContext; 
+
 /**
  * \brief
  * 	A special file that allows readers to block until new events arrive
@@ -39,14 +42,30 @@ public:
 		const size_t max_backlog = 64
 	);
 
+	/**
+	 * \brief
+	 * 	Creates an extended OpenContext with additional EventFile
+	 * 	context data
+	 **/
+	OpenContext* createOpenContext() override;
+
 protected: // functions
 
-	int read(char *buf, size_t size, off_t offset) override;
-	int write(const char *buf, size_t size, off_t offset) override;
+	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
+
+protected: // types
+
+	struct Event
+	{
+		std::string text;
+		size_t id = 0;
+	};
 
 protected: // data
 
 	const size_t m_max_backlog;
+	size_t m_next_id = 1;
 };
 
 } // end ns

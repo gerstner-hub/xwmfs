@@ -19,8 +19,9 @@ const WinManagerFileEntry::SetWindowFunctionMap WinManagerFileEntry::m_set_windo
 	{ "active_window", &RootWin::setWM_ActiveWindow }
 };
 
-int WinManagerFileEntry::write(const char *data, const size_t bytes, off_t offset)
+int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset)
 {
+	(void)ctx;
 	if( !m_writable )
 		return -EBADF;
 	// we don't support writing at offsets

@@ -159,8 +159,8 @@ public: // functions
 		return Entry::markDeleted();
 	}
 
-	int read(char *buf, size_t size, off_t offset) override;
-	int write(const char *buf, size_t size, off_t offset) override;
+	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
 	Mutex& getLock() { return m_lock; }
 

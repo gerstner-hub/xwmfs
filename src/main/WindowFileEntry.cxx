@@ -35,8 +35,9 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
 	}
 }
 
-int WindowFileEntry::write(const char *data, const size_t bytes, off_t offset)
+int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset)
 {
+	(void)ctx;
 	if( ! m_writable )
 		return -EBADF;
 	// we don't support writing at offsets

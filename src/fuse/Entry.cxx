@@ -8,6 +8,7 @@
 
 // xwmfs
 #include "fuse/Entry.hxx"
+#include "fuse/OpenContext.hxx"
 #include "main/Xwmfs.hxx"
 
 namespace xwmfs
@@ -101,6 +102,37 @@ void Entry::setParent(DirEntry *dir)
 
 	// make sure the parent exists at least as long as us
 	m_parent->ref();
+}
+
+OpenContext* Entry::createOpenContext()
+{
+	// TODO: we could improve performance here by using pre-allocated
+	// objects for OpenContext
+	auto ret = new OpenContext(this);
+
+	// increase the reference count to avoid deletion while the file is
+	// opened
+	//
+	// NOTE: this race conditions only shows if fuse is mounted with the
+	// direct_io option, otherwise heavy caching is employed that avoids
+	// the SEGFAULT when somebody tries to read from an Entry that's
+	// already been deleted
+	this->ref();
+
+	return ret;
+}
+
+void Entry::destroyOpenContext(OpenContext *ctx)
+{
+	delete ctx;
+
+	if( this->unref() )
+	{
+		// deleting this entry should not require a write guard,
+		// because we're the last user of the file nobody else should
+		// know about it ...
+		delete this;
+	}
 }
 
 } // end ns

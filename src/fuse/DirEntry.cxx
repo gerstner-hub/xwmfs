@@ -90,8 +90,9 @@ void DirEntry::clear()
 	}
 }
 
-int DirEntry::read(char *buf, const size_t size, off_t offset)
+int DirEntry::read(OpenContext *ctx, char *buf, const size_t size, off_t offset)
 {
+	(void)ctx;
 	(void)buf;
 	(void)size;
 	(void)offset;
@@ -99,8 +100,9 @@ int DirEntry::read(char *buf, const size_t size, off_t offset)
 	return -EISDIR;
 }
 
-int DirEntry::write(const char *buf, const size_t size, off_t offset)
+int DirEntry::write(OpenContext *ctx, const char *buf, const size_t size, off_t offset)
 {
+	(void)ctx;
 	(void)buf;
 	(void)size;
 	(void)offset;

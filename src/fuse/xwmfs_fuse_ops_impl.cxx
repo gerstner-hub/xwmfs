@@ -17,6 +17,7 @@
 #include "fuse/Entry.hxx"
 #include "fuse/FileEntry.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
+#include "fuse/OpenContext.hxx"
 #include "main/Xwmfs.hxx"
 #include "common/Exception.hxx"
 
@@ -145,17 +146,8 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	else if((fi->flags & 3) != O_RDONLY && !entry->isWritable() )
 		return -EACCES;
 
-	// store the pointer to the entry in the file handle
-	fi->fh = (intptr_t)entry;
-
-	// increase the reference count to avoid deletion while the file is
-	// opened
-	//
-	// NOTE: this race conditions only shows if fuse is mounted with the
-	// direct_io option, otherwise heavy caching is employed that avoids
-	// the SEGFAULT when somebody tries to read from an Entry that's
-	// already been deleted
-	entry->ref();
+	// store a pointer to an OpenContext in the file handle
+	fi->fh = (intptr_t)entry->createOpenContext();
 
 	return 0;
 }
@@ -172,15 +164,10 @@ int xwmfs_release(const char *path, struct fuse_file_info *fi)
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our entry pointer back from the file handle field
-	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
+	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
+	auto entry = context->getEntry();
 
-	// deleting this entry should not require a write guard, because
-	// we're the last user of the file nobody else should know about it
-	// ...
-	if( entry->unref() )
-	{
-		delete entry;
-	}
+	entry->destroyOpenContext(context);
 
 	// return value is ignored by FUSE
 	return 0;
@@ -194,16 +181,15 @@ int xwmfs_read(
 
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
-	// get our entry pointer back from the file handle field
-	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
-
-	assert(entry);
+	// get our context pointer back from the file handle field
+	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
+	auto entry = context->getEntry();
 
 	try
 	{
 		auto res = entry->isOperationAllowed();
 
-		return res ? res : entry->read(buf, size, offset);
+		return res ? res : entry->read(context, buf, size, offset);
 	}
 	catch( const xwmfs::Exception &ex )
 	{
@@ -221,14 +207,16 @@ int xwmfs_write(
 
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
-	// get our entry pointer back from the file handle field
-	xwmfs::Entry *entry = reinterpret_cast<xwmfs::Entry*>(fi->fh);
+	// get our context pointer back from the file handle field
+	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
+
+	auto entry = context->getEntry();
 
 	try
 	{
 		auto res = entry->isOperationAllowed();
 
-		return res ? res : entry->write(buf, size, offset);
+		return res ? res : entry->write(context, buf, size, offset);
 	}
 	catch( const xwmfs::Exception &ex )
 	{

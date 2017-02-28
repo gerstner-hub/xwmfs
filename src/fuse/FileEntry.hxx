@@ -75,9 +75,9 @@ struct FileEntry :
 	 *	If it is still called then "invalid argument" will be
 	 *	returned.
 	 **/
-	int write(const char *data, size_t size, off_t offset) override;
+	int write(OpenContext *ctx, const char *data, size_t size, off_t offset) override;
 
-	int read(char *buf, size_t size, off_t offset) override;
+	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
 	void getStat(struct stat*) override;
 };

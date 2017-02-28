@@ -35,7 +35,7 @@ struct WindowFileEntry :
 	 * 	Implementation of write() that updates window properties
 	 * 	according to the file that is being written
 	 **/
-	int write(const char *data, const size_t bytes, off_t offset) override;
+	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
 
 	void writeName(const char *data, const size_t bytes)
 	{

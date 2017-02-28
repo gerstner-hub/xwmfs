@@ -28,7 +28,7 @@ struct WinManagerFileEntry :
 		FileEntry(n, true, t)
 	{}
 
-	int write(const char *data, const size_t bytes, off_t offset) override;
+	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
 
 protected: // types
 

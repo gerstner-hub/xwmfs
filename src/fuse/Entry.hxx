@@ -16,6 +16,7 @@ namespace xwmfs
 // fwd. declarations
 struct DirEntry;
 struct FileEntry;
+class OpenContext;
 
 /**
  * \brief
@@ -132,7 +133,7 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes read on success.
 	 **/
-	virtual int read(char *buf, size_t size, off_t offset) = 0;
+	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset) = 0;
 
 	/**
 	 * \brief
@@ -144,7 +145,7 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes written on success
 	 **/
-	virtual int write(const char *buf, size_t size, off_t offset) = 0;
+	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) = 0;
 
 	/**
 	 * \brief
@@ -160,6 +161,31 @@ public: // functions
 	 * 	for any file operations
 	 **/
 	int isOperationAllowed() const;
+
+	/**
+	 * \brief
+	 * 	Creates a new file open context for this entry
+	 * \details
+	 * 	This function is called from the low level fuse functions to
+	 * 	create a new file open context at file open time. This context
+	 * 	uniquely identifies any open file instance.
+	 *
+	 * 	Derived classes can override this function and
+	 * 	destroyOpenContext() to return types derived from OpenContext
+	 * 	that contain additional data. They need to handle
+	 * 	ref()/unref() then, however.
+	 **/
+	virtual OpenContext* createOpenContext();
+
+	/**
+	 * \brief
+	 * 	Destroys an open context for this entry
+	 * \details
+	 * 	This function is called from the low level fuse functions to
+	 * 	destroy an open context at file close time. This context was
+	 * 	previously returned from createOpenContext().
+	 **/
+	virtual void destroyOpenContext(OpenContext *ctx);
 
 protected: // functions
 
