@@ -31,7 +31,11 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 	return SpecVector( {
 		EntrySpec("id", &WindowDirEntry::updateId, false),
 		EntrySpec("name", &WindowDirEntry::updateWindowName, true,
-			std_props.atom_icccm_window_name),
+			{
+				std_props.atom_icccm_window_name,
+				std_props.atom_ewmh_window_name
+			}
+		),
 		EntrySpec("desktop", &WindowDirEntry::updateDesktop, true,
 			std_props.atom_ewmh_desktop_nr),
 		EntrySpec("pid", &WindowDirEntry::updatePID, false,

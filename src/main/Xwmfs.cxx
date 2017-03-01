@@ -370,8 +370,8 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		logger.debug() << "Property (atom = "
 			<< std::dec << ev.xproperty.atom
 			<< ") on window " << std::hex
-			<< "0x" << ev.xproperty.window << " changed"
-			<< std::dec << std::endl;
+			<< "0x" << ev.xproperty.window << " changed ("
+			<< std::dec << ev.xproperty.state << ")" << std::endl;
 		switch( ev.xproperty.state )
 		{
 		case PropertyNewValue:

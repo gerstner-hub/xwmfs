@@ -22,10 +22,10 @@ typename UpdateableDir<CLASS>::AtomSpecMap UpdateableDir<CLASS>::getUpdateMap() 
 
 	for( const auto &spec: m_specs )
 	{
-		if( ! spec.atom.valid() )
-			continue;
-
-		ret.insert( { spec.atom, spec } );
+		for( const auto &atom: spec.atoms )
+		{
+			ret.insert( { atom, spec } );
+		}
 	}
 
 	return ret;

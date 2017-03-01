@@ -22,6 +22,7 @@ class UpdateableDir :
 protected: // types
 
 	typedef void (CLASS::*UpdateFunction)(FileEntry &entry);
+	typedef std::vector<XAtom> AtomVector;
 
 	//! holds information about a single file entry
 	struct EntrySpec
@@ -33,15 +34,28 @@ protected: // types
 		//! a member function of the derived class type to call for
 		//! updates of the entry value
 		UpdateFunction member_func = nullptr;
-		//! the associated XAtom, if any
-		XAtom atom;
+		//! the associated XAtoms, if any
+		AtomVector atoms;
 
 		EntrySpec(
 			const char *n,
 			UpdateFunction f,
-			const bool rw = false,
-			XAtom a = XAtom(None)
-		) : name(n), read_write(rw), member_func(f), atom(a) {}
+			const bool rw = false
+		) : name(n), read_write(rw), member_func(f), atoms({}) {}
+
+		EntrySpec(
+			const char *n,
+			UpdateFunction f,
+			const bool rw,
+			XAtom a
+		) : name(n), read_write(rw), member_func(f), atoms({a}) {}
+
+		EntrySpec(
+			const char *n,
+			UpdateFunction f,
+			const bool rw,
+			AtomVector av
+		) : name(n), read_write(rw), member_func(f), atoms(av) {}
 	};
 
 	//! a mapping of XAtom values to the corresponding file entry specs
