@@ -24,3 +24,13 @@ Only Linux on x86-64 has been tested by me so far.
 
 There are currently no special configure options available for xwmfs besides
 the default options provided by autotools.
+
+DEBUG BUILD
+------------
+
+To create a debug build simply set CFLAGS and CXXFLAGS accordingly e.g.
+
+	- CFLAGS="-g -O"
+	- CXXFLAGS="$CFLAGS"
+
+before running configure.
