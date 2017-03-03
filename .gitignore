@@ -5,3 +5,4 @@ tags
 config_aux
 *.m4
 configure
+__pycache__
