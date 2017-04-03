@@ -72,6 +72,16 @@ public: // functions
 		}
 	}
 
+	void broadcast()
+	{
+		if( ::pthread_cond_broadcast(&m_pcond) != 0 )
+		{
+			xwmfs_throw(
+				xwmfs::SystemException("Error broadcasting condition" )
+			);
+		}
+	}
+
 protected: // data
 
 	pthread_cond_t m_pcond;
