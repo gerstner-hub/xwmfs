@@ -1,8 +1,13 @@
 #ifndef XWMFS_XWMFS_HXX
 #define XWMFS_XWMFS_HXX
 
+// POSIX
 #include <sys/select.h>
 
+// C++
+#include <map>
+
+// Xwmfs
 #include "common/Thread.hxx"
 #include "x11/RootWin.hxx"
 #include "fuse/RootEntry.hxx"
@@ -13,6 +18,7 @@ namespace xwmfs
 {
 
 class WinManagerDirEntry;
+class EventFile;
 
 /**
  * \brief
@@ -84,7 +90,64 @@ public: // functions
 	//! returns the current time (update for each new X event)
 	time_t getCurrentTime() const { return m_current_time; }
 
+	/**
+	 * \brief
+	 * 	Registers blocking call situation
+	 * \details
+	 * 	The calling thread will be associated with the given file
+	 * 	object. The callee will make sure that fuse signals to abort
+	 * 	the blocking request will be caught and the blocking call
+	 * 	woken up.
+	 *
+	 * 	In any case the caller must call unregisterBlockingCall()
+	 * 	after the blocking call is over, whether aborted or not.
+	 **/
+	void registerBlockingCall(EventFile *f);
+
+	/**
+	 * \brief
+	 * 	Unregisters a previously registered blocking call situation
+	 **/
+	void unregisterBlockingCall();
+
 protected: // functions
+
+	friend void fuseAbortSignal(int);
+
+	/**
+	 * \brief
+	 * 	Called from an asynchronous signal handler in case a blocking
+	 * 	call shall be aborted for the calling thread
+	 **/
+	void abortBlockingCall(const bool all);
+
+	/**
+	 * \brief
+	 * 	Abort a blocking call for the given thread, called
+	 * 	synchronously from the event handling thread
+	 **/
+	void abortBlockingCall(pthread_t thread);
+
+	/**
+	 * \brief
+	 * 	Called synchronously from the event calling thread to abort
+	 * 	all pending blocking calls
+	 **/
+	void abortAllBlockingCalls();
+
+
+	/**
+	 * \brief
+	 * 	Read an available message from the abort pipe
+	 **/
+	void readAbortPipe();
+
+	/**
+	 * \brief
+	 * 	Sets up any asynchronous signal handlers we need for aborting
+	 * 	blocking calls
+	 **/
+	void setupAbortSignals(const bool on_off);
 
 	/**
 	 * \brief
@@ -154,6 +217,25 @@ protected: // functions
 	 **/
 	void updateRootWindow(Atom changed_atom);
 
+private: // types
+
+	typedef std::map<pthread_t, EventFile*> BlockingCallMap;
+
+	//! different abort signal contexts
+	enum class AbortType
+	{
+		//! abort just a single ongoing call in the associated thread
+		CALL,
+		//! abort all ongoing blocking calls to prepare for shutdown
+		SHUTDOWN
+	};
+
+	struct AbortMsg
+	{
+		AbortType type;
+		pthread_t thread;
+	};
+
 private: // data
 
 	//! \brief
@@ -172,9 +254,9 @@ private: // data
 	//! options for the current instance
 	xwmfs::Options &m_opts;
 
-	// this is the fd for the connection to the display
+	//! this is the fd for the connection to the display
 	int m_dis_fd = -1;
-	// wakeup pipe read and write end
+	//! wakeup pipe read and write end
 	int m_wakeup_pipe[2];
 
 	//! file descriptors to monitor for events
@@ -188,6 +270,15 @@ private: // data
 	DirEntry *m_win_dir = nullptr;
 	//! directory node containing global wm information
 	WinManagerDirEntry *m_wm_dir = nullptr;
+
+	//! abort pipe to signal abort requests for a specific thread
+	int m_abort_pipe[2];
+	//! a mapping of active blocking threads and their associated files
+	BlockingCallMap m_blocking_calls;
+	//! protection for m_blocking_calls
+	Mutex m_blocking_call_lock;
+	//! low level fuse data structure required to forward shutdown signals
+	struct fuse *m_fuse = nullptr;
 
 	//! the active umask of the current process
 	static mode_t m_umask;

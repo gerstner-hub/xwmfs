@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <vector>
 
 // C
 #include <stdlib.h> // EXIT_*
@@ -13,6 +14,11 @@
 #include <unistd.h> // pipe
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <signal.h>
+
+// FUSE
+#include <fuse.h>
 
 // xwmfs
 #include "main/Xwmfs.hxx"
@@ -22,6 +28,7 @@
 #include "main/WindowDirEntry.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
+#include "fuse/EventFile.hxx"
 #include "common/Helper.hxx"
 
 namespace xwmfs
@@ -146,6 +153,8 @@ void Xwmfs::exit()
 		// finally join the thread
 		m_ev_thread.join();
 	}
+
+	setupAbortSignals(false);
 }
 
 int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
@@ -229,6 +238,8 @@ int Xwmfs::init()
 			createFS();
 
 			m_ev_thread.start();
+
+			setupAbortSignals(true);
 		}
 		catch( const xwmfs::RootWin::QueryError &ex )
 		{
@@ -268,12 +279,18 @@ Xwmfs::Xwmfs() :
 
 	// this is a pipe that allows us to wake up the event handling thread
 	// in case of shutdown
-	const int pipe_res = ::pipe(m_wakeup_pipe);
-
-	if( pipe_res != 0 )
+	if( ::pipe2(m_wakeup_pipe, O_CLOEXEC) != 0 )
 	{
 		xwmfs_throw( SystemException("Unable to create wakeup pipe") );
 	}
+
+	// this is a pipe that allows to pass thread IDs to abort blocking
+	// calls for to the event handling thread
+	if( ::pipe2(m_abort_pipe, O_CLOEXEC) != 0 )
+	{
+		xwmfs_throw( SystemException("Unable to create abort pipe") );
+	}
+
 }
 
 Xwmfs::~Xwmfs()
@@ -284,6 +301,9 @@ Xwmfs::~Xwmfs()
 
 	::close( m_wakeup_pipe[0] );
 	::close( m_wakeup_pipe[1] );
+
+	::close( m_abort_pipe[0] );
+	::close( m_abort_pipe[1] );
 }
 
 void Xwmfs::threadEntry(const xwmfs::Thread &t)
@@ -298,6 +318,7 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 		FD_ZERO(&m_select_set);
 		FD_SET(m_dis_fd, &m_select_set);
 		FD_SET(m_wakeup_pipe[0], &m_select_set);
+		FD_SET(m_abort_pipe[0], &m_select_set);
 
 		// here we wait until one of the file descriptors is readable
 		const int sel_res = ::select(
@@ -307,7 +328,7 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 
 		if( sel_res == -1 )
 		{
-			::perror("unable to select X-connection fd");
+			::perror("unable to select on event fds");
 			return;
 		}
 
@@ -318,6 +339,11 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 				<< "Caught cancel request. Shutting down..."
 				<< std::endl;
 			return;
+		}
+		else if( FD_ISSET(m_abort_pipe[0], &m_select_set) )
+		{
+			readAbortPipe();
+			continue;
 		}
 
 		// now we should be able to read the next event without
@@ -463,6 +489,203 @@ void Xwmfs::handleCreateEvent(const XEvent &ev)
 	{
 		debug_log << "\terror adding window: " << ex << std::endl;
 	}
+}
+
+/*
+ * global sync signal handler for the fuse abort signal
+ */
+void fuseAbortSignal(int sig)
+{
+	auto &xwmfs = Xwmfs::getInstance();
+
+	xwmfs.abortBlockingCall(sig != SIGUSR1);
+}
+
+void Xwmfs::setupAbortSignals(const bool on_off)
+{
+	/*
+	 * we have two troubles with implementing blocking read calls in the
+	 * EventFile here:
+	 *
+	 * 1) when a blocking call is pending and the userspace process that
+	 * blocks on it wants to interrupt the call then this situation is
+	 * only made available to us via SIGUSR1.  This signal will be sent by
+	 * fuse in a thread directed manner i.e. we need to setup an
+	 * asynchronous signal handler and the thread this signal handlers
+	 * runs in is the one that needs to abort its blocking request.
+	 *
+	 * Our EventFile implementation uses a Condition variable for
+	 * efficiently waiting for data, and the Condition variable has no way
+	 * to unblock due to an asynchronously received signal (contrary to
+	 * what man 7 signal says about EINTR return if SA_RESTART is not
+	 * set).
+	 *
+	 * Thus we need to somehow keep track of which blocking calls are
+	 * going on in which objects by which threads. Then the asynchronous
+	 * signal handler forwards the interrupt information to a global event
+	 * thread which sorts the information out and unblocks the right
+	 * thread. Pretty fucked up but that's just the way it is
+	 *
+	 * https://sourceforge.net/p/fuse/mailman/message/28816288/
+	 *
+	 * 2) When a blocking call is pending and the fuse userspace process
+	 * gets a SIGINT or SIGTERM for shutdown then fuse will internally
+	 * deadlock.
+	 *
+	 * When FUSE gets the interrupt it tries to join all of its running
+	 * threads before calling the fuse_exit() function. So we have no
+	 * chance of knowing that we'd need to unblock the Condition wait.
+	 *
+	 * The way fuse thinks we should deal with this is using
+	 * pthread_cancel and cancelation points. but this doesn't fly with us
+	 * in c++ where we need to call destructors and friends.
+	 *
+	 * Therefore we're overwriting the SIGINT and SIGTERM signal handlers
+	 * so we get a chance to abort all ongoing blocking calls. The tricky
+	 * part is to forward the interrupt request to the internal fuse
+	 * routines, however.
+	 *
+	 * For this we need to know the struct fuse which is a low level data
+	 * structure normally not available when we use the high level API of
+	 * fuse. We need this structure for explicitly shutting down fuse when
+	 * we intercept a SIGINT or SIGTERM.
+	 *
+	 * Another alternative might have been to catch the SIGINT, unblock
+	 * our blocking threads and then reinstate the original SIGINT handler
+	 * for fuse to shut down the regular way.
+	 *
+	 * Both approaches leave room for a race condition when we've
+	 * unblocked our waiting threads but before fuse has a chance to
+	 * shutdown another blocking call comes into existence.  There's
+	 * nothing much we can do against this, except maybe polling for
+	 * blocked threads or so.
+	 *
+	 * Actually the fuse_get_context() is only valid for the duraction of
+	 * a request call, but I hope the fuse pointer is an exception, as
+	 * this shouldn't change for the lifetime of the fuse instance.
+	 */
+	if( on_off )
+	{
+		m_fuse = fuse_get_context()->fuse;
+	}
+
+	struct sigaction act;
+	std::memset( &act, 0, sizeof(struct sigaction));
+	act.sa_handler = on_off ? &fuseAbortSignal : SIG_DFL;
+
+	std::vector<int> sigs;
+
+	sigs.push_back(SIGUSR1);
+
+	if( on_off )
+	{
+		// those signals should never be reset to default, because
+		// then the process would end unconditionally on successive
+		// SIGINT/SIGTERM
+		sigs.push_back(SIGINT);
+		sigs.push_back(SIGTERM);
+	}
+
+	for( const auto sig: sigs )
+	{
+		if( sigaction(sig, &act, nullptr) != 0  )
+		{
+			xwmfs_throw(xwmfs::Exception("Failed to change abort sighandler"));
+		}
+	}
+}
+
+void Xwmfs::abortBlockingCall(const bool all)
+{
+	// send the ID of the thread that got the signal over the abort pipe
+	// so the event thread can deal with the situation without
+	// restrictions of async signal handling
+
+	AbortMsg msg;
+	msg.type = all ? AbortType::SHUTDOWN : AbortType::CALL;
+	msg.thread = pthread_self();
+
+	// writing to the pipe <= PIPE_BUF is atomic so we don't need to fear
+	// partial writes here. But the call may block if the pipe is full.
+	if( write(m_abort_pipe[1], &msg, sizeof(msg)) != sizeof(msg) )
+	{
+		std::cerr << "failed to write to abort pipe\n";
+	}
+}
+
+void Xwmfs::abortBlockingCall(pthread_t thread)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	MutexGuard g(m_blocking_call_lock);
+
+	auto it = m_blocking_calls.find(thread);
+
+	if( it == m_blocking_calls.end() )
+	{
+		logger.error() << "Failed to find abort entry for thread" << std::endl;
+		return;
+	}
+
+	logger.info() << "Abort request for some blocking call" << std::endl;
+
+	auto ef = it->second;
+
+	ef->abortBlockingCall(thread);
+}
+
+void Xwmfs::abortAllBlockingCalls()
+{
+	MutexGuard g(m_blocking_call_lock);
+
+	for( auto it: m_blocking_calls )
+	{
+		auto ef = it.second;
+
+		ef->abortBlockingCall(it.first);
+	}
+}
+
+void Xwmfs::readAbortPipe()
+{
+	AbortMsg msg;
+
+	// read <= PIPE_BUF bytes from the pipe is atomic,
+	// should never even block
+	if( read(m_abort_pipe[0], &msg, sizeof(msg)) != sizeof(msg) )
+	{
+		auto &logger = xwmfs::StdLogger::getInstance();
+		logger.error()
+			<< "Failed to read from abort pipe"
+			<< std::endl;
+		return;
+	}
+
+	if( msg.type == AbortType::CALL )
+	{
+		abortBlockingCall(msg.thread);
+	}
+	else
+	{
+		abortAllBlockingCalls();
+		// forward the shutdown request to fuse, this is a low level
+		// API we're actually not suppose to use, along with the
+		// illegally acquired m_fuse. Cross fingers ;)
+		fuse_exit(m_fuse);
+	}
+}
+
+void Xwmfs::registerBlockingCall(EventFile *f)
+{
+	MutexGuard g(m_blocking_call_lock);
+
+	m_blocking_calls.insert( std::make_pair( pthread_self(), f ) );
+}
+
+void Xwmfs::unregisterBlockingCall()
+{
+	MutexGuard g(m_blocking_call_lock);
+
+	m_blocking_calls.erase( pthread_self() );
 }
 
 } // end ns
