@@ -146,8 +146,20 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
 	else if((fi->flags & 3) != O_RDONLY && !entry->isWritable() )
 		return -EACCES;
 
+	auto ctx = entry->createOpenContext();
+
+	if( fi->flags & O_NONBLOCK )
+	{
+		ctx->setNonBlocking(true);
+	}
+
 	// store a pointer to an OpenContext in the file handle
-	fi->fh = (intptr_t)entry->createOpenContext();
+	fi->fh = (intptr_t)ctx;
+
+	if( entry->enableDirectIO() )
+	{
+		fi->direct_io = 1;
+	}
 
 	return 0;
 }

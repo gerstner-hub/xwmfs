@@ -187,6 +187,22 @@ public: // functions
 	 **/
 	virtual void destroyOpenContext(OpenContext *ctx);
 
+	/**
+	 * \brief
+	 * 	Returns whether this type of file system entry requires fuse
+	 * 	direct_io behaviour
+	 * \details
+	 * 	By default fuse does not implement direct_io behavour. This
+	 * 	means the kernel will cache file contents and make some
+	 * 	assumptions. userspace read/write calls will not be directly
+	 * 	mapped to fuse calls into the file system.
+	 *
+	 * 	In some cases this is not what we want, for example when we
+	 * 	don't know the file size in advance. See EventFile for an
+	 * 	example.
+	 **/
+	virtual bool enableDirectIO() const { return false; }
+
 protected: // functions
 
 	/**
