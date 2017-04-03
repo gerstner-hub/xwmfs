@@ -3,6 +3,7 @@
 #include "main/WinManagerFileEntry.hxx"
 #include "main/StdLogger.hxx"
 #include "x11/RootWin.hxx"
+#include "fuse/EventFile.hxx"
 
 namespace xwmfs
 {
@@ -12,6 +13,10 @@ WinManagerDirEntry::WinManagerDirEntry(RootWin &root_win) :
 	m_root_win(root_win)
 {
 	addEntries();
+
+	m_events = new EventFile(*this, "events");
+
+	addEntry(m_events);
 }
 
 WinManagerDirEntry::SpecVector WinManagerDirEntry::getSpecVector() const

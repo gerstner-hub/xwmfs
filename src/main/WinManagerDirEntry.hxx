@@ -9,6 +9,7 @@ namespace xwmfs
 {
 
 class RootWin;
+class EventFile;
 
 /**
  * \brief
@@ -51,6 +52,7 @@ protected: // functions
 protected: // data
 
 	RootWin &m_root_win;
+	EventFile *m_events = nullptr;
 };
 
 } // end ns
