@@ -39,6 +39,11 @@ WinManagerDirEntry::SpecVector WinManagerDirEntry::getSpecVector() const
 	} );
 }
 
+void WinManagerDirEntry::forwardEvent(const EntrySpec &changed_entry)
+{
+	m_events->addEvent(changed_entry.name);
+}
+
 void WinManagerDirEntry::addEntries()
 {
 	for( const auto &spec: m_specs )
@@ -113,6 +118,8 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 	}
 
 	entry->setModifyTime(m_modify_time);
+
+	forwardEvent(update_spec);
 }
 
 void WinManagerDirEntry::updateNumberOfDesktops(FileEntry &entry)

@@ -42,6 +42,8 @@ protected: // functions
 
 	SpecVector getSpecVector() const;
 
+	void forwardEvent(const EntrySpec &changed_entry);
+
 	void updateNumberOfDesktops(FileEntry &entry);
 	void updateActiveDesktop(FileEntry &entry);
 	void updateActiveWindow(FileEntry &entry);
