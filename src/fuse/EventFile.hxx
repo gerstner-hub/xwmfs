@@ -2,7 +2,7 @@
 #define XWMFS_EVENT_FILE_HXX
 
 // C++
-#include <vector>
+#include <deque>
 #include <set>
 
 // xwmfs
@@ -82,7 +82,7 @@ public: // types
 		Event(const std::string &s, size_t i) : text(s), id(i) {}
 	};
 
-	typedef std::vector<Event> EventQueue;
+	typedef std::deque<Event> EventQueue;
 	typedef std::set<pthread_t> AbortSet;
 
 protected: // functions
@@ -109,7 +109,7 @@ protected: // data
 	const size_t m_max_backlog;
 	Condition m_cond;
 	EventQueue m_event_queue;
-	size_t m_next_id = 1;
+	size_t m_next_id = 0;
 	//! holds threads for which blocking calls shall be aborted
 	AbortSet m_abort_set;
 };

@@ -4,25 +4,30 @@
 #include "fuse/DirEntry.hxx"
 #include "main/Xwmfs.hxx"
 
+#include <iostream>
+
 namespace xwmfs
 {
 
-const size_t INVAL_ID = 0;
+const size_t INVAL_ID = SIZE_MAX;
 
 struct EventOpenContext :
 	public OpenContext
 {
-	EventOpenContext(Entry *entry) :
-		OpenContext(entry)
+	EventOpenContext(Entry *entry, const size_t first_id) :
+		OpenContext(entry),
+		cur_id(first_id)
 	{}
 
+	EventOpenContext(const EventOpenContext&) = delete;
+
 	/*
-	 * instead of storing a shared ptr and an offset to the event reduce
+	 * instead of storing a shared ptr and an offset to the event, reduce
 	 * our functionality to providing complete events only. Thus we can
-	 * switch to a std::vector of fixed reserved size.
+	 * switch to a std::deque of fixed maximum size.
 	 *
 	 * only question is about the kind of errno signaling. There's no
-	 * error to say "you buffer is too small". Because everything is
+	 * error to say "your buffer is too small". Because everything is
 	 * character/byte based. But there are cases like readlink(2) which
 	 * silently truncates in such cases. That's what we do.
 	 */
@@ -40,7 +45,6 @@ EventFile::EventFile(
 	m_max_backlog(max_backlog),
 	m_cond(parent.getLock())
 {
-	m_event_queue.reserve(m_max_backlog);
 }
 
 bool EventFile::markDeleted()
@@ -62,21 +66,27 @@ void EventFile::addEvent(const std::string &text)
 {
 	{
 		MutexGuard g(m_parent->getLock());
+
+		// reflect the most recent event time as modification time
+		this->setModifyTime(Xwmfs::getInstance().getCurrentTime());
+
 		if( ! m_refcount )
 		{
 			// no readers, so nothing to do
 			return;
 		}
 
+		if( m_event_queue.size() == m_max_backlog )
+		{
+			m_event_queue.pop_front();
+		}
+
 		m_event_queue.push_back( Event(text, m_next_id++) );
 
 		if( m_next_id == INVAL_ID )
 		{
-			m_next_id++;
+			m_next_id = 0;
 		}
-
-		// reflect the most recent event time as modification time
-		this->setModifyTime(Xwmfs::getInstance().getCurrentTime());
 	}
 
 	// wake up all readers so they can read the new event, if required
@@ -86,17 +96,25 @@ void EventFile::addEvent(const std::string &text)
 const EventFile::Event* EventFile::nextEvent(const size_t prev_id)
 {
 	if( m_event_queue.empty() )
+	{
 		return nullptr;
+	}
 
 	const auto num_events = m_event_queue.size();
 	const auto oldest_id = m_event_queue[0].id;
 	const auto newest_id = m_event_queue[num_events-1].id;
 
-	if( newest_id == prev_id )
+	if( prev_id == INVAL_ID )
+	{
+		// no previous event available, return the oldest one then
+		return &m_event_queue[0];
+	}
+	else if( newest_id == prev_id )
+	{
 		// no new event available
 		return nullptr;
-
-	if( oldest_id > newest_id )
+	}
+	else if( oldest_id > newest_id )
 	{
 		// id wraparound situation, fallback to linear search to find
 		// the right current event
@@ -126,7 +144,7 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
 	// we ignore the read offset, because we return records depending on
 	// the state of the open context here
 	(void)offset;
-	auto evt_ctx = *(reinterpret_cast<EventOpenContext*>(ctx));
+	auto &evt_ctx = *(reinterpret_cast<EventOpenContext*>(ctx));
 	const Event *event = nullptr;
 
 	auto &xwmfs = xwmfs::Xwmfs::getInstance();
@@ -211,7 +229,11 @@ int EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offse
 
 OpenContext* EventFile::createOpenContext() 
 {
-	auto ret = new EventOpenContext(this);
+	auto ret = new EventOpenContext(
+		this,
+		// make sure no outdated events are presented to new readers
+		m_event_queue.empty() ? INVAL_ID : m_event_queue.back().id
+	);
 
 	this->ref();
 
