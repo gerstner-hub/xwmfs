@@ -105,6 +105,11 @@ int main(int argc, char *argv[])
 			print_xwmfs_help = parseXWMFSOptions(
 				argc, argv, fuse_args
 			);
+
+			// make interruptible the default, this seems to be
+			// the only way. Otherwise the abort logic for
+			// blocking calls is not enabled
+			fuse_opt_add_arg(&fuse_args, "-ointr");
 		}
 		catch( const xwmfs::Exception &e )
 		{

@@ -189,7 +189,11 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
 		 */
 
 		fs_lock.unlock();
-		xwmfs.registerBlockingCall(this);
+		if( ! xwmfs.registerBlockingCall(this) )
+		{
+			fs_lock.readlock();
+			return -EINTR;
+		}
 		m_cond.wait();
 		xwmfs.unregisterBlockingCall();
 		fs_lock.readlock();

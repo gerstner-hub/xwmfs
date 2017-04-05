@@ -102,7 +102,7 @@ public: // functions
 	 * 	In any case the caller must call unregisterBlockingCall()
 	 * 	after the blocking call is over, whether aborted or not.
 	 **/
-	void registerBlockingCall(EventFile *f);
+	bool registerBlockingCall(EventFile *f);
 
 	/**
 	 * \brief
@@ -220,6 +220,7 @@ protected: // functions
 private: // types
 
 	typedef std::map<pthread_t, EventFile*> BlockingCallMap;
+	typedef std::map<int, struct sigaction> SignalHandlerMap;
 
 	//! different abort signal contexts
 	enum class AbortType
@@ -277,8 +278,10 @@ private: // data
 	BlockingCallMap m_blocking_calls;
 	//! protection for m_blocking_calls
 	Mutex m_blocking_call_lock;
-	//! low level fuse data structure required to forward shutdown signals
-	struct fuse *m_fuse = nullptr;
+	//! whether we're in a shutdown condition
+	bool m_shutdown = false;
+	//! used for storing the original fuse signal handlers
+	SignalHandlerMap m_signal_handlers;
 
 	//! the active umask of the current process
 	static mode_t m_umask;

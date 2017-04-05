@@ -153,8 +153,6 @@ void Xwmfs::exit()
 		// finally join the thread
 		m_ev_thread.join();
 	}
-
-	setupAbortSignals(false);
 }
 
 int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
@@ -498,7 +496,9 @@ void fuseAbortSignal(int sig)
 {
 	auto &xwmfs = Xwmfs::getInstance();
 
-	xwmfs.abortBlockingCall(sig != SIGUSR1);
+	const bool shutdown = sig != SIGUSR1;
+
+	xwmfs.abortBlockingCall(shutdown);
 }
 
 void Xwmfs::setupAbortSignals(const bool on_off)
@@ -545,52 +545,52 @@ void Xwmfs::setupAbortSignals(const bool on_off)
 	 * part is to forward the interrupt request to the internal fuse
 	 * routines, however.
 	 *
-	 * For this we need to know the struct fuse which is a low level data
-	 * structure normally not available when we use the high level API of
-	 * fuse. We need this structure for explicitly shutting down fuse when
-	 * we intercept a SIGINT or SIGTERM.
+	 * a) For this we need to know the struct fuse which is a low level
+	 * data structure normally not available when we use the high level
+	 * API of fuse. We need this structure for explicitly shutting down
+	 * fuse when we intercept a SIGINT or SIGTERM.
 	 *
-	 * Another alternative might have been to catch the SIGINT, unblock
-	 * our blocking threads and then reinstate the original SIGINT handler
-	 * for fuse to shut down the regular way.
+	 * b) Another alternative is to catch the SIGINT, unblock our blocking
+	 * threads and then reinstate the original SIGINT handler for fuse to
+	 * shut down the regular way.
 	 *
 	 * Both approaches leave room for a race condition when we've
 	 * unblocked our waiting threads but before fuse has a chance to
 	 * shutdown another blocking call comes into existence.  There's
 	 * nothing much we can do against this, except maybe polling for
-	 * blocked threads or so.
+	 * blocked threads or so. Or a shutdown flag which we now have in
+	 * m_shutdown.
 	 *
 	 * Actually the fuse_get_context() is only valid for the duraction of
 	 * a request call, but I hope the fuse pointer is an exception, as
 	 * this shouldn't change for the lifetime of the fuse instance.
+	 *
+	 * After some testing I'm going for solution b). This works now.
+	 * Solution a) had strange problems when the fuse main thread didn't
+	 * react to the fuse_exit() call on the first attempt. It seems the
+	 * sem_wait() the fuse main thread does did not always return EINTR in
+	 * these situations. All pretty f***ed up.
 	 */
-	if( on_off )
-	{
-		m_fuse = fuse_get_context()->fuse;
-	}
-
-	struct sigaction act;
-	std::memset( &act, 0, sizeof(struct sigaction));
-	act.sa_handler = on_off ? &fuseAbortSignal : SIG_DFL;
+	struct sigaction act, orig;
+	std::memset( &act, 0, sizeof(struct sigaction) );
+	act.sa_handler = &fuseAbortSignal;
 
 	std::vector<int> sigs;
 
 	sigs.push_back(SIGUSR1);
-
-	if( on_off )
-	{
-		// those signals should never be reset to default, because
-		// then the process would end unconditionally on successive
-		// SIGINT/SIGTERM
-		sigs.push_back(SIGINT);
-		sigs.push_back(SIGTERM);
-	}
+	sigs.push_back(SIGINT);
+	sigs.push_back(SIGTERM);
 
 	for( const auto sig: sigs )
 	{
-		if( sigaction(sig, &act, nullptr) != 0  )
+		if( sigaction(sig, on_off ? &act : &m_signal_handlers[sig], &orig) != 0  )
 		{
 			xwmfs_throw(xwmfs::Exception("Failed to change abort sighandler"));
+		}
+
+		if( on_off )
+		{
+			m_signal_handlers[sig] = orig;
 		}
 	}
 }
@@ -643,6 +643,15 @@ void Xwmfs::abortAllBlockingCalls()
 
 		ef->abortBlockingCall(it.first);
 	}
+
+	/*
+	 * this signaling flag is necessary to avoid race conditions: all
+	 * blocking calls may return but userspace programs often react to
+	 * EINTR by retrying the blocking calls, which would cause again a
+	 * deadlock. This flag helps us to continously return EINTR to
+	 * successive calls.
+	 */
+	m_shutdown = true;
 }
 
 void Xwmfs::readAbortPipe()
@@ -667,18 +676,24 @@ void Xwmfs::readAbortPipe()
 	else
 	{
 		abortAllBlockingCalls();
-		// forward the shutdown request to fuse, this is a low level
-		// API we're actually not suppose to use, along with the
-		// illegally acquired m_fuse. Cross fingers ;)
-		fuse_exit(m_fuse);
+		/* reinstate original signal handlers */
+		setupAbortSignals(false);
+		kill( getpid(), SIGINT );
 	}
 }
 
-void Xwmfs::registerBlockingCall(EventFile *f)
+bool Xwmfs::registerBlockingCall(EventFile *f)
 {
 	MutexGuard g(m_blocking_call_lock);
 
+	if( m_shutdown )
+	{
+		return false;
+	}
+
 	m_blocking_calls.insert( std::make_pair( pthread_self(), f ) );
+
+	return true;
 }
 
 void Xwmfs::unregisterBlockingCall()
