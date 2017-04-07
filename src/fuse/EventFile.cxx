@@ -53,7 +53,7 @@ bool EventFile::markDeleted()
 
 	{
 		MutexGuard g(m_parent->getLock());
-		ret = Entry::unref();
+		ret = Entry::markDeleted();
 	}
 
 	// make sure any blocked readers notice we're gone
@@ -139,28 +139,22 @@ const EventFile::Event* EventFile::nextEvent(const size_t prev_id)
 	return &(m_event_queue[index]);
 }
 
-int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
+int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size)
 {
-	// we ignore the read offset, because we return records depending on
-	// the state of the open context here
-	(void)offset;
-	auto &evt_ctx = *(reinterpret_cast<EventOpenContext*>(ctx));
-	const Event *event = nullptr;
-
 	auto &xwmfs = xwmfs::Xwmfs::getInstance();
-	auto &fs_lock = xwmfs.getFS();
 	const auto self = pthread_self();
+	const Event *event = nullptr;
 
 	MutexGuard g(m_parent->getLock());
 
-	while( (event = nextEvent(evt_ctx.cur_id)) == nullptr )
+	while( (event = nextEvent(ctx.cur_id)) == nullptr )
 	{
 		if( this->isDeleted() )
 		{
 			// file was closed in the meantime
 			return -EBADF;
 		}
-		else if( evt_ctx.isNonBlocking() )
+		else if( ctx.isNonBlocking() )
 		{
 			// don't block if there's no event immediately
 			// available
@@ -172,31 +166,12 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
 			return -EINTR;
 		}
 
-		/*
-		 * This is a pretty stupid situation here. we need to release
-		 * the global filesystem read lock here to avoid deadlocks.
-		 * For example if the caller wants to close its file
-		 * descriptor while being blocked here, or practically any
-		 * other operation.
-		 *
-		 * Now that we have a mutex per directory we might just use
-		 * that one instead or the global lock to protect read
-		 * operations from write operations or events.
-		 *
-		 * the read lock is actually not required at all for
-		 * EventFile for reading, but in general is required for other
-		 * entry types and is taken in xwmfs_read early on.
-		 */
-
-		fs_lock.unlock();
 		if( ! xwmfs.registerBlockingCall(this) )
 		{
-			fs_lock.readlock();
 			return -EINTR;
 		}
 		m_cond.wait();
 		xwmfs.unregisterBlockingCall();
-		fs_lock.readlock();
 	}
 
 	const auto copy_size = std::min( (event->text).size(), size - 1);
@@ -204,9 +179,40 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
 	// ship a newline after each event
 	buf[copy_size] = '\n';
 
-	evt_ctx.cur_id = event->id;
+	ctx.cur_id = event->id;
 
 	return copy_size + 1;
+}
+
+int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
+{
+	// we ignore the read offset, because we return records depending on
+	// the state of the open context here
+	(void)offset;
+	auto &evt_ctx = *(reinterpret_cast<EventOpenContext*>(ctx));
+
+	auto &fs_lock = xwmfs::Xwmfs::getInstance().getFS();
+
+	/*
+	 * This is a pretty stupid situation here. we need to release
+	 * the global filesystem read lock here to avoid deadlocks.
+	 * For example if the caller wants to close its file
+	 * descriptor while being blocked here, or practically any
+	 * other operation.
+	 *
+	 * Now that we have a mutex per directory we might just use
+	 * that one instead or the global lock to protect read
+	 * operations from write operations or events.
+	 *
+	 * the read lock is actually not required at all for
+	 * EventFile for reading, but in general is required for other
+	 * entry types and is taken in xwmfs_read early on.
+	 */
+
+	fs_lock.unlock();
+	const int ret = readEvent(evt_ctx, buf, size);
+	fs_lock.readlock();
+	return ret;
 }
 
 void EventFile::abortBlockingCall(pthread_t thread)

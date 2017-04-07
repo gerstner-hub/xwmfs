@@ -104,6 +104,8 @@ protected: // functions
 	 **/
 	const Event* nextEvent(size_t prev_id);
 
+	int readEvent(EventOpenContext &ctx, char *buf, size_t size);
+
 protected: // data
 
 	const size_t m_max_backlog;
