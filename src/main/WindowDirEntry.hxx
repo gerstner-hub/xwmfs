@@ -9,6 +9,7 @@
 namespace xwmfs
 {
 
+class EventFile;
 
 /**
  * \brief
@@ -36,11 +37,15 @@ protected: // functions
 	//! adds all directory file entries for the represented window
 	void addEntries();
 
+	bool markDeleted() override;
+
 	SpecVector getSpecVector() const;
 
 	void addSpecEntry(
 		const UpdateableDir<WindowDirEntry>::EntrySpec &spec
 	);
+
+	void forwardEvent(const EntrySpec &changed_entry);
 
 	std::string getCommandInfo();
 
@@ -66,6 +71,9 @@ protected: // data
 
 	//! the window we're representing with this directory
 	XWindow m_win;
+	//! an event file from which programs can efficiently read individual
+	//! window events
+	EventFile *m_events = nullptr;
 };
 
 } // end ns

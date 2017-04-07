@@ -99,6 +99,9 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   read then a list of valid commands is returned.
  |       |                   Currently "destroy" or "delete" to force or ask
  |       |                   the window to be closed.
+ |       |--------> events:  Produces one line for each event related to the
+ |       |                   window's directory. Each line will consist of the
+ |       |                   basename of the file that changed.
  |
 -wm: A directory containing global state information about the
  |   window manager
@@ -117,6 +120,9 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |                             desktop icons and background are shown
  |                             instead
  |--------> pid: Contains the PID of the running window manager process
+ |--------> events: Produces one line for each event related to the wm
+ |		    directory. Each line will consist of the basename of the
+ |		    file that changed
 
 Should the window manager not support some of the properties like
 "show_desktop_mode" then a value of -1 is contained in the file if the file

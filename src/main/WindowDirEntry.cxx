@@ -5,6 +5,7 @@
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
 #include "x11/XAtom.hxx"
+#include "fuse/EventFile.hxx"
 
 namespace xwmfs
 {
@@ -14,6 +15,10 @@ WindowDirEntry::WindowDirEntry(const XWindow &win) :
 	m_win(win)
 {
 	addEntries();
+
+	m_events = new EventFile(*this, "events");
+
+	addEntry(m_events);
 }
 
 void WindowDirEntry::addEntries()
@@ -22,6 +27,13 @@ void WindowDirEntry::addEntries()
 	{
 		addSpecEntry(spec);
 	}
+}
+
+bool WindowDirEntry::markDeleted()
+{
+	m_events->addEvent("destroyed");
+
+	return UpdateableDir::markDeleted();
 }
 
 WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
@@ -130,6 +142,13 @@ void WindowDirEntry::update(Atom changed_atom)
 	}
 
 	entry->setModifyTime(m_modify_time);
+
+	forwardEvent(spec);
+}
+
+void WindowDirEntry::forwardEvent(const EntrySpec &changed_entry)
+{
+	m_events->addEvent(changed_entry.name);
 }
 
 void WindowDirEntry::updateWindowName(FileEntry &entry)
