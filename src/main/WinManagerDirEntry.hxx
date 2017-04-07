@@ -54,6 +54,8 @@ protected: // functions
 protected: // data
 
 	RootWin &m_root_win;
+	//! an event file from where programs can efficiently read individual
+	//! window manager events
 	EventFile *m_events = nullptr;
 };
 
