@@ -234,7 +234,7 @@ private: // types
 	struct AbortMsg
 	{
 		AbortType type;
-		pthread_t thread;
+		pthread_t thread = 0;
 	};
 
 private: // data
