@@ -5,20 +5,32 @@
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
 #include "x11/XAtom.hxx"
+#include "x11/XWindowAttrs.hxx"
 #include "fuse/EventFile.hxx"
 
 namespace xwmfs
 {
 
-WindowDirEntry::WindowDirEntry(const XWindow &win) :
+WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	UpdateableDir(win.idStr(), getSpecVector()),
 	m_win(win)
 {
 	addEntries();
 
 	m_events = new EventFile(*this, "events");
-
 	addEntry(m_events);
+
+	m_mapped = new  WindowFileEntry("mapped", m_win);
+	addEntry(m_mapped);
+
+	if( query_attrs )
+	{
+		queryAttrs();
+	}
+	else
+	{
+		setDefaultAttrs();
+	}
 }
 
 void WindowDirEntry::addEntries()
@@ -146,6 +158,14 @@ void WindowDirEntry::update(Atom changed_atom)
 	forwardEvent(spec);
 }
 
+void WindowDirEntry::newMappedState(const bool mapped)
+{
+	m_mapped->str("");
+	(*m_mapped) << (mapped ? "1" : "0") << "\n";
+
+	m_events->addEvent("mapped");
+}
+
 void WindowDirEntry::forwardEvent(const EntrySpec &changed_entry)
 {
 	m_events->addEvent(changed_entry.name);
@@ -179,6 +199,29 @@ void WindowDirEntry::updateCommandControl(FileEntry &entry)
 void WindowDirEntry::updateClientMachine(FileEntry &entry)
 {
 	entry << m_win.getClientMachine();
+}
+
+void WindowDirEntry::queryAttrs()
+{
+	XWindowAttrs attrs;
+	try
+	{
+		m_win.getAttrs(attrs);
+
+		newMappedState(attrs.isMapped());
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().error()
+			<< "Error getting window attrs for " << m_win << ": " << ex.what()
+			<< std::endl;
+		setDefaultAttrs();
+	}
+}
+
+void WindowDirEntry::setDefaultAttrs()
+{
+	(*m_mapped) << "0\n";
 }
 
 } // end ns

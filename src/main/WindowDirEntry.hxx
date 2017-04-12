@@ -10,6 +10,7 @@ namespace xwmfs
 {
 
 class EventFile;
+class WindowFileEntry;
 
 /**
  * \brief
@@ -24,13 +25,26 @@ class WindowDirEntry :
 {
 public: // functions
 
-	explicit WindowDirEntry(const XWindow &win);
+	/**
+	 * \brief
+	 * 	Create a new window dir entry
+	 * \param[in] query_attrs
+	 * 	If set then during construction some window parameters will be
+	 * 	polled from the window, instead of waiting for update events
+	 **/
+	explicit WindowDirEntry(
+		const XWindow &win,
+		const bool query_attrs = false
+	);
 
 	/**
 	 * \brief
 	 * 	Update window data denoted by \c changed_atom
 	 **/
 	void update(Atom changed_atom);
+
+	//! the window has been (un)mapped
+	void newMappedState(const bool mapped);
 
 protected: // functions
 
@@ -67,6 +81,12 @@ protected: // functions
 	//! Adds an entry for the client machine a window is running on
 	void updateClientMachine(FileEntry &entry);
 
+	//! Actively query some attributes
+	void queryAttrs();
+
+	//! Set some default attributes
+	void setDefaultAttrs();
+
 protected: // data
 
 	//! the window we're representing with this directory
@@ -74,6 +94,8 @@ protected: // data
 	//! an event file from which programs can efficiently read individual
 	//! window events
 	EventFile *m_events = nullptr;
+	//! contains the mapped state of this window
+	WindowFileEntry *m_mapped = nullptr;
 };
 
 } // end ns
