@@ -1,7 +1,7 @@
 INTRODUCTION
 ============
 
-This is xwmfs (X window manager file system), a userspace filesystem based on
+This is xwmfs (X window manager file system), a userspace file system based on
 fuse that allows interaction with an EWMH compliant X11 window manager
 via files.
 
@@ -15,7 +15,7 @@ Some of its features are:
   in the file system
 - some X operations are accessible via control files in the file system
 
-Thef file system can be used for easily implementing scripts that operate on
+The file system can be used for easily implementing scripts that operate on
 the window manager and windows (for example arranging them in a specific
 order, moving them around etc).
 
