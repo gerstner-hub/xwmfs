@@ -1,5 +1,5 @@
-#ifndef XWMFS_WINDOW
-#define XWMFS_WINDOW
+#ifndef XWMFS_WINDOW_HXX
+#define XWMFS_WINDOW_HXX
 
 #include <iosfwd>
 
@@ -19,6 +19,8 @@
 
 namespace xwmfs
 {
+
+class XWindowAttrs;
 
 /**
  * \brief
@@ -316,6 +318,14 @@ public: // functions
 		m_send_event_mask = other.m_send_event_mask;
 		return *this;
 	}
+
+	/**
+	 * \brief
+	 * 	Retrieve the attributes for this window
+	 * \details
+	 * 	If this fails then an X11Exception is thrown
+	 **/
+	void getAttrs(XWindowAttrs &attrs);
 
 protected: // functions
 

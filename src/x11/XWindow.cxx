@@ -4,6 +4,7 @@
 
 // own header
 #include "x11/XWindow.hxx"
+#include "x11/XWindowAttrs.hxx"
 #include "x11/XAtom.hxx"
 
 #include "main/Xwmfs.hxx"
@@ -336,6 +337,18 @@ void XWindow::setProperty(const Atom name_atom, const Property<PROPTYPE> &prop)
 	// requests to the server are not dispatched immediatly thus we need
 	// to flush once
 	display.flush();
+}
+
+void XWindow::getAttrs(XWindowAttrs &attrs)
+{
+	auto &display = XDisplay::getInstance();
+	const auto status = XGetWindowAttributes(display, m_win, &attrs);
+
+	// stupid error codes again. A non-zero status on success?
+	if( status == 0 )
+	{
+		xwmfs_throw(X11Exception(display, status));
+	}
 }
 
 /*
