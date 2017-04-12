@@ -152,7 +152,7 @@ int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size)
 		if( this->isDeleted() )
 		{
 			// file was closed in the meantime
-			return -EBADF;
+			return -ENXIO;
 		}
 		else if( ctx.isNonBlocking() )
 		{

@@ -72,6 +72,14 @@ public:
 	 **/
 	void abortBlockingCall(pthread_t thread);
 
+	/**
+	 * \brief
+	 * 	Always allow operations on event files, even if closed
+	 * \details
+	 * 	Otherwise the final destroy event might be lost to readers
+	 **/
+	int isOperationAllowed() const override { return 0; }
+
 public: // types
 
 	struct Event

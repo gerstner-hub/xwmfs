@@ -160,7 +160,7 @@ public: // functions
 	 * 	zero if it is allowed, otherwise a FUSE error code to return
 	 * 	for any file operations
 	 **/
-	int isOperationAllowed() const;
+	virtual int isOperationAllowed() const;
 
 	/**
 	 * \brief
