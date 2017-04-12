@@ -6,6 +6,7 @@
 
 // C++
 #include <map>
+#include <set>
 
 // Xwmfs
 #include "common/Thread.hxx"
@@ -18,6 +19,7 @@ namespace xwmfs
 {
 
 class WinManagerDirEntry;
+class WindowDirEntry;
 class EventFile;
 
 /**
@@ -188,14 +190,16 @@ protected: // functions
 	/**
 	 * \brief
 	 * 	Handles a window CreateNotify event
+	 * \return
+	 * 	Whether the window has been added to the file system or not
 	 **/
-	void handleCreateEvent(const XEvent &ev);
+	bool handleCreateEvent(const XEvent &ev);
 
 	//! called from m_ev_thread if a window is to be removed from the FS
 	void removeWindow(const XWindow &win);
 
 	//! called from m_ev_thread if a window is to be added to the FS
-	void addWindow(const XWindow &win);
+	void addWindow(const XWindow &win, const bool initial = false);
 
 	/**
 	 * \brief
@@ -210,12 +214,37 @@ protected: // functions
 
 	/**
 	 * \brief
+	 * 	called from m_ev_thread if the mapped state of a window is to
+	 * 	be updated
+	 * \param[in] win
+	 * 	The window that was (un)mapped
+	 * \param[in] is_mapped
+	 * 	Whether the window is no mapped or unmapped
+	 **/
+	void updateMappedState(const XWindow &win, const bool is_mapped);
+
+	/**
+	 * \brief
+	 * 	Returns a pointer to the file system entry corresponding to \c
+	 * 	win
+	 * \returns
+	 * 	The matching pointer or nullptr if not found
+	 **/
+	WindowDirEntry* getWindowDir(const XWindow &win);
+
+	/**
+	 * \brief
 	 * 	called from m_ev_thread if the root window in the file system
 	 * 	is to be updated
 	 * \param[in] changed_atom
 	 * 	The atom at the root window that changed
 	 **/
 	void updateRootWindow(Atom changed_atom);
+
+	bool isIgnored(const XWindow &win) const
+	{
+		return m_ignored_windows.find(win.id()) != m_ignored_windows.end();
+	}
 
 private: // types
 
@@ -236,6 +265,8 @@ private: // types
 		AbortType type;
 		pthread_t thread = 0;
 	};
+
+	typedef std::set<Window> WindowSet;
 
 private: // data
 
@@ -285,6 +316,9 @@ private: // data
 
 	//! the active umask of the current process
 	static mode_t m_umask;
+
+	//! currently existing windows that are ignored by us
+	WindowSet m_ignored_windows;
 
 private: // functions
 

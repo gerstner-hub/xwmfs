@@ -64,7 +64,7 @@ void Xwmfs::updateTime()
  *	Upon create event for a window this function is called for the
  *	according window
  */
-void Xwmfs::addWindow(const XWindow &win)
+void Xwmfs::addWindow(const XWindow &win, const bool initial)
 {
 	// get the current time for timestamping the new file
 	updateTime();
@@ -74,11 +74,13 @@ void Xwmfs::addWindow(const XWindow &win)
 	win.selectDestroyEvent();
 	win.selectPropertyNotifyEvent();
 
+	auto win_dir = new xwmfs::WindowDirEntry(win, initial ? true : false);
+
 	// the window directories are named after their IDs
-	m_win_dir->addEntry(new xwmfs::WindowDirEntry(win), false);
+	m_win_dir->addEntry(win_dir, false);
 
 	auto &logger = xwmfs::StdLogger::getInstance().debug();
-	logger << "New window " << win.id() << std::endl;
+	logger << "Added window " << win.id() << std::endl;
 }
 
 void Xwmfs::updateRootWindow(Atom changed_atom)
@@ -88,18 +90,25 @@ void Xwmfs::updateRootWindow(Atom changed_atom)
 	m_wm_dir->update(changed_atom);
 }
 
-void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
+WindowDirEntry* Xwmfs::getWindowDir(const XWindow &win)
 {
-	FileSysWriteGuard write_guard(m_fs_root);
-
 	std::stringstream id;
 	id << win.id();
 
 	// TODO: this is an unsafe cast, because we have no type information
 	// for WindowDirEntry ... :-/
-	WindowDirEntry* win_dir = reinterpret_cast<WindowDirEntry*>(
+	auto win_dir = reinterpret_cast<WindowDirEntry*>(
 		m_win_dir->getDirEntry(id.str().c_str())
 	);
+
+	return win_dir;
+}
+
+void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
+{
+	FileSysWriteGuard write_guard(m_fs_root);
+
+	auto win_dir = getWindowDir(win);
 
 	if( !win_dir )
 	{
@@ -109,6 +118,29 @@ void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
 	}
 
 	win_dir->update(changed_atom);
+}
+
+void Xwmfs::updateMappedState(const XWindow &win, const bool is_mapped)
+{
+	FileSysWriteGuard write_guard(m_fs_root);
+
+	auto win_dir = getWindowDir(win);
+
+	if( win_dir )
+	{
+		xwmfs::StdLogger::getInstance().info()
+			<< "Mapped state for window " << win
+			<< " changed to " << is_mapped << std::endl;
+	}
+	else
+	{
+		xwmfs::StdLogger::getInstance().warn()
+			<< "Mapping state update for unknown window "
+			<< win << std::endl;
+		return;
+	}
+
+	win_dir->newMappedState(is_mapped);
 }
 
 void Xwmfs::createFS()
@@ -132,7 +164,7 @@ void Xwmfs::createFS()
 
 	for( const auto &win: windows )
 	{
-		addWindow( win );
+		addWindow( win, true );
 	}
 }
 
@@ -365,7 +397,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 {
 	auto &logger = xwmfs::StdLogger::getInstance();
 #if 0
-	logger.debug() << "Received event of type "
+	logger.debug() << "Received event #" << ev.xany.serial << " of type "
 		<< std::dec << ev.type << std::endl;
 #endif
 
@@ -378,13 +410,24 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	// and such
 	case CreateNotify:
 	{
-		handleCreateEvent(ev);
+		if( ! handleCreateEvent(ev) )
+		{
+			m_ignored_windows.insert( ev.xcreatewindow.window );
+		}
 		break;
 	}
 	// a window was destroyed
 	case DestroyNotify:
 	{
 		XWindow w(ev.xdestroywindow.window);
+		auto it = m_ignored_windows.find(w.id());
+		if( it != m_ignored_windows.end() )
+		{
+			// don't need to process a window we've ignored
+			// before
+			m_ignored_windows.erase(it);
+			break;
+		}
 		logger.debug() << "Window " << w << " was destroyed!" << std::endl;
 		this->removeWindow(w);
 		break;
@@ -414,6 +457,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			break;
 		}
 		case PropertyDelete:
+			// TODO: remove file system entry?
 		default:
 			break;
 		}
@@ -432,6 +476,13 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	case UnmapNotify:
 	case MapNotify:
 	{
+		XWindow w(ev.xmap.window);
+		if( isIgnored(w) )
+		{
+			break;
+		}
+		updateTime();
+		this->updateMappedState( w, ev.type == MapNotify );
 		break;
 	}
 	case GravityNotify:
@@ -450,21 +501,26 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	}
 }
 
-void Xwmfs::handleCreateEvent(const XEvent &ev)
+bool Xwmfs::handleCreateEvent(const XEvent &ev)
 {
+	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
+
 	// Xlib manual says one should generally ignore these
 	// events as they come from popups
 	if( ev.xcreatewindow.override_redirect )
-		return;
+	{
+		return false;
+	}
 	// this is grand-kid or something. we could add these
 	// in a hierarchical manner as sub-windows but for now
 	// we ignore them
 	else if( ev.xcreatewindow.parent != m_root_win.id() )
-		return;
+	{
+		debug_log << "Ignoring grand-child-window" << ev.xcreatewindow.window << std::endl;
+		return false;
+	}
 
 	XWindow w(ev.xcreatewindow.window);
-
-	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 
 	debug_log << "Window " << w << " was created!" << std::endl;
 	debug_log << "\tParent: " << XWindow(ev.xcreatewindow.parent) << std::endl;
@@ -487,6 +543,9 @@ void Xwmfs::handleCreateEvent(const XEvent &ev)
 	{
 		debug_log << "\terror adding window: " << ex << std::endl;
 	}
+
+
+	return true;
 }
 
 /*
