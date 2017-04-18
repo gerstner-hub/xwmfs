@@ -2,13 +2,100 @@ from __future__ import print_function
 import os, sys
 import subprocess
 import atexit
+import time
+import argparse
 
-# tests whether changing a window name is reflected in the file system
+class File(object):
+
+	def __init__(self, path):
+
+		self.m_path = path
+
+	def exists(self):
+
+		return os.path.exists(self.m_path)
+
+	def read(self):
+		with open(self.m_path, 'r') as fd:
+			return fd.read().strip()
+
+	def write(self, what):
+
+		with open(self.m_path, 'w') as fd:
+			fd.write(what)
+
+	def __str__(self):
+		return self.m_path
+
+class DirBase(object):
+
+	def __init__(self, path):
+
+		self.m_path = path
+	
+	def getFile(self, which):
+
+		return File(self.getPath(which))
+	
+	def getPath(self, which):
+
+		return os.path.join(self.m_path, which)
+
+class Window(DirBase):
+
+	def __init__(self, _id):
+
+		self.m_id = _id
+		DirBase.__init__(self, self.getDir())
+
+	@classmethod
+	def setBase(self, base):
+		self.m_base = base
+
+	def getDir(self):
+
+		windir = os.path.join(self.m_base.m_windows, self.m_id)
+
+		if not os.path.isdir(windir):
+			print("Test window directory", windir, "is not existing?")
+			sys.exit(1)
+
+		return windir
+
+	def __str__(self):
+		return os.path.basename(self.m_id)
+
+class ManagerDir(DirBase):
+
+	def __init__(self, path):
+
+		DirBase.__init__(self, path)
 
 class TestBase(object):
 
+
+	def setupParser(self):
+
+		self.m_parser = argparse.ArgumentParser("xwmfs unit test")
+
+		self.m_parser.add_argument(
+			"-l", "--logfile",
+			help = "Path to write xwmfs logs to"
+		)
+
+		self.m_parser.add_argument(
+			"-d", "--debug",
+			help = "Run xwmfs with debugging extras",
+			action = 'store_true'
+		)
+
+	def parseArgs(self):
+
+		self.m_args = self.m_parser.parse_args()
+
 	def __init__(self):
 
+		self.setupParser()
 		self.m_res = 0
 		self.m_xwmfs = self.getBinary()
 
@@ -19,7 +106,9 @@ class TestBase(object):
 
 		atexit.register(self._cleanup)
 		self.m_proc = None
+		self.m_test_window = None
 		self.m_mount_dir = "/tmp/xwmfs"
+		Window.setBase(self)
 
 	def _cleanup(self):
 
@@ -27,6 +116,9 @@ class TestBase(object):
 			self.m_proc.terminate()
 			self.m_proc.wait()
 			os.rmdir(self.m_mount_dir)
+
+		if self.m_test_window:
+			self.closeTestWindow()
 
 	def getBinary(self):
 
@@ -41,6 +133,16 @@ class TestBase(object):
 		print("Expecting path to xwmfs binary as parameter or in the XWMFS environment variable")
 		sys.exit(1)
 
+	def logSetting(self):
+
+		return "111{}".format(
+			"1" if self.m_args.debug else "0"
+		)
+			
+	def extraSettings(self):
+		return []
+		#return [ "-o", "debug" ] if self.m_args.debug else []
+
 	def mount(self):
 
 		if os.path.exists(self.m_mount_dir):
@@ -50,7 +152,10 @@ class TestBase(object):
 		os.makedirs(self.m_mount_dir)
 
 		self.m_proc = subprocess.Popen(
-			[ self.m_xwmfs, "-f", self.m_mount_dir ]
+			[
+				self.m_xwmfs, "-f",
+				"--logger={}".format(self.logSetting()),
+			] + self.extraSettings() + [ self.m_mount_dir ]
 		)
 
 		while len(os.listdir(self.m_mount_dir)) == 0:
@@ -78,8 +183,10 @@ class TestBase(object):
 
 	def run(self):
 
+		self.parseArgs()
 		self.mount()
 		self.m_windows = os.path.join(self.m_mount_dir, "windows")
+		self.m_mgr = ManagerDir(os.path.join(self.m_mount_dir, "wm"))
 
 		self.test()
 
@@ -87,40 +194,91 @@ class TestBase(object):
 
 		return self.m_res
 
+	def getWindowList(self):
+
+		return [ Window(w) for w in os.listdir(self.m_windows) ]
+
 	def getTestWindow(self):
 
 		our_id = os.environ.get("WINDOWID", None)
 
 		if our_id:
-			return our_id
+			return Window(our_id)
 
 		# otherwise just the first one we approach
-		return os.listdir(self.m_windows)[0]
+		return Window(self.getWindowList()[0])
 
-	def getWindowDir(self, window):
+	def createTestWindow(self, required_files = []):
+		# creates a new window and returns its window ID
 
-		windir = os.path.join(self.m_windows, window)
+		# this currently assumes an xterm executable is around
 
-		if not os.path.isdir(windir):
-			print("Test window directory", windir, "is not existing?")
-			sys.exit(1)
+		if self.m_test_window:
+			raise Exception("Double create of test window, without closeTestWindow()")
 
-		return windir
+		print("Creating test window")
+		try:
+			self.m_test_window = subprocess.Popen("xterm")
+		except Exception as e:
+			print("Failed to run xterm to create a test window")
+			raise
 
-	def getWindowFile(self, window, which):
+		diff = set()
 
-		windir = self.getWindowDir(window)
-		return os.path.join(windir, which)
+		our_win = None
 
-	def readContent(self, path):
+		while not our_win:
 
-		with open(path, 'r') as fd:
-			return fd.read().strip()
+			windows = self.getWindowList()
 
-	def writeContent(self, path, what):
+			for window in windows:
+				pid = window.getFile("pid")
+				try:
+					pid = int(pid.read())
+				except Exception as e:
+					# race condition, no PID yet
+					continue
 
-		with open(path, 'w') as fd:
-			fd.write(what)
+				if pid == self.m_test_window.pid:
+					our_win = window
+					break
+			else:
+				time.sleep(0.25)
+
+		print("Created window", our_win, "waiting for", required_files)
+
+		for req in required_files:
+			wf = our_win.getFile(req)
+
+			count = 0
+
+			while not wf.exists():
+				count += 1
+				time.sleep(0.25)
+
+				if count >= 50:
+					raise Exception("Required window file '{}' did not appear".format(req))
+
+		print("All files present")
+
+		# wait for the window to become mapped
+		mapped = our_win.getFile("mapped")
+
+		while mapped.read() != "1":
+			time.sleep(0.25)
+
+		return our_win
+
+	def closeTestWindow(self):
+		# waits for a previously created test window to exit
+
+		self.m_test_window.kill()
+		self.m_test_window.wait()
+		self.m_test_window = None
+
+	def getManagerFile(self, which):
+
+		return self.m_mgr.getFile(which)
 
 	def setGoodResult(self, text):
 		print("Good:", text)
@@ -128,3 +286,4 @@ class TestBase(object):
 	def setBadResult(self, text):
 		print("Bad:", text)
 		self.m_res = 1
+
