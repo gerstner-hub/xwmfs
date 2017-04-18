@@ -85,6 +85,14 @@ public: // functions
 		return ret;
 	}
 
+	std::string getName(const Atom atom)
+	{
+		auto str = XGetAtomName( m_dis, atom );
+		std::string ret(str);
+		XFree(str);
+		return ret;
+	}
+
 	/**
 	 * \brief
 	 *	Flushes any commands not yet issued to the server
