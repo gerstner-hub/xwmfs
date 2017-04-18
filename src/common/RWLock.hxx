@@ -107,7 +107,7 @@ public: // functions
 
 	~ReadLockGuard()
 	{
-
+		m_rwl.unlock();
 	}
 private: // data
 	const RWLock &m_rwl;
