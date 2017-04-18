@@ -58,49 +58,63 @@ StandardProps::StandardProps()
 
 XAtom XAtomMapper::getAtom(const std::string &s)
 {
-	XAtom ret;
-	m_mappings_lock.readlock();
-
-	AtomMapping::iterator it = m_mappings.find(s);
-
-	if( it != m_mappings.end() )
 	{
-		ret = it->second;
-	}
-	else
-	{
-		m_mappings_lock.unlock();
+		ReadLockGuard g(m_mappings_lock);
 
-		ret = XDisplay::getInstance().getAtom(s);
+		AtomMapping::iterator it = m_mappings.find(s);
 
-		auto &logger = xwmfs::StdLogger::getInstance();
-		logger.debug() << "Resolved atom id for '"
-			<< s << "' is " << std::dec << ret.get() << std::endl;
-
-		m_mappings_lock.writelock();
-
-		m_mappings.insert( std::make_pair( s, (Atom)ret ) );
+		if( it != m_mappings.end() )
+		{
+			return XAtom(it->second);
+		}
 	}
 
-	m_mappings_lock.unlock();
-
-	return ret;
+	return cacheMiss(s);
 }
 
 const std::string& XAtomMapper::getName(const XAtom &atom) const
 {
-	ReadLockGuard g(m_mappings_lock);
-
-	for( const auto &pair: m_mappings )
 	{
-		if( pair.second == atom )
+		ReadLockGuard g(m_mappings_lock);
+
+		for( const auto &pair: m_mappings )
 		{
-			return pair.first;
+			if( pair.second == atom )
+			{
+				return pair.first;
+			}
 		}
 	}
 
-	static std::string empty;
-	return empty;
+	return cacheMiss(atom);
+}
+
+const std::string& XAtomMapper::cacheMiss(const XAtom &atom) const
+{
+	const auto name = XDisplay::getInstance().getName(atom);
+
+	{
+		WriteLockGuard g(m_mappings_lock);
+		auto ret = m_mappings.insert( std::make_pair( name, atom ) );
+
+		return (ret.first)->first;
+	}
+}
+
+XAtom XAtomMapper::cacheMiss(const std::string &s)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	XAtom ret = XAtom( XDisplay::getInstance().getAtom(s) );
+
+	logger.debug() << "Resolved atom id for '"
+		<< s << "' is " << std::dec << ret.get() << std::endl;
+
+	{
+		WriteLockGuard g(m_mappings_lock);
+		m_mappings.insert( std::make_pair( s, (Atom)ret ) );
+	}
+
+	return ret;
 }
 
 } // end ns

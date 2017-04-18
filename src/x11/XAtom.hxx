@@ -132,6 +132,9 @@ protected: // functions
 	//! protected constructor to enforce singleton usage
 	XAtomMapper() {};
 
+	const std::string& cacheMiss(const XAtom &atom) const;
+	XAtom cacheMiss(const std::string &s);
+
 protected: // types
 
 	//! The map contained that maps string to X atoms
@@ -140,7 +143,7 @@ protected: // types
 protected: // data
 
 	//! contains the actual mappings
-	AtomMapping m_mappings;
+	mutable AtomMapping m_mappings;
 	//! synchronizes parallel read and update of \c m_mappings
 	RWLock m_mappings_lock;
 };
