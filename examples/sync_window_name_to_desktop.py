@@ -26,14 +26,19 @@ event_fd = open(our_events, 'r')
 our_name = os.path.join( our_win_dir, "name")
 our_desktop = os.path.join( our_win_dir, "desktop")
 
-while True:
-	event = event_fd.readline().strip()
-
-	if event != "desktop":
-		continue
-
+def changeName():
 	with open(our_desktop, 'r') as desktop_fd:
 		desktop = desktop_fd.read().strip()
 
 	with open(our_name, 'w') as name_fd:
 		name_fd.write("Desktop {}".format(desktop))
+
+while True:
+	event = event_fd.readline().strip()
+
+	if event == "desktop":
+		changeName()
+	elif event == "destroyed":
+		# window is gone
+		sys.exit(0)
+
