@@ -30,6 +30,7 @@
 #include "fuse/xwmfs_fuse.hxx"
 #include "fuse/EventFile.hxx"
 #include "common/Helper.hxx"
+#include "x11/XAtom.hxx"
 
 namespace xwmfs
 {
@@ -73,6 +74,14 @@ void Xwmfs::addWindow(const XWindow &win, const bool initial)
 	// we want to get any structure change events
 	win.selectDestroyEvent();
 	win.selectPropertyNotifyEvent();
+
+	// make sure the XServer knows we want to get those events, otherwise
+	// race conditions can occur so that for example:
+	// - we see that the new window has no "name" yet
+	// - the XServer didn't get our event registration yet, sets a name
+	// for the window but doesn't notify us
+	// - so in the end we'd never get to know about the window name
+	XDisplay::getInstance().sync();
 
 	auto win_dir = new xwmfs::WindowDirEntry(win, initial ? true : false);
 
@@ -197,7 +206,7 @@ int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
 	XGetErrorText(disp, error->error_code, &err_msg[0], 512);
 
 	StdLogger::getInstance().warn()
-		<< "An X error occured: \"" << err_msg << "\"" << std::endl;
+		<< "An async X error occured: \"" << err_msg << "\"" << std::endl;
 
 	return 0;
 }
@@ -207,7 +216,7 @@ int Xwmfs::XIOErrorHandler(Display *disp)
 	(void)disp;
 
 	StdLogger::getInstance().error()
-		<< "A fatal X error occured. Exiting." << std::endl;
+		<< "A fatal async X error occured. Exiting." << std::endl;
 
 	// call the internal exit explicitly, the normal exit would cause
 	// follow up errors through destruction of static objects in
@@ -264,6 +273,25 @@ int Xwmfs::init()
 			// this gets us information about changed global
 			// properties like the number of desktops
 			m_root_win.selectPropertyNotifyEvent();
+			// make sure the XServer knows about our event
+			// registrations to avoid any race conditions
+			XDisplay::getInstance().sync();
+
+			/*
+			 * there is a race condition that we can't really
+			 * avoid here:
+			 *
+			 * in createFS() we statically determine the current
+			 * state of the window manager. We might already be
+			 * getting events about things that happened before
+			 * this initial lookup, thus artifacts like
+			 * destroy events for windows we don't know about or
+			 * creation events for windows we've already seen.
+			 *
+			 * this is probably better than the other way around:
+			 * losing events for things we should have known,
+			 * causing inconsistent data
+			 */
 
 			createFS();
 
@@ -434,9 +462,9 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	}
 	case PropertyNotify:
 	{
-		logger.debug() << "Property (atom = "
-			<< std::dec << ev.xproperty.atom
-			<< ") on window " << std::hex
+		logger.debug()
+			<< "Property (" << XAtom(ev.xproperty.atom) << ")"
+			<< " on window " << std::hex
 			<< "0x" << ev.xproperty.window << " changed ("
 			<< std::dec << ev.xproperty.state << ")" << std::endl;
 		switch( ev.xproperty.state )
