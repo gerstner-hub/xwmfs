@@ -78,8 +78,8 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 	if( it == m_atom_update_map.end() )
 	{
 		logger.warn()
-			<< "Root window unknown property "
-			<< "0x" << changed_atom << ") changed" << std::endl;
+			<< "Root window unknown property ("
+			<< XAtom(changed_atom) << ") changed" << std::endl;
 		return;
 	}
 
