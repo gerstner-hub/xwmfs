@@ -229,8 +229,10 @@ void XWindow::selectEvent(const long new_event) const
 	);
 
 	// stupid return codes again
-	(void)res;
-
+	if( res == 0 )
+	{
+		xwmfs_throw(Exception("XSelectInput failed"));
+	}
 }
 
 template <typename PROPTYPE>

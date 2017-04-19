@@ -107,7 +107,29 @@ public: // functions
 	 **/
 	void flush()
 	{
-		XFlush( m_dis );
+		if( XFlush( m_dis ) == 0 )
+		{
+			xwmfs_throw( Exception("XFlush failed") );
+		}
+	}
+
+	/**
+	 * \brief
+	 * 	Flushes any commands not yet issued to the server and waits
+	 * 	for it to process them
+	 * \details
+	 * 	This is just like flush(), with the extra functionality that
+	 * 	this call will block until all requests have also been
+	 * 	processed by the XServer. This is helpful, for example, if we
+	 * 	have registered new events to be notified of and want to make
+	 * 	sure the XServer knows this at some point in time.
+	 **/
+	void sync()
+	{
+		if( XSync( m_dis, False ) == 0 )
+		{
+			xwmfs_throw( Exception("XSync failed") );
+		}
 	}
 
 	//! transparently casts the instance to the Xlib Display primitive
