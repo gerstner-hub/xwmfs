@@ -183,6 +183,13 @@ protected: // functions
 
 	/**
 	 * \brief
+	 * 	Reads and processes all events that can currently be read
+	 * 	without blocking
+	 **/
+	void handlePendingEvents();
+
+	/**
+	 * \brief
 	 * 	Handles a single X11 event received by the x11 event thread
 	 **/
 	void handleEvent(const XEvent &ev);
@@ -293,6 +300,9 @@ private: // data
 
 	//! file descriptors to monitor for events
 	fd_set m_select_set;
+
+	XEvent m_ev;
+	Display *m_display = nullptr;
 
 	//! the time of the last event that might lead to creating new file
 	//! system objects

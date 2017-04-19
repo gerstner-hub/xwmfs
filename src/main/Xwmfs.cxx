@@ -366,9 +366,7 @@ Xwmfs::~Xwmfs()
 
 void Xwmfs::threadEntry(const xwmfs::Thread &t)
 {
-	XEvent ev;
-	Display *dis = XDisplay::getInstance();
-
+	m_display = XDisplay::getInstance();
 	auto &logger = xwmfs::StdLogger::getInstance();
 
 	while( t.getState() == xwmfs::Thread::RUN )
@@ -404,21 +402,39 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 			continue;
 		}
 
-		// now we should be able to read the next event without
+		// now we should be able to read at least one event without
 		// blocking
-		XNextEvent(dis, &ev);
+		handlePendingEvents();
+	}
+}
+
+void Xwmfs::handlePendingEvents()
+{
+	do
+	{
+		XNextEvent(m_display, &m_ev);
 
 		try
 		{
-			handleEvent(ev);
+			handleEvent(m_ev);
 		}
 		catch(const xwmfs::Exception &ex)
 		{
+			auto &logger = xwmfs::StdLogger::getInstance();
 			logger.error()
 				<< "Failed to handle X11 event of type "
-				<< std::dec << ev.type << ": " << ex.what();
+				<< std::dec << m_ev.type << ": " << ex.what();
 		}
 	}
+	/*
+	 * this is important to avoid blocking while there are still events to
+	 * be processed. this is because the select() in the event thread only
+	 * wakes up when there's network data from the X server. But the
+	 * libX11 can read more than one event at once from the network in one
+	 * go, thus the socket might not be readable, still there would be
+	 * pending events that we wouldn't process
+	 */
+	while( XPending(m_display) != 0 );
 }
 
 void Xwmfs::handleEvent(const XEvent &ev)
