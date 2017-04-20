@@ -140,8 +140,11 @@ class TestBase(object):
 		)
 			
 	def extraSettings(self):
-		return []
-		#return [ "-o", "debug" ] if self.m_args.debug else []
+
+		debug_opts = [ "--xsync" ]
+		# [ "-o", "debug" ]
+
+		return debug_opts if self.m_args.debug else []
 
 	def mount(self):
 
@@ -252,6 +255,7 @@ class TestBase(object):
 
 			count = 0
 
+			print("Waiting for", req, "file")
 			while not wf.exists():
 				count += 1
 				time.sleep(0.25)

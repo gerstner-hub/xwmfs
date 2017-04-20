@@ -21,6 +21,9 @@ class EventsTest(TestBase):
 
 			line = self.m_event_file.readline()
 
+			if not line:
+				raise Exception("EOF on event file")
+
 			if line.strip() != name:
 				print("Other event:", line)
 			else:
