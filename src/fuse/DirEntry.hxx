@@ -36,6 +36,19 @@ public: // types
 	//! The type enum associated with DirEntry. Can be used in templates.
 	static const Entry::Type type = Entry::DIRECTORY;
 
+	struct DoubleAddError :
+		public Exception
+	{
+		DoubleAddError(const std::string &name) :
+			Exception(
+				std::string("double-add of the same directory node \"")
+					+ name.c_str() + "\""
+			)
+		{}
+
+		XWMFS_EXCEPTION_IMPL;
+	};
+
 public: // functions
 
 	/**
@@ -131,9 +144,19 @@ public: // functions
 		return reinterpret_cast<DirEntry*>(getEntry(n, Entry::Type::DIRECTORY));
 	}
 
+	DirEntry* getDirEntry(const std::string &n)
+	{
+		return getDirEntry(n.c_str());
+	}
+
 	FileEntry* getFileEntry(const char *n)
 	{
 		return reinterpret_cast<FileEntry*>(getEntry(n, Entry::Type::REG_FILE));
+	}
+
+	FileEntry* getFileEntry(const std::string &n)
+	{
+		return getFileEntry(n.c_str());
 	}
 
 	//! wrapper for removeEntry(const char*) using a std::string
@@ -146,7 +169,7 @@ public: // functions
 	 * \details
 	 * 	Throws an Exception if no such entry is existing
 	 **/
-	void removeEntry(const char* s);
+	void removeEntry(const char *s);
 
 	//! Retrieves the constant map of all contained entries
 	const NameEntryMap& getEntries() const { return m_objs; }

@@ -23,9 +23,7 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time)
 
 	if( ! insert_res.second )
 	{
-		xwmfs_throw( Exception(
-			std::string("double-add of the same directory node \"") + e->name() + "\""
-		));
+		xwmfs_throw( DoubleAddError(e->name()) );
 	}
 
 	// we inherit our own time info to the new entry, if none has been
