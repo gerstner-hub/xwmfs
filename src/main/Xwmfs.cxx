@@ -85,11 +85,44 @@ void Xwmfs::addWindow(const XWindow &win, const bool initial)
 
 	auto win_dir = new xwmfs::WindowDirEntry(win, initial ? true : false);
 
-	// the window directories are named after their IDs
-	m_win_dir->addEntry(win_dir, false);
+	auto &logger = xwmfs::StdLogger::getInstance();
 
-	auto &logger = xwmfs::StdLogger::getInstance().debug();
-	logger << "Added window " << win.id() << std::endl;
+	try
+	{
+		// the window directories are named after their IDs
+		m_win_dir->addEntry(win_dir, false);
+		logger.debug() << "Added window " << win.id() << std::endl;
+	}
+	catch( const DirEntry::DoubleAddError & )
+	{
+		/*
+		 * this situation happens sometimes e.g. on i3 window manager.
+		 * a window is destroyed but some kind of zombie entry remains
+		 * in the client list. if xwmfs starts up in this situation
+		 * then it will populate this zombie window in the file
+		 * system, however all operations on it will fail, thus many
+		 * directory nodes will be missing.
+		 *
+		 * when a new window is created then i3 seems to recycle the
+		 * zombie window id and a create event for this new window is
+		 * coming in. in this situation we have a double add from our
+		 * point of view. we try to recover from it and be robust
+		 * about it, by updating the existing entry
+		 */
+		logger.warn() << "double-add of window "
+			<< win_dir->name() << ": updating existing entry\n"; 
+		auto orig_entry = reinterpret_cast<WindowDirEntry*>(
+			m_win_dir->getDirEntry(win_dir->name())
+		);
+		orig_entry->updateAll();
+		// delete the duplicate
+		delete win_dir;
+	}
+	catch( ... )
+	{
+		delete win_dir;
+		throw;
+	}
 }
 
 void Xwmfs::updateRootWindow(Atom changed_atom)
@@ -183,6 +216,8 @@ void Xwmfs::exit()
 
 	if( m_ev_thread.getState() == xwmfs::Thread::RUN )
 	{
+		m_ev_thread.requestExit();
+
 		const int dummy_data = 1;
 		// we need to wakeup the thread to signal it that stuff is
 		// over now
@@ -375,7 +410,6 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 		FD_SET(m_dis_fd, &m_select_set);
 		FD_SET(m_wakeup_pipe[0], &m_select_set);
 		FD_SET(m_abort_pipe[0], &m_select_set);
-
 		// here we wait until one of the file descriptors is readable
 		const int sel_res = ::select(
 			FD_SETSIZE,
@@ -448,10 +482,6 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	switch( ev.type )
 	{
 	// a new window came into existence
-	//
-	// NOTE: it might be better to look for MappedEvents instead
-	// of CreateEvents. In case there are strange hidden windows
-	// and such
 	case CreateNotify:
 	{
 		if( ! handleCreateEvent(ev) )
@@ -540,7 +570,9 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	default:
 		logger.debug()
 			<< __FUNCTION__
-			<< ": Some unknown event received" << "\n";
+			<< ": Some unknown event "
+			<< ev.type << " for window "
+			<< XWindow(ev.xany.window) << " received" << "\n";
 		break;
 	}
 }
