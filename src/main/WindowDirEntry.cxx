@@ -118,6 +118,14 @@ std::string WindowDirEntry::getCommandInfo()
 	return ret;
 }
 
+void WindowDirEntry::updateAll()
+{
+	for( auto it: m_atom_update_map )
+	{
+		update(it.first);
+	}
+}
+
 void WindowDirEntry::update(Atom changed_atom)
 {
 	auto it = m_atom_update_map.find(XAtom(changed_atom));

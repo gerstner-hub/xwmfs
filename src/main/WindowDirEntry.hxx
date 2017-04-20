@@ -46,6 +46,15 @@ public: // functions
 	//! the window has been (un)mapped
 	void newMappedState(const bool mapped);
 
+	/**
+	 * \brief
+	 * 	Updates all information stored in the window directory
+	 * \details
+	 * 	This is effectivelly a poll of all information from the X
+	 * 	server
+	 **/
+	void updateAll();
+
 protected: // functions
 
 	//! adds all directory file entries for the represented window
