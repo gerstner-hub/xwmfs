@@ -20,7 +20,7 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	m_events = new EventFile(*this, "events");
 	addEntry(m_events);
 
-	m_mapped = new  WindowFileEntry("mapped", m_win);
+	m_mapped = new  WindowFileEntry("mapped", m_win, m_modify_time, false);
 	addEntry(m_mapped);
 
 	if( query_attrs )
