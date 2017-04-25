@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import os, sys
@@ -52,7 +52,7 @@ class EventsTest(TestBase):
 
 		count = 0
 
-		cur_desktop = desktop_path.read()
+		cur_desktop = int(desktop_path.read())
 
 		for i in range(num_desktops):
 			if i != cur_desktop:
