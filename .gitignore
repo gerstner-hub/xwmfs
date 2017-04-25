@@ -6,3 +6,4 @@ config_aux
 *.m4
 configure
 __pycache__
+*.pyc
