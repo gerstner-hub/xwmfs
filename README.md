@@ -102,6 +102,8 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |--------> events:  Produces one line for each event related to the
  |       |                   window's directory. Each line will consist of the
  |       |                   basename of the file that changed.
+ |       |--------> mapped:  Produces a boolean value (0, 1) whether this
+ |       |                   window is currently mapped (visible)
  |
 -wm: A directory containing global state information about the
  |   window manager
@@ -113,7 +115,7 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |                          desktop, if virtual desktops are available
  |                          and configured. Counting starts at zero.
  |--------> number_of_desktops: Contains the number of virtual desktops
- |                              current configured, if supported
+ |                              currently configured, if supported
  |--------> show_desktop_mode: Returns a 0/1 value whether currently the
  |                             "show desktop mode" is active. This means
  |                             that all windows are hidden from view and
@@ -175,5 +177,3 @@ The feature set I initially intended for xwmfs is roughly the following:
 	  other properties of them
 	* possibility to get and change names of virtual desktops as
 	  applicable
-	* possibility to wait for events on specific windows or the window
-	  manager in the file system
