@@ -89,6 +89,12 @@ class TestBase(object):
 			action = 'store_true'
 		)
 
+		self.m_parser.add_argument(
+			"-b", "--binary",
+			help = "Location of the xwmfs executable to test",
+			default = None
+		)
+
 	def parseArgs(self):
 
 		self.m_args = self.m_parser.parse_args()
@@ -97,12 +103,6 @@ class TestBase(object):
 
 		self.setupParser()
 		self.m_res = 0
-		self.m_xwmfs = self.getBinary()
-
-		if not os.path.isfile(self.m_xwmfs):
-
-			print("Not a regular file:", self.m_xwmfs)
-			sys.exit(1)
 
 		atexit.register(self._cleanup)
 		self.m_proc = None
@@ -124,14 +124,23 @@ class TestBase(object):
 
 		xwmfs = os.environ.get("XWMFS", None)
 
-		if xwmfs:
-			return xwmfs
+		if self.m_args.binary:
+			ret = self.m_args.binary
+		elif xwmfs:
+			ret = xwmfs
+		else:
+			ret = None
 
-		if len(sys.argv) == 2:
-			return sys.argv[1]
+		if not ret:
+			print("Expecting path to xwmfs binary as parameter or in the XWMFS environment variable")
+			sys.exit(1)
 
-		print("Expecting path to xwmfs binary as parameter or in the XWMFS environment variable")
-		sys.exit(1)
+		if not os.path.isfile(ret):
+			print("Not a regular file:", ret)
+			sys.exit(1)
+
+		return ret
+
 
 	def logSetting(self):
 
@@ -187,6 +196,7 @@ class TestBase(object):
 	def run(self):
 
 		self.parseArgs()
+		self.m_xwmfs = self.getBinary()
 		self.mount()
 		self.m_windows = os.path.join(self.m_mount_dir, "windows")
 		self.m_mgr = ManagerDir(os.path.join(self.m_mount_dir, "wm"))

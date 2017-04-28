@@ -26,7 +26,7 @@ There are currently no special configure options available for xwmfs besides
 the default options provided by autotools.
 
 DEBUG BUILD
-------------
+-----------
 
 To create a debug build simply set CFLAGS and CXXFLAGS accordingly e.g.
 
@@ -34,3 +34,13 @@ To create a debug build simply set CFLAGS and CXXFLAGS accordingly e.g.
 	- CXXFLAGS="$CFLAGS"
 
 before running configure.
+
+UNIT TESTS
+----------
+
+You can build `make check` to run a number of unit tests shipped with xwmfs.
+These are written in python and run automatically without user interaction.
+
+You can run isolated unit tests yourself by executing the appropriate scripts
+from the tests directory. You either need to specify the *xwmfs* binary as
+`-b <BINARY>` or via the *XWMFS* environment variable.
