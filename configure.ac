@@ -19,6 +19,10 @@ dnl check for C and C++ compilers (we need a C99 compiler for fuse structure set
 AC_PROG_CC_C99
 AC_PROG_CXX
 
+dnl check for asciidoc availibility, optional
+AC_CHECK_PROG([asciidoc], [a2x], [yes], [no])
+AM_CONDITIONAL([FOUND_ASCIIDOC], [test "x$asciidoc" = xyes])
+
 dnl we need fuse
 dnl AC_CHECK_LIB([fuse], [fuse_main], [], [AC_MSG_ERROR([You need the fuse userspace library to build this package])])
 PKG_CHECK_MODULES([fuse], [ fuse >= 2.8.1 ])
@@ -38,4 +42,5 @@ dnl We need to specify an output file for every single Makefile that is generate
 dnl (i.e. for every subdirectory, too)
 AC_OUTPUT([
 	src/Makefile
-	])
+	docs/Makefile
+])

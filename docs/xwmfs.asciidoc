@@ -1,0 +1,185 @@
+XWMFS(1)
+========
+:doctype: manpage
+
+
+NAME
+----
+xwmfs - represents X11 window manager state in the file system
+
+
+SYNOPSIS
+--------
+*xwmfs* ['OPTIONS'] 'MOUNTPOINT'
+
+
+DESCRIPTION
+-----------
+An implementation of a userspace file system based on fuse that allows
+interaction with an EWMH compliant X11 window manager via files.
+
+Because the xwmfs acts as an X11 client on the X server it requires to have a
+valid DISPLAY environment variable set and the authority to access the X11
+display. Otherwise the xwmfs program will print an error and exit immediately.
+
+To unmount the xwmfs file system the command `fusermount -u 'MOUNPOINT'` can
+be used.
+
+For information about the semantics of the file presented in the file system
+see <<X1,*ENTRIES PER WINDOW*>> and <<X2,*ENTRIES FOR WINDOW MANAGER*>>.
+
+OPTIONS
+-------
+
+*-f*::
+	Run the file system in the foregrond. Otherwise the program will detach
+	into the background.
+
+*-d*::
+	Enable additional low level debug output on stdout. This will trace
+	every file system access and more.
+
+*--logger*='EWID'::
+	A bitmask for the logging output of the program. Each letter stands
+	for error, warning, information and debug respectively. So a value of
+	'1111' would enable all logging output to stdout. This logging
+	consists of higher level information about what happens on X protocol
+	and file system level. By default only errors and warnings are
+	printed.
+
+*--xsync*::
+	Operates the X client library in synchronous mode. This allows better
+	error detection if some X operation fails.
+
+[[X1]]
+ENTRIES PER WINDOW
+------------------
+
+The `windows` directory contains one directory entry per X window managed by
+the window manager on the current DISPLAY. Some secondary windows like popup
+windows are currently not handled by xwmfs. Each directory is named after the
+unique decimal window ID of the represented X window. These directories may
+contain the following files:
+
+*id*::
+	A regular, read-only file that again produces the unique, decimal
+	window ID of the represented X window.
+
+*name*::
+	A regular, read-write file that produces the current window title on
+	read, and changes the window title on write. Changes of this value are
+	also reported via the `events` file.
+
+*desktop*::
+	A regular, read-write file that produces the desktop number a window
+	is located on on read, and changes where the desktop a window is
+	located on write. Changes of this value are also reported via the
+	`events` file.
+
+*pid*::
+	A regular, read-only file that produces the PID of the program that
+	owns the window.
+
+*command*::
+	A regular, read-write file that allows to issue commands for the
+	window. On read the list of possible commands is returned. On write
+	the appropriate command is executed. Currently this covers 'DELETE'
+	and 'DESTROY' to force or ask the window to be closed.
+
+*events*::
+	A regular, read-only file that produces one event per line that
+	affects the represented X window. The name of the event corresponds to
+	the name of the file that is affected by the event. For example, if
+	the name of the window changes than an event named 'name' is produced.
+	To obtain the new value you need to read the file in question. If the
+	window gets closed then the events file produces a 'destroyed' event
+	and returns an EOF indication on further read attempts.
+
+*mapped*::
+	A regular, read-only file that produces a boolean value of 0 or 1
+	indicating whether this window is currently mapped (visible). Changes
+	of this value are also reported via the `events` file.
+
+[[X2]]
+ENTRIES FOR WINDOW MANAGER
+--------------------------
+
+The `wm` directory contains global state related to the window manager. The
+directory may contain the following files:
+
+
+*name*::
+	A regular, read-only file that produces the name of the running window
+	manager.
+
+*class*::
+	A regular, read-only file that produces the kind of window manager
+	that is running. Not always available.
+
+*active_desktop*::
+	A regular, read-write file that produces the number of the currently
+	shown desktop on read. Writing a new desktop number to this file
+	causes the active desktop to be changed.
+
+*number_of_desktops*::
+	A regular, read-only file that produces the number of virtual desktops
+	currently configured.
+
+*show_desktop_mode*::
+	A regular, read-only file that produces a boolean value of 0 or 1
+	indicating whether the "show desktop mode" is active.
+
+*pid*::
+	A regular, read-only file that produces the PID of the window manager
+	process.
+
+*events*::
+	A regular, read-only file that produces one event per line that
+	affects the global window manager state. The name of the event
+	corresponds to the name of the file that is affected by the event. For
+	example if the number of desktops changed then an event
+	'number_of_desktops' is produced.
+
+NOTES
+-----
+
+Depending on the window manager in use some features may not be available or
+may behave differently than with other window managers. This has nothing to do
+with xwmfs.
+
+Because of the asynchronous nature of the X protocol, intermediate states may
+be seen in the file system. A window might disappear at any time, values of
+properties may change quickly. Any scripts that operate on the file system
+should be prepared to deal with such situations.
+
+Any open files that correspond to X windows that have already been destroyed
+will return an error code of 'ENXIO' for any attempted operations.
+
+EXIT STATUS
+-----------
+*0*::
+    Success
+
+*1*::
+    Failure (syntax or usage error; X error).
+
+ENVIRONMENT VARIABLES
+---------------------
+
+*DISPLAY*::
+  The X Display to use
+
+AUTHOR
+------
+xwmfs was written by Matthias Gerstner <matthias.gerstner@nefkom.net>.
+
+
+RESOURCES
+---------
+GitHub: <https://github.com/gerstner-hub/xwmfs>
+
+COPYING
+-------
+Copyright \(C) 2017 Matthias Gerstner. Free use of this software is
+granted under the terms of the GNU General Public License (GPL).
+

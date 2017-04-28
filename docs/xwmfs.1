@@ -1,0 +1,191 @@
+'\" t
+.\"     Title: xwmfs
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 04/27/2017
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "XWMFS" "1" "04/27/2017" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+xwmfs \- represents X11 window manager state in the file system
+.SH "SYNOPSIS"
+.sp
+\fBxwmfs\fR [\fIOPTIONS\fR] \fIMOUNTPOINT\fR
+.SH "DESCRIPTION"
+.sp
+An implementation of a userspace file system based on fuse that allows interaction with an EWMH compliant X11 window manager via files\&.
+.sp
+Because the xwmfs acts as an X11 client on the X server it requires to have a valid DISPLAY environment variable set and the authority to access the X11 display\&. Otherwise the xwmfs program will print an error and exit immediately\&.
+.sp
+To unmount the xwmfs file system the command fusermount \-u \*(AqMOUNPOINT\*(Aq can be used\&.
+.sp
+For information about the semantics of the file presented in the file system see \fBENTRIES PER WINDOW\fR and \fBENTRIES FOR WINDOW MANAGER\fR\&.
+.SH "OPTIONS"
+.PP
+\fB\-f\fR
+.RS 4
+Run the file system in the foregrond\&. Otherwise the program will detach into the background\&.
+.RE
+.PP
+\fB\-d\fR
+.RS 4
+Enable additional low level debug output on stdout\&. This will trace every file system access and more\&.
+.RE
+.PP
+\fB\-\-logger\fR=\fIEWID\fR
+.RS 4
+A bitmask for the logging output of the program\&. Each letter stands for error, warning, information and debug respectively\&. So a value of
+\fI1111\fR
+would enable all logging output to stdout\&. This logging consists of higher level information about what happens on X protocol and file system level\&. By default only errors and warnings are printed\&.
+.RE
+.PP
+\fB\-\-xsync\fR
+.RS 4
+Operates the X client library in synchronous mode\&. This allows better error detection if some X operation fails\&.
+.RE
+.SH "ENTRIES PER WINDOW"
+.sp
+The windows directory contains one directory entry per X window managed by the window manager on the current DISPLAY\&. Some secondary windows like popup windows are currently not handled by xwmfs\&. Each directory is named after the unique decimal window ID of the represented X window\&. These directories may contain the following files:
+.PP
+\fBid\fR
+.RS 4
+A regular, read\-only file that again produces the unique, decimal window ID of the represented X window\&.
+.RE
+.PP
+\fBname\fR
+.RS 4
+A regular, read\-write file that produces the current window title on read, and changes the window title on write\&. Changes of this value are also reported via the
+events
+file\&.
+.RE
+.PP
+\fBdesktop\fR
+.RS 4
+A regular, read\-write file that produces the desktop number a window is located on on read, and changes where the desktop a window is located on write\&. Changes of this value are also reported via the
+events
+file\&.
+.RE
+.PP
+\fBpid\fR
+.RS 4
+A regular, read\-only file that produces the PID of the program that owns the window\&.
+.RE
+.PP
+\fBcommand\fR
+.RS 4
+A regular, read\-write file that allows to issue commands for the window\&. On read the list of possible commands is returned\&. On write the appropriate command is executed\&. Currently this covers
+\fIDELETE\fR
+and
+\fIDESTROY\fR
+to force or ask the window to be closed\&.
+.RE
+.PP
+\fBevents\fR
+.RS 4
+A regular, read\-only file that produces one event per line that affects the represented X window\&. The name of the event corresponds to the name of the file that is affected by the event\&. For example, if the name of the window changes than an event named
+\fIname\fR
+is produced\&. To obtain the new value you need to read the file in question\&. If the window gets closed then the events file produces a
+\fIdestroyed\fR
+event and returns an EOF indication on further read attempts\&.
+.RE
+.PP
+\fBmapped\fR
+.RS 4
+A regular, read\-only file that produces a boolean value of 0 or 1 indicating whether this window is currently mapped (visible)\&. Changes of this value are also reported via the
+events
+file\&.
+.RE
+.SH "ENTRIES FOR WINDOW MANAGER"
+.sp
+The wm directory contains global state related to the window manager\&. The directory may contain the following files:
+.PP
+\fBname\fR
+.RS 4
+A regular, read\-only file that produces the name of the running window manager\&.
+.RE
+.PP
+\fBclass\fR
+.RS 4
+A regular, read\-only file that produces the kind of window manager that is running\&. Not always available\&.
+.RE
+.PP
+\fBactive_desktop\fR
+.RS 4
+A regular, read\-write file that produces the number of the currently shown desktop on read\&. Writing a new desktop number to this file causes the active desktop to be changed\&.
+.RE
+.PP
+\fBnumber_of_desktops\fR
+.RS 4
+A regular, read\-only file that produces the number of virtual desktops currently configured\&.
+.RE
+.PP
+\fBshow_desktop_mode\fR
+.RS 4
+A regular, read\-only file that produces a boolean value of 0 or 1 indicating whether the "show desktop mode" is active\&.
+.RE
+.PP
+\fBpid\fR
+.RS 4
+A regular, read\-only file that produces the PID of the window manager process\&.
+.RE
+.PP
+\fBevents\fR
+.RS 4
+A regular, read\-only file that produces one event per line that affects the global window manager state\&. The name of the event corresponds to the name of the file that is affected by the event\&. For example if the number of desktops changed then an event
+\fInumber_of_desktops\fR
+is produced\&.
+.RE
+.SH "NOTES"
+.sp
+Depending on the window manager in use some features may not be available or may behave differently than with other window managers\&. This has nothing to do with xwmfs\&.
+.sp
+Because of the asynchronous nature of the X protocol, intermediate states may be seen in the file system\&. A window might disappear at any time, values of properties may change quickly\&. Any scripts that operate on the file system should be prepared to deal with such situations\&.
+.sp
+Any open files that correspond to X windows that have already been destroyed will return an error code of \fIENXIO\fR for any attempted operations\&.
+.SH "EXIT STATUS"
+.PP
+\fB0\fR
+.RS 4
+Success
+.RE
+.PP
+\fB1\fR
+.RS 4
+Failure (syntax or usage error; X error)\&.
+.RE
+.SH "ENVIRONMENT VARIABLES"
+.PP
+\fBDISPLAY\fR
+.RS 4
+The X Display to use
+.RE
+.SH "AUTHOR"
+.sp
+xwmfs was written by Matthias Gerstner <matthias\&.gerstner@nefkom\&.net>\&.
+.SH "RESOURCES"
+.sp
+GitHub: https://github\&.com/gerstner\-hub/xwmfs
+.SH "COPYING"
+.sp
+Copyright (C) 2017 Matthias Gerstner\&. Free use of this software is granted under the terms of the GNU General Public License (GPL)\&.
