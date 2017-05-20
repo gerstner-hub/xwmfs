@@ -1,6 +1,8 @@
 #ifndef XWMFS_WINDOW_HXX
 #define XWMFS_WINDOW_HXX
 
+// C++
+#include <set>
 #include <iosfwd>
 
 #include <unistd.h> // pid_t
@@ -95,11 +97,12 @@ public: // types
 		XWMFS_EXCEPTION_IMPL;
 	};
 
+	typedef std::set<Window> WindowSet;
+
 public: // functions
 
 	//! Create an object without binding to a window
 	XWindow() :
-		m_win(),
 		m_std_props(StandardProps::instance())
 	{ }
 
@@ -314,6 +317,7 @@ public: // functions
 	XWindow& operator=(const XWindow &other)
 	{
 		m_win = other.m_win;
+		m_parent = other.m_parent;
 		m_input_event_mask = other.m_input_event_mask;
 		m_send_event_mask = other.m_send_event_mask;
 		return *this;
@@ -326,6 +330,19 @@ public: // functions
 	 * 	If this fails then an X11Exception is thrown
 	 **/
 	void getAttrs(XWindowAttrs &attrs);
+
+	void setParent(Window parent) { m_parent = parent; }
+	void setParent(const XWindow &parent) { setParent(parent.id()); }
+
+	Window getParent() const { return m_parent; }
+
+	const WindowSet& getChildren() const { return m_children; }
+
+	void addChild(const XWindow &child) { m_children.insert(child.id()); }
+	void delChild(const XWindow &child) { m_children.erase(child.id()); }
+
+	//! queries parent and child windows of this window and sets them acc.
+	void updateFamily();
 
 protected: // functions
 
@@ -384,11 +401,14 @@ protected: // functions
 		const XWindow *window = nullptr
 	);
 
-
 protected: // data
 
 	//! The X11 window ID this object represents
 	Window m_win = 0;
+	//! The X11 window ID of the parent of this window
+	Window m_parent = 0;
+	//! A set of X11 window IDs that presents the children of this window
+	WindowSet m_children;
 
 	//! The X11 input event mask currently associated with this window
 	mutable long m_input_event_mask = 0;

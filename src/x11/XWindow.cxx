@@ -149,9 +149,7 @@ void XWindow::destroy()
 	const auto res = XDestroyWindow( display, m_win );
 	display.flush();
 
-	// this is one of these asynchronous error reportings that's not
-	// helpful. See setProperty().
-	if( false /* || res != Success*/ )
+	if( res != 1 )
 	{
 		xwmfs_throw( X11Exception(display, res) );
 	}
@@ -351,6 +349,35 @@ void XWindow::getAttrs(XWindowAttrs &attrs)
 	{
 		xwmfs_throw(X11Exception(display, status));
 	}
+}
+
+void XWindow::updateFamily()
+{
+	auto &display = XDisplay::getInstance();
+	Window root = 0, parent = 0;
+	Window *children = nullptr;
+	unsigned int num_children = 0;
+
+	m_children.clear();
+	m_parent = 0;
+
+	const Status res = XQueryTree(
+		display, m_win, &root, &parent, &children, &num_children
+	);
+
+	if( res != 1 )
+	{
+		xwmfs_throw(X11Exception(display, res));
+	}
+
+	m_parent = parent;
+
+	for( unsigned int i = 0; i < num_children; i++ )
+	{
+		m_children.insert(children[i]);
+	}
+
+	XFree(children);
 }
 
 /*
