@@ -27,6 +27,7 @@
 #include "main/WindowFileEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WinManagerDirEntry.hxx"
+#include "main/WindowsRootDir.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "fuse/EventFile.hxx"
 #include "common/Helper.hxx"
@@ -37,152 +38,9 @@ namespace xwmfs
 
 mode_t Xwmfs::m_umask = 0777;
 
-/*
- *	Upon a destroy event for a window this function is called for the
- *	according window.
- *
- *	It is possible that the given window isn't existing in the filesystem
- *	in which case the event should be ignored.
- *
- *	Exceptions are handled by the caller
- */
-void Xwmfs::removeWindow(const XWindow &win)
-{
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	std::stringstream id;
-	id << win.id();
-
-	m_win_dir->removeEntry(id.str());
-}
-
 void Xwmfs::updateTime()
 {
 	m_current_time = time(nullptr);
-}
-
-/*
- *	Upon create event for a window this function is called for the
- *	according window
- */
-void Xwmfs::addWindow(const XWindow &win, const bool initial)
-{
-	// get the current time for timestamping the new file
-	updateTime();
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	// we want to get any structure change events
-	win.selectDestroyEvent();
-	win.selectPropertyNotifyEvent();
-
-	// make sure the XServer knows we want to get those events, otherwise
-	// race conditions can occur so that for example:
-	// - we see that the new window has no "name" yet
-	// - the XServer didn't get our event registration yet, sets a name
-	// for the window but doesn't notify us
-	// - so in the end we'd never get to know about the window name
-	XDisplay::getInstance().sync();
-
-	auto win_dir = new xwmfs::WindowDirEntry(win, initial ? true : false);
-
-	auto &logger = xwmfs::StdLogger::getInstance();
-
-	try
-	{
-		// the window directories are named after their IDs
-		m_win_dir->addEntry(win_dir, false);
-		logger.debug() << "Added window " << win.id() << std::endl;
-	}
-	catch( const DirEntry::DoubleAddError & )
-	{
-		/*
-		 * this situation happens sometimes e.g. on i3 window manager.
-		 * a window is destroyed but some kind of zombie entry remains
-		 * in the client list. if xwmfs starts up in this situation
-		 * then it will populate this zombie window in the file
-		 * system, however all operations on it will fail, thus many
-		 * directory nodes will be missing.
-		 *
-		 * when a new window is created then i3 seems to recycle the
-		 * zombie window id and a create event for this new window is
-		 * coming in. in this situation we have a double add from our
-		 * point of view. we try to recover from it and be robust
-		 * about it, by updating the existing entry
-		 */
-		logger.warn() << "double-add of window "
-			<< win_dir->name() << ": updating existing entry\n"; 
-		auto orig_entry = reinterpret_cast<WindowDirEntry*>(
-			m_win_dir->getDirEntry(win_dir->name())
-		);
-		orig_entry->updateAll();
-		// delete the duplicate
-		delete win_dir;
-	}
-	catch( ... )
-	{
-		delete win_dir;
-		throw;
-	}
-}
-
-void Xwmfs::updateRootWindow(Atom changed_atom)
-{
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	m_wm_dir->update(changed_atom);
-}
-
-WindowDirEntry* Xwmfs::getWindowDir(const XWindow &win)
-{
-	std::stringstream id;
-	id << win.id();
-
-	// TODO: this is an unsafe cast, because we have no type information
-	// for WindowDirEntry ... :-/
-	auto win_dir = reinterpret_cast<WindowDirEntry*>(
-		m_win_dir->getDirEntry(id.str().c_str())
-	);
-
-	return win_dir;
-}
-
-void Xwmfs::updateWindow(const XWindow &win, Atom changed_atom)
-{
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	auto win_dir = getWindowDir(win);
-
-	if( !win_dir )
-	{
-		xwmfs::StdLogger::getInstance().debug() <<
-			"Property update for unknown window" << std::endl;
-		return;
-	}
-
-	win_dir->update(changed_atom);
-}
-
-void Xwmfs::updateMappedState(const XWindow &win, const bool is_mapped)
-{
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	auto win_dir = getWindowDir(win);
-
-	if( win_dir )
-	{
-		xwmfs::StdLogger::getInstance().info()
-			<< "Mapped state for window " << win
-			<< " changed to " << is_mapped << std::endl;
-	}
-	else
-	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Mapping state update for unknown window "
-			<< win << std::endl;
-		return;
-	}
-
-	win_dir->newMappedState(is_mapped);
 }
 
 void Xwmfs::createFS()
@@ -198,15 +56,17 @@ void Xwmfs::createFS()
 	m_fs_root.addEntry( m_wm_dir );
 
 	// now add a directory that contains each window
-	m_win_dir = new xwmfs::DirEntry("windows");
+	m_win_dir = new WindowsRootDir();
 	m_fs_root.addEntry( m_win_dir );
 
 	// add each window there
 	const auto &windows = m_root_win.getWindowList();
 
+	FileSysWriteGuard write_guard(m_fs_root);
+
 	for( const auto &win: windows )
 	{
-		addWindow( win, true );
+		m_win_dir->addWindow( win, true );
 	}
 }
 
@@ -503,15 +363,15 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			break;
 		}
 		logger.debug() << "Window " << w << " was destroyed!" << std::endl;
-		this->removeWindow(w);
+		FileSysWriteGuard write_guard(m_fs_root);
+		m_win_dir->removeWindow(w);
 		break;
 	}
 	case PropertyNotify:
 	{
 		logger.debug()
 			<< "Property (" << XAtom(ev.xproperty.atom) << ")"
-			<< " on window " << std::hex
-			<< "0x" << ev.xproperty.window << " changed ("
+			<< " on window " << ev.xproperty.window << " changed ("
 			<< std::dec << ev.xproperty.state << ")" << std::endl;
 		switch( ev.xproperty.state )
 		{
@@ -520,13 +380,15 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			XWindow w(ev.xproperty.window);
 			updateTime();
 
+			FileSysWriteGuard write_guard(m_fs_root);
+
 			if( w == m_root_win )
 			{
-				this->updateRootWindow(ev.xproperty.atom);
+				m_wm_dir->update(ev.xproperty.atom);
 			}
 			else
 			{
-				this->updateWindow(w, ev.xproperty.atom);
+				m_win_dir->updateProperty(w, ev.xproperty.atom);
 			}
 			break;
 		}
@@ -556,7 +418,8 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			break;
 		}
 		updateTime();
-		this->updateMappedState( w, ev.type == MapNotify );
+		FileSysWriteGuard write_guard(m_fs_root);
+		m_win_dir->updateMappedState( w, ev.type == MapNotify );
 		break;
 	}
 	case GravityNotify:
@@ -565,6 +428,10 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	}
 	case ReparentNotify:
 	{
+		XWindow w(ev.xreparent.window);
+		w.setParent(ev.xreparent.parent);
+		FileSysWriteGuard write_guard(m_fs_root);
+		m_win_dir->updateParent(w);
 		break;
 	}
 	default:
@@ -597,9 +464,10 @@ bool Xwmfs::handleCreateEvent(const XEvent &ev)
 	}
 
 	XWindow w(ev.xcreatewindow.window);
+	w.setParent(ev.xcreatewindow.parent);
 
 	debug_log << "Window " << w << " was created!" << std::endl;
-	debug_log << "\tParent: " << XWindow(ev.xcreatewindow.parent) << std::endl;
+	debug_log << "\tParent: " << XWindow(w.getParent()) << std::endl;
 	debug_log << "\twin name = ";
 
 	try
@@ -613,7 +481,9 @@ bool Xwmfs::handleCreateEvent(const XEvent &ev)
 
 	try
 	{
-		this->addWindow(w);
+		updateTime();
+		FileSysWriteGuard write_guard(m_fs_root);
+		m_win_dir->addWindow(w);
 	}
 	catch( const xwmfs::Exception &ex )
 	{
