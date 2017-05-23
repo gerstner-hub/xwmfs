@@ -2,13 +2,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <string>
 
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 #include "main/Xwmfs.hxx"
 #include "common/Exception.hxx"
+#include "common/Helper.hxx"
 
+/**
+ * \brief
+ * 	Parses the xwmfs command line, handling custom options and passing the
+ * 	rest to libfuse
+ * \return
+ * 	Whether the usage/help should be printed
+ **/
 bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 {
 	bool ret = false;
@@ -16,17 +25,17 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 
 	for(int i = 0; i < argc; i++)
 	{
-		const auto &arg = argv[i];
+		const std::string arg = argv[i];
 
-		if( ::strcmp(arg, "--xsync") == 0 )
+		if( arg == "--xsync" )
 		{
 			opts.xsync(true);
 		}
-		else if( ::strncmp(arg, "--logger=",
-			sizeof("--logger=") - 1 ) == 0 )
+		else if( xwmfs::isprefix(arg, "--logger=") )
 		{
-			std::string logger_opts = arg +
-				sizeof("--logger=") - 1;
+			std::string logger_opts = arg.substr(
+				arg.find_first_of('=') + 1
+			);
 
 			const size_t NUM_CHANNELS = 4;
 			bool channels[NUM_CHANNELS] = { true, true, true, false };
@@ -54,17 +63,18 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 				channels[2], channels[3]
 			);
 		}
+		else if( arg == "--handle-pseudo-windows" )
+		{
+			opts.handlePseudoWindows(true);
+		}
 		else
 		{
-			if(
-				(::strcmp(arg, "--help") == 0) ||
-				(::strcmp(arg, "-h") == 0)
-			)
+			if( arg == "-h" || arg == "--help")
 			{
 				ret = true;
 			}
 
-			fuse_opt_add_arg(&fuse_args, arg);
+			fuse_opt_add_arg(&fuse_args, argv[i]);
 		}
 	}
 
