@@ -30,6 +30,15 @@ struct compare_cstring
 	{ return std::strcmp(a, b) < 0; }
 };
 
+/**
+ * \brief
+ * 	Returns whether prefix is a prefix of s
+ **/
+inline bool isprefix(const std::string &s, const std::string &prefix)
+{
+	return s.substr(0, prefix.length()) == prefix;
+}
+
 } // end ns
 
 #endif // inc. guard
