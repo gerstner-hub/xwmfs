@@ -125,6 +125,12 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |--------> events: Produces one line for each event related to the wm
  |		    directory. Each line will consist of the basename of the
  |		    file that changed
+ |--------> parent: Returns the window ID of the parent window of this window.
+ |                  Note that this window might not be known by xwmfs, because
+ |                  it can be a "pseudo window", a decoration window created
+ |                  by the window manager or similar. Use the parameter
+ |                  --handle-pseudo-windows to also display these kind of
+ |                  windows in xwmfs. Contains 0 for the root window.
 
 Should the window manager not support some of the properties like
 "show_desktop_mode" then a value of -1 is contained in the file if the file

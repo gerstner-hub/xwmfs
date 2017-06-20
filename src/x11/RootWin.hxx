@@ -125,8 +125,21 @@ public: // functions
 	//! requests to change the focus to the given window
 	void setWM_ActiveWindow(const XWindow &win);
 
-	//! Returns the list of windows managed by the window manager
+	//! returns the list of windows managed by the window manager
 	const std::vector<XWindow>& getWindowList() const { return m_windows; }
+
+	/**
+	 * \brief
+	 * 	returns the complete hierarchy of windows, actively queried
+	 * \details
+	 * 	While getWindowList() returns only windows that are propagated
+	 * 	by the window manager, this function actively queries the
+	 * 	hierarchy of X windows from the root window onwards.
+	 *
+	 * 	Thus this list also contains hidden windows, decoration
+	 * 	windows etc.
+	 **/
+	const std::vector<XWindow>& getWindowTree() const { return m_tree; }
 
 	/*
 	 * These are called from the event thread when property changes have
@@ -137,6 +150,21 @@ public: // functions
 	void updateActiveDesktop();
 	void updateNumberOfDesktops();
 	void updateActiveWindow();
+
+	/**
+	 * \brief
+	 * 	Queries all existing windows from the WM and stores them in
+	 * 	m_windows
+	 **/
+	void queryWindows();
+
+	/**
+	 * \brief
+	 * 	Queries the complete window tree and stores the windows in
+	 * 	m_tree
+	 **/
+	void queryTree();
+
 
 protected: // functions
 
@@ -168,13 +196,6 @@ protected: // functions
 	//! determines the PID of the window manager
 	void queryPID();
 
-	/**
-	 * \brief
-	 * 	Queries all existing windows from the WM and stores them in
-	 * 	m_windows
-	 **/
-	void queryWindows();
-
 	//! generic update function for property members
 	template <typename TYPE>
 	void updateProperty(const XAtom &atom, TYPE &property);
@@ -197,8 +218,10 @@ private: // data
 	//! active (or -1 if N/A)
 	int m_wm_showing_desktop = -1;
 
-	//! An array of all windows existing, in undefined order
+	//! An array of all main windows existing, in undefined order
 	std::vector<XWindow> m_windows;
+	//! An array of all (even special) windows existing, in undefined order
+	std::vector<XWindow> m_tree;
 
 	//! the concrete type of window manager encountered
 	WindowManager m_wm_type = WindowManager::UNKNOWN;

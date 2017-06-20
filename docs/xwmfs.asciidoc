@@ -51,6 +51,11 @@ OPTIONS
 	Operates the X client library in synchronous mode. This allows better
 	error detection if some X operation fails.
 
+*--handle-pseudo-windows*::
+	With this flag the file system also displays and updates windows that
+	are not full windows in their own right, but popup menus or window
+	decorations that are implemented as windows
+
 [[X1]]
 ENTRIES PER WINDOW
 ------------------

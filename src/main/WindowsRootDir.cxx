@@ -51,11 +51,20 @@ WindowDirEntry* WindowsRootDir::getWindowDir(const XWindow &win)
  *	Upon create event for a window this function is called for the
  *	according window
  */
-void WindowsRootDir::addWindow(const XWindow &win, const bool initial)
+void WindowsRootDir::addWindow(
+	const XWindow &win, const bool initial, const bool is_root_win
+)
 {
-	// we want to get any structure change events
-	win.selectDestroyEvent();
-	win.selectPropertyNotifyEvent();
+	if( ! is_root_win )
+	{
+		// we want to get any structure change events
+		//
+		// but don't register these for the root window, Xwmfs class
+		// already registered events for that one. Otherwise we'd
+		// overwrite settings like getting create events.
+		win.selectDestroyEvent();
+		win.selectPropertyNotifyEvent();
+	}
 
 	// make sure the XServer knows we want to get those events, otherwise
 	// race conditions can occur so that for example:

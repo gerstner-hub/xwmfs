@@ -1,6 +1,9 @@
 #ifndef XWMFS_WINDOWDIRENTRY_HXX
 #define XWMFS_WINDOWDIRENTRY_HXX
 
+// C++
+#include <set>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
 #include "x11/XWindow.hxx"
@@ -46,6 +49,9 @@ public: // functions
 	//! the window has been (un)mapped
 	void newMappedState(const bool mapped);
 
+	//! the window's parent has been changed
+	void newParent(const XWindow &win);
+
 	/**
 	 * \brief
 	 * 	Updates all information stored in the window directory
@@ -90,6 +96,9 @@ protected: // functions
 	//! Adds an entry for the client machine a window is running on
 	void updateClientMachine(FileEntry &entry);
 
+	//! Adds an entry for the ID of the parent window
+	void updateParent();
+
 	//! Actively query some attributes
 	void queryAttrs();
 
@@ -100,11 +109,14 @@ protected: // data
 
 	//! the window we're representing with this directory
 	XWindow m_win;
+
 	//! an event file from which programs can efficiently read individual
 	//! window events
 	EventFile *m_events = nullptr;
 	//! contains the mapped state of this window
 	WindowFileEntry *m_mapped = nullptr;
+	//! contains the ID of the parent of this window
+	WindowFileEntry *m_parent = nullptr;
 };
 
 } // end ns

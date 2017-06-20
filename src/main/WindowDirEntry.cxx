@@ -4,6 +4,7 @@
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
+#include "main/Xwmfs.hxx"
 #include "x11/XAtom.hxx"
 #include "x11/XWindowAttrs.hxx"
 #include "fuse/EventFile.hxx"
@@ -20,8 +21,15 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	m_events = new EventFile(*this, "events");
 	addEntry(m_events);
 
-	m_mapped = new  WindowFileEntry("mapped", m_win, m_modify_time, false);
+	m_mapped = new WindowFileEntry("mapped", m_win, m_modify_time, false);
 	addEntry(m_mapped);
+
+	// NOTE: might become a writeable entry, using XReparentWindow(),
+	// pretty obscure though
+	m_parent = new WindowFileEntry("parent", m_win, m_modify_time, false);
+	addEntry(m_parent);
+	m_win.updateFamily();
+	updateParent();
 
 	if( query_attrs )
 	{
@@ -65,7 +73,7 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 		EntrySpec("pid", &WindowDirEntry::updatePID, false,
 			std_props.atom_ewmh_wm_pid),
 		EntrySpec("command", &WindowDirEntry::updateCommandControl, true),
-		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false)
+		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false),
 	} );
 }
 
@@ -230,6 +238,20 @@ void WindowDirEntry::queryAttrs()
 void WindowDirEntry::setDefaultAttrs()
 {
 	(*m_mapped) << "0\n";
+}
+
+void WindowDirEntry::updateParent()
+{
+	m_parent->str("");
+	(*m_parent) << m_win.getParent() << "\n";
+}
+
+void WindowDirEntry::newParent(const XWindow &win)
+{
+	m_events->addEvent("parent");
+	m_win.setParent(win);
+
+	updateParent();
 }
 
 } // end ns

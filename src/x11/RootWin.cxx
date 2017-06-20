@@ -33,7 +33,6 @@ void RootWin::getInfo()
 {
 	queryWMWindow();
 	queryBasicWMProperties();
-	queryWindows();
 }
 
 void RootWin::queryWMWindow()
@@ -322,6 +321,8 @@ void RootWin::updateProperty(const XAtom &atom, TYPE &property)
 
 void RootWin::queryWindows()
 {
+	m_windows.clear();
+
 	/*
 	 * 	The _NET_CLIENT_LIST, if supported, is set on the root window
 	 * 	and contains an array of X windows that are managed by the WM.
@@ -359,6 +360,86 @@ void RootWin::queryWindows()
 	{
 		xwmfs::StdLogger::getInstance().warn()
 			<< "Couldn't query window list: " << ex.what();
+		throw;
+	}
+
+}
+
+void RootWin::queryTree()
+{
+	/*
+	 * this query operation is inherently racy ... windows might
+	 * appear/disappear and we thus might construct an invalid state
+	 *
+	 * there could a possibility to lock the complete X server for the
+	 * duration of this operation but I didn't look that up yet ...
+	 */
+
+	// helper class for storing tree traversal state
+	class TreeNode :
+		public XWindow
+	{
+	public:
+		TreeNode(Window w) :
+			XWindow(w)
+		{
+			// query all children
+			updateFamily();
+			m_next = m_children.begin();
+		}
+
+		TreeNode(const TreeNode &o) = delete;
+
+
+		bool isFinished() const { return m_next == m_children.end(); }
+		void nextChild() { m_next++; }
+		Window currentChild() { return *m_next; }
+
+		// next child to process
+		WindowSet::const_iterator m_next;
+	};
+
+	m_tree.clear();
+
+	try
+	{
+		// Use heap allocated node instances, otherwise the copying
+		// within containers becomes troublesome. Using C++ 11
+		// movables there might be a more efficient and elegant
+		// approach
+		std::vector<TreeNode*> to_process;
+
+		// start with the root window
+		to_process.push_back( new TreeNode(this->id()) );
+
+		while( ! to_process.empty() )
+		{
+			auto &current = *(to_process.back());
+
+			if( current.isFinished() )
+			{
+				// no more childs, add this window to the list
+				// and remove it
+				m_tree.push_back( XWindow(current) );
+				delete &current;
+				to_process.pop_back();
+			}
+			else
+			{
+				// add the next child to the list to process
+				// and select the next child window for the
+				// currently processed one
+				auto next = current.currentChild();
+				current.nextChild();
+
+				to_process.push_back( new TreeNode(next) );
+			}
+		}
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().warn()
+			<< "Couldn't query window tree: " << ex.what();
 		throw;
 	}
 

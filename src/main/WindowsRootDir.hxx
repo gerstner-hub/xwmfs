@@ -40,8 +40,15 @@ public: // functions
 	 * \param[in] initial
 	 * 	If set then this is the initial population of windows and thus
 	 * 	a full query of properties should be made
+	 * \param[in] is_root_win
+	 * 	If set then \c win refers to the root window. This triggers
+	 * 	some special logic
 	 **/
-	void addWindow(const XWindow &win, const bool initial = false);
+	void addWindow(
+		const XWindow &win,
+		const bool initial = false,
+		const bool is_root_win = false
+	);
 
 	/**
 	 * \brief

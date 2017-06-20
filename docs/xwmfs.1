@@ -2,12 +2,12 @@
 .\"     Title: xwmfs
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 04/27/2017
+.\"      Date: 05/23/2017
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "XWMFS" "1" "04/27/2017" "\ \&" "\ \&"
+.TH "XWMFS" "1" "05/23/2017" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -63,6 +63,11 @@ would enable all logging output to stdout\&. This logging consists of higher lev
 \fB\-\-xsync\fR
 .RS 4
 Operates the X client library in synchronous mode\&. This allows better error detection if some X operation fails\&.
+.RE
+.PP
+\fB\-\-handle\-pseudo\-windows\fR
+.RS 4
+With this flag the file system also displays and updates windows that are not full windows in their own right, but popup menus or window decorations that are implemented as windows
 .RE
 .SH "ENTRIES PER WINDOW"
 .sp

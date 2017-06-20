@@ -201,7 +201,14 @@ protected: // functions
 	 * \return
 	 * 	Whether the window has been added to the file system or not
 	 **/
-	bool handleCreateEvent(const XEvent &ev);
+	bool handleCreateEvent(const XCreateWindowEvent &ev);
+
+	/**
+	 * \brief
+	 * 	Returns whether the given CreateNotify event refers to a
+	 * 	pseudo window
+	 **/
+	bool isPseudoWindow(const XCreateWindowEvent &ev) const;
 
 	bool isIgnored(const XWindow &win) const
 	{

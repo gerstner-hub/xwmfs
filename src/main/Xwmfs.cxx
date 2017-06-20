@@ -59,14 +59,39 @@ void Xwmfs::createFS()
 	m_win_dir = new WindowsRootDir();
 	m_fs_root.addEntry( m_win_dir );
 
-	// add each window there
-	const auto &windows = m_root_win.getWindowList();
+	const std::vector<XWindow> *windows = nullptr;
+
+	if( m_opts.handlePseudoWindows() )
+	{
+		/*
+		 * if we want to display all pseudo windows then we can't rely
+		 * on the client list the window manager provides, because
+		 * this only contains actual application windows.
+		 *
+		 * instead we need to query the complete window tree. from
+		 * there on we get events for all created windows, even pseudo
+		 * ones.
+		 *
+		 * this is only a snapshot so there may be a race condition
+		 * and we end up with a slightly wrong initial state of
+		 * windows. not sure what to do against that.
+		 */
+		m_root_win.queryTree();
+		windows = &(m_root_win.getWindowTree());
+	}
+	else
+	{
+		m_root_win.queryWindows();
+		windows = &(m_root_win.getWindowList());
+	}
+
+	// add each window found in the list
 
 	FileSysWriteGuard write_guard(m_fs_root);
 
-	for( const auto &win: windows )
+	for( const auto &win: *windows )
 	{
-		m_win_dir->addWindow( win, true );
+		m_win_dir->addWindow( win, true, win == m_root_win );
 	}
 }
 
@@ -344,7 +369,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	// a new window came into existence
 	case CreateNotify:
 	{
-		if( ! handleCreateEvent(ev) )
+		if( ! handleCreateEvent(ev.xcreatewindow) )
 		{
 			m_ignored_windows.insert( ev.xcreatewindow.window );
 		}
@@ -444,27 +469,43 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	}
 }
 
-bool Xwmfs::handleCreateEvent(const XEvent &ev)
+bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const
 {
 	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 
 	// Xlib manual says one should generally ignore these
 	// events as they come from popups
-	if( ev.xcreatewindow.override_redirect )
+	if( ev.override_redirect )
 	{
-		return false;
+		debug_log << "Ignoring override_redirect window " << ev.window << std::endl;
+		return true;
 	}
 	// this is grand-kid or something. we could add these
 	// in a hierarchical manner as sub-windows but for now
 	// we ignore them
-	else if( ev.xcreatewindow.parent != m_root_win.id() )
+	else if( ev.parent != m_root_win.id() )
 	{
-		debug_log << "Ignoring grand-child-window" << ev.xcreatewindow.window << std::endl;
-		return false;
+		debug_log << "Ignoring grand-child-window" << ev.window << std::endl;
+		return true;
 	}
 
-	XWindow w(ev.xcreatewindow.window);
-	w.setParent(ev.xcreatewindow.parent);
+	return false;
+}
+
+bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev)
+{
+	if( ! m_opts.handlePseudoWindows() )
+	{
+		if( isPseudoWindow(ev) )
+		{
+			return false;
+		}
+	}
+
+	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
+
+	XWindow w(ev.window);
+	w.setParent(ev.parent);
 
 	debug_log << "Window " << w << " was created!" << std::endl;
 	debug_log << "\tParent: " << XWindow(w.getParent()) << std::endl;
