@@ -378,8 +378,8 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	// a window was destroyed
 	case DestroyNotify:
 	{
-		XWindow w(ev.xdestroywindow.window);
-		auto it = m_ignored_windows.find(w.id());
+		handleDestroyEvent(ev.xdestroywindow);
+		auto it = m_ignored_windows.find( ev.xdestroywindow.window );
 		if( it != m_ignored_windows.end() )
 		{
 			// don't need to process a window we've ignored
@@ -387,9 +387,6 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			m_ignored_windows.erase(it);
 			break;
 		}
-		logger.debug() << "Window " << w << " was destroyed!" << std::endl;
-		FileSysWriteGuard write_guard(m_fs_root);
-		m_win_dir->removeWindow(w);
 		break;
 	}
 	case PropertyNotify:
@@ -525,6 +522,7 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev)
 		updateTime();
 		FileSysWriteGuard write_guard(m_fs_root);
 		m_win_dir->addWindow(w);
+		m_wm_dir->windowLifecycleEvent(w, true);
 	}
 	catch( const xwmfs::Exception &ex )
 	{
@@ -533,6 +531,18 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev)
 
 
 	return true;
+}
+
+void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev)
+{
+	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
+	XWindow w(ev.window);
+
+	debug_log << "Window " << w << " was destroyed!" << std::endl;
+
+	FileSysWriteGuard write_guard(m_fs_root);
+	m_win_dir->removeWindow(w);
+	m_wm_dir->windowLifecycleEvent(w, false);
 }
 
 /*

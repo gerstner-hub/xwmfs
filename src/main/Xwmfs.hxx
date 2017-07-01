@@ -205,6 +205,12 @@ protected: // functions
 
 	/**
 	 * \brief
+	 * 	Handles a window DestroyNotify event
+	 **/
+	void handleDestroyEvent(const XDestroyWindowEvent &ev);
+
+	/**
+	 * \brief
 	 * 	Returns whether the given CreateNotify event refers to a
 	 * 	pseudo window
 	 **/

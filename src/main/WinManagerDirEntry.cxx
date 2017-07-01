@@ -5,6 +5,9 @@
 #include "x11/RootWin.hxx"
 #include "fuse/EventFile.hxx"
 
+// C++
+#include <sstream>
+
 namespace xwmfs
 {
 
@@ -120,6 +123,16 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 	entry->setModifyTime(m_modify_time);
 
 	forwardEvent(update_spec);
+}
+
+void WinManagerDirEntry::windowLifecycleEvent(
+	const XWindow &win,
+	const bool created_else_destroyed
+)
+{
+	std::stringstream ss;
+	ss << (created_else_destroyed ? "created" : "destroyed") << " " << win;
+	m_events->addEvent(ss.str());
 }
 
 void WinManagerDirEntry::updateNumberOfDesktops(FileEntry &entry)

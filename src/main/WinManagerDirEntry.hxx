@@ -10,6 +10,7 @@ namespace xwmfs
 
 class RootWin;
 class EventFile;
+class XWindow;
 
 /**
  * \brief
@@ -31,6 +32,15 @@ public: // functions
 	 * 	Update window manager data denoted by \c changed_atom
 	 **/
 	void update(const Atom changed_atom);
+
+	/**
+	 * \brief
+	 * 	To be called when a window was created or destroyed
+	 **/
+	void windowLifecycleEvent(
+		const XWindow &win,
+		const bool created_else_destroyed
+	);
 
 protected: // functions
 
