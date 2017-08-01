@@ -197,13 +197,36 @@ public: // functions
 	}
 };
 
-template <>
-//! property type specialization for arrays of Window identifiers
-class XPropTraits< std::vector<Window> >
+template <typename ELEM>
+//! property type specialization for vectors of primitives
+class XPropTraits< std::vector<ELEM> >
 {
 public: // constants
 
-	static const Atom x_type = XA_WINDOW;
+	static const Atom x_type = XPropTraits<ELEM>::x_type;
+	static const unsigned long fixed_size = 0;
+	static const char format = XPropTraits<ELEM>::format;
+	typedef typename XPropTraits<ELEM>::XPtrType XPtrType;
+
+public: // functions
+
+	static
+	void x2native(std::vector<ELEM> &v, XPtrType data, unsigned int count)
+	{
+		for( unsigned int e = 0; e < count; e++ )
+		{
+			v.push_back(data[e]);
+		}
+	}
+};
+
+template <>
+//! property type specialization for arrays of Window identifiers
+class XPropTraits< std::vector<int> >
+{
+public: // constants
+
+	static const Atom x_type = XA_CARDINAL;
 	static const unsigned long fixed_size = 0;
 	static const char format = 32;
 	typedef long* XPtrType;
@@ -211,11 +234,11 @@ public: // constants
 public: // functions
 
 	static
-	void x2native(std::vector<Window> &w, XPtrType data, unsigned int count)
+	void x2native(std::vector<int> &v, XPtrType data, unsigned int count)
 	{
 		for( unsigned int e = 0; e < count; e++ )
 		{
-			w.push_back(data[e]);
+			v.push_back(data[e]);
 		}
 	}
 };
@@ -389,9 +412,9 @@ protected: // functions
 	{
 		checkDelete();
 
-		if( Traits::fixed_size )
+		if( Traits::fixed_size && size > Traits::fixed_size)
 		{
-			assert( size <= Traits::fixed_size );
+			xwmfs_throw(Exception("size is larger than fixed_size")); 
 		}
 
 		m_data_is_from_x = true;
