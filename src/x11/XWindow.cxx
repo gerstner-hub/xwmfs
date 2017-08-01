@@ -233,14 +233,82 @@ void XWindow::selectEvent(const long new_event) const
 	}
 }
 
+void XWindow::getPropertyList(AtomVector &atoms)
+{
+	atoms.clear();
+
+	int num_atoms = 0;
+
+	Atom *list = XListProperties(
+		XDisplay::getInstance(),
+		m_win,
+		&num_atoms
+	);
+
+	if( list == nullptr )
+	{
+		// could be an error (probably) or a window without any
+		// properties
+		return;
+	}
+
+	for( int i = 0; i < num_atoms; i++ )
+	{
+		atoms.push_back( list[i] );
+	}
+
+	XFree(list);
+}
+
+void XWindow::getPropertyInfo(const XAtom &property, PropertyInfo &info)
+{
+	int actual_format = 0;
+	unsigned long number_items = 0;
+	/*
+	 * we don't want any data returned, but the function excepts valid
+	 * pointers to pointers here, otherwise we segfault
+	 */
+	unsigned long bytes_left = 0;
+	unsigned char *prop_data = nullptr;
+
+	const auto res = XGetWindowProperty(
+		XDisplay::getInstance(),
+		m_win,
+		property,
+		0, /* offset */
+		0, /* length */
+		False, /* deleted property ? */
+		AnyPropertyType,
+		&info.type,
+		&actual_format,
+		&number_items,
+		&bytes_left, /* bytes left to read */
+		&prop_data /* output buffer to read into */
+	);
+
+	if( res != Success )
+	{
+		xwmfs_throw(X11Exception(XDisplay::getInstance(), res));
+	}
+
+	info.items = bytes_left / (actual_format / 8);
+	info.format = actual_format;
+
+	XFree(prop_data);
+}
+
 template <typename PROPTYPE>
-void XWindow::getProperty(const Atom name_atom, Property<PROPTYPE> &prop) const
+void XWindow::getProperty(
+	const Atom name_atom,
+	Property<PROPTYPE> &prop,
+	const PropertyInfo *info
+) const
 {
 	// shorthand for our concrete property object
 	typedef Property<PROPTYPE> THIS_PROP;
 
 	Atom x_type = THIS_PROP::getXType();
-	assert( x_type != None );
+	assert(x_type != None);
 
 	Atom actual_type;
 	// if 8, 16, or 32-bit format was actually read
@@ -249,6 +317,9 @@ void XWindow::getProperty(const Atom name_atom, Property<PROPTYPE> &prop) const
 	unsigned long remaining_bytes = 0;
 	unsigned char *data = nullptr;
 
+	const size_t max_len = info ?
+		(info->items * (info->format / 8)) : 65536 / 4;
+
 	const int res = XGetWindowProperty(
 		XDisplay::getInstance(),
 		m_win,
@@ -256,7 +327,7 @@ void XWindow::getProperty(const Atom name_atom, Property<PROPTYPE> &prop) const
 		// offset into the property data
 		0,
 		// maximum length of the property to read in 32-bit items
-		4096 / 4,
+		max_len,
 		// delete request
 		False,
 		// our expected type
@@ -278,23 +349,32 @@ void XWindow::getProperty(const Atom name_atom, Property<PROPTYPE> &prop) const
 		xwmfs_throw(PropertyQueryError(XDisplay::getInstance(), res));
 	}
 
-	if( actual_type == None )
+	try
+	{
+		if( actual_type == None )
+		{
+			xwmfs_throw(PropertyNotExisting());
+		}
+		else if( x_type != actual_type )
+		{
+			xwmfs_throw(PropertyTypeMismatch(x_type, actual_type));
+		}
+		else if( remaining_bytes != 0 )
+		{
+			xwmfs_throw(Exception("Bytes remaining during property read"));
+		}
+
+		assert( actual_format == THIS_PROP::Traits::format );
+
+		// ret_items gives the number of items acc. to actual_format that have
+		// been returned
+		prop.takeData(data, ret_items * (actual_format / 8));
+	}
+	catch( ... )
 	{
 		XFree(data);
-		xwmfs_throw(PropertyNotExisting());
+		throw;
 	}
-	else if( x_type != actual_type )
-	{
-		XFree(data);
-		xwmfs_throw(PropertyTypeMismatch(x_type, actual_type));
-	}
-
-	assert( actual_format == THIS_PROP::Traits::format );
-	assert( ! remaining_bytes );
-
-	// ret_items gives the number of items acc. to actual_format that have
-	// been returned
-	prop.takeData(data, ret_items * (actual_format / 8));
 }
 
 template <typename PROPTYPE>
@@ -385,8 +465,10 @@ void XWindow::updateFamily()
  *
  * allow to outline the above template code
  */
-template void XWindow::getProperty(const Atom, Property<unsigned long>&) const;
-template void XWindow::getProperty(const Atom, Property<std::vector<unsigned long> >&) const;
+template void XWindow::getProperty(const Atom, Property<unsigned long>&, const PropertyInfo*) const;
+template void XWindow::getProperty(const Atom, Property<const char*>&, const PropertyInfo*) const;
+template void XWindow::getProperty(const Atom, Property<std::vector<unsigned long> >&, const PropertyInfo*) const;
+template void XWindow::getProperty(const Atom, Property<std::vector<int> >&, const PropertyInfo*) const;
 
 } // end ns
 

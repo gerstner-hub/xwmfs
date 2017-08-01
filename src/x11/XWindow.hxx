@@ -4,6 +4,7 @@
 // C++
 #include <set>
 #include <iosfwd>
+#include <vector>
 
 #include <unistd.h> // pid_t
 
@@ -97,7 +98,23 @@ public: // types
 		XWMFS_EXCEPTION_IMPL;
 	};
 
+	/**
+	 * \brief
+	 * 	Keeps metadata about a property
+	 **/
+	struct PropertyInfo
+	{
+		//! the property's type
+		Atom type = None;
+		//! the number of items of the given format
+		size_t items = 0;
+		//! the format of the property 8/16/32
+		size_t format = 0;
+	};
+
 	typedef std::set<Window> WindowSet;
+
+	typedef std::vector<Atom> AtomVector;
 
 public: // functions
 
@@ -210,6 +227,28 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Retrieves a list of all properties currently present on this
+	 * 	window
+	 * \details
+	 * 	The vector of \c atoms is cleared in any case and will be
+	 * 	filled with the atoms identifying the properties existing on
+	 * 	this window.
+	 **/
+	void getPropertyList(AtomVector &atoms);
+
+	/**
+	 * \brief
+	 * 	Retrieves property metadata about the given property present
+	 * 	on this window
+	 * \details
+	 * 	This information is useful for processing properties in a
+	 * 	generic way without knowing their type in advance. For example
+	 * 	to be used together with getPropertyList().
+	 **/
+	void getPropertyInfo(const XAtom &property, PropertyInfo &info);
+
+	/**
+	 * \brief
 	 *	Retrieve a property from this window object
 	 * \details
 	 *	The property \c name will be queried from the current window
@@ -229,9 +268,16 @@ public: // functions
 	 * \brief
 	 *	The same as getProperty(std::string, Property<PROPTYPE>&) but
 	 *	for the case when you already have an atom mapping
+	 * \param[in] info
+	 * 	An optional pointer to the PropertyInfo for the given atom for
+	 * 	helping determining the correct size to retrieve
 	 **/
 	template <typename PROPTYPE>
-	void getProperty(const Atom name_atom, Property<PROPTYPE> &p) const;
+	void getProperty(
+		const Atom name_atom,
+		Property<PROPTYPE> &p,
+		const PropertyInfo *info = nullptr
+	) const;
 
 	/**
 	 * \brief
