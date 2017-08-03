@@ -1,4 +1,5 @@
 // C++
+#include <sstream>
 
 // xwmfs
 #include "main/WindowDirEntry.hxx"
@@ -74,6 +75,7 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_ewmh_wm_pid),
 		EntrySpec("command", &WindowDirEntry::updateCommandControl, true),
 		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false),
+		EntrySpec("properties", &WindowDirEntry::updateProperties, false, true /* always update this entry */)
 	} );
 }
 
@@ -138,15 +140,21 @@ void WindowDirEntry::update(Atom changed_atom)
 {
 	auto it = m_atom_update_map.find(XAtom(changed_atom));
 
-	if( it == m_atom_update_map.end() )
+	if( it != m_atom_update_map.end() )
 	{
-		return;
+		update(it->second);
 	}
 
-	updateModifyTime();
-	const auto &spec = it->second;
-	const auto entry = this->getFileEntry(spec.name);
+	for( const auto &spec: m_always_update_specs )
+	{
+		update(spec);
+	}
+}
 
+void WindowDirEntry::update(const EntrySpec &spec)
+{
+	updateModifyTime();
+	const auto entry = this->getFileEntry(spec.name);
 
 	// the property was not available during window creation but now here
 	// it is
@@ -215,6 +223,138 @@ void WindowDirEntry::updateCommandControl(FileEntry &entry)
 void WindowDirEntry::updateClientMachine(FileEntry &entry)
 {
 	entry << m_win.getClientMachine();
+}
+
+namespace
+{
+
+void getPropertyValue(
+	const XWindow &win,
+	const XAtom &prop_atom,
+	const XWindow::PropertyInfo &info,
+	std::stringstream &value
+)
+{
+	/*
+	 * this code could be more compact via templates but would then also
+	 * be more complex ...
+	 */
+	auto std_props = StandardProps::instance();
+
+	switch(info.type)
+	{
+		case XA_CARDINAL:
+		{
+			if( info.items == 1 )
+			{
+				Property<int> prop;
+				win.getProperty(prop_atom, prop, &info);
+				value << prop.get();
+			}
+			else
+			{
+				Property<std::vector<int>> prop;
+				win.getProperty(prop_atom, prop, &info);
+				for( const auto &val: prop.get() )
+				{
+					value << val << " ";
+				}
+			}
+			break;
+		}
+		case XA_STRING:
+		{
+			Property<const char*> prop;
+			win.getProperty(prop_atom, prop, &info);
+			value << prop.get();
+			break;
+		}
+		case XA_WINDOW:
+		{
+			Property<Window> prop;
+			win.getProperty(prop_atom, prop, &info);
+			value << prop.get();
+			break;
+		}
+		default:
+		{
+			if( info.type == std_props.atom_ewmh_utf8_string )
+			{
+				Property<utf8_string> prop;
+				win.getProperty(prop_atom, prop, &info);
+				value << prop.get().data;
+			}
+			else
+			{
+				// some unknown property type, display as hex
+				// TODO
+			}
+
+			break;
+		}
+	}
+}
+
+std::string getAtomTypeLabel(const XWindow::PropertyInfo &info)
+{
+	auto std_props = StandardProps::instance();
+
+	switch( info.type )
+	{
+	case XA_CARDINAL:
+		return "I";
+	case XA_STRING:
+		return "S";
+	case XA_WINDOW:
+		return "W";
+	}
+
+	if( info.type == std_props.atom_ewmh_utf8_string )
+		return "U";
+
+	return "?";
+}
+
+} // end ns
+
+void WindowDirEntry::updateProperties(FileEntry &entry)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	const auto &mapper = XAtomMapper::getInstance();
+	XWindow::AtomVector atoms;
+	m_win.getPropertyList(atoms);
+
+	bool first = true;
+	XWindow::PropertyInfo info;
+
+	for( const auto &plain_atom: atoms )
+	{
+		const XAtom atom(plain_atom);
+		m_win.getPropertyInfo(atom, info);
+		const auto &name = mapper.getName(atom);
+
+		logger.debug()
+			<< "Querying property " << atom << " on window "
+			<< m_win << std::endl;
+		logger.debug()
+			<< "type = " << info.type << ", items = " << info.items << ", format = " << info.format << std::endl;
+
+		entry << (first ? "" : "\n") << name << "(" << getAtomTypeLabel(info) << ") = ";
+
+		try
+		{
+			getPropertyValue(m_win, atom, info, entry);
+		}
+		catch( const Exception &ex )
+		{
+			logger.error()
+				<< "Error getting property value for "
+				<< m_win << "/" << atom << ": " << ex.what()
+				<< std::endl;
+			entry << "<error>";
+		}
+		first = false;
+	}
 }
 
 void WindowDirEntry::queryAttrs()

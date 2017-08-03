@@ -46,6 +46,8 @@ public: // functions
 	 **/
 	void update(Atom changed_atom);
 
+	void update(const EntrySpec &spec);
+
 	//! the window has been (un)mapped
 	void newMappedState(const bool mapped);
 
@@ -90,11 +92,14 @@ protected: // functions
 	//! adds/updates an entry for the PID of the window owner
 	void updatePID(FileEntry &entry);
 
-	//! Adds an entry for the command control file of a window
+	//! adds/updates an entry for the command control file of a window
 	void updateCommandControl(FileEntry &entry);
 
-	//! Adds an entry for the client machine a window is running on
+	//! adds/updates an entry for the client machine a window is running on
 	void updateClientMachine(FileEntry &entry);
+
+	//! adds/udpates a list of all properties of the window
+	void updateProperties(FileEntry &entry);
 
 	//! Adds an entry for the ID of the parent window
 	void updateParent();
