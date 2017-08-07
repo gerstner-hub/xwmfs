@@ -92,6 +92,9 @@ protected: // functions
 	//! adds/updates an entry for the PID of the window owner
 	void updatePID(FileEntry &entry);
 
+	//! updates an entry for the command line of a window
+	void updateCommand(FileEntry &entry);
+
 	//! adds/updates an entry for the command control file of a window
 	void updateCommandControl(FileEntry &entry);
 

@@ -198,6 +198,8 @@ struct StandardProps
 	//! contains the name of application instance and class as two
 	//! consecutive, null terminated strings
 	XAtom atom_icccm_wm_class;
+	//! contains the command line used to create the window
+	XAtom atom_icccm_wm_command;
 
 	static const StandardProps& instance();
 

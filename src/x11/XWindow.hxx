@@ -214,6 +214,12 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Returns the command line used to create the window
+	 **/
+	std::string getCommand() const;
+
+	/**
+	 * \brief
 	 * 	Requests the X server to destroy the represented window and
 	 * 	all sub-windows
 	 * \details

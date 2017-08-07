@@ -12,7 +12,7 @@ const WindowFileEntry::WriteMemberFunctionMap
 {
 	{ "name", &WindowFileEntry::writeName },
 	{ "desktop", &WindowFileEntry::writeDesktop },
-	{ "command", &WindowFileEntry::writeCommand }
+	{ "control", &WindowFileEntry::writeCommand }
 };
 
 void WindowFileEntry::writeCommand(const char *data, const size_t bytes)

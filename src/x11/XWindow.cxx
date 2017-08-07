@@ -143,6 +143,15 @@ std::string XWindow::getClientMachine() const
 	return name.get();
 }
 
+std::string XWindow::getCommand() const
+{
+	xwmfs::Property<const char *> name;
+
+	this->getProperty(m_std_props.atom_icccm_wm_command, name);
+
+	return name.get();
+}
+
 XWindow::ClassStringPair XWindow::getClass() const
 {
 	/*

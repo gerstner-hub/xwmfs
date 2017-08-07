@@ -73,12 +73,13 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_ewmh_desktop_nr),
 		EntrySpec("pid", &WindowDirEntry::updatePID, false,
 			std_props.atom_ewmh_wm_pid),
-		EntrySpec("command", &WindowDirEntry::updateCommandControl, true),
+		EntrySpec("control", &WindowDirEntry::updateCommandControl, true),
 		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false),
 		EntrySpec("properties", &WindowDirEntry::updateProperties, false, true /* always update this entry */),
 		EntrySpec("class", &WindowDirEntry::updateClass, false,
 			std_props.atom_icccm_wm_class
-		)
+		),
+		EntrySpec("command", &WindowDirEntry::updateCommand, false)
 	} );
 }
 
@@ -216,6 +217,11 @@ void WindowDirEntry::updateId(FileEntry &entry)
 void WindowDirEntry::updatePID(FileEntry &entry)
 {
 	entry << m_win.getPID();
+}
+
+void WindowDirEntry::updateCommand(FileEntry &entry)
+{
+	entry << m_win.getCommand();
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)
