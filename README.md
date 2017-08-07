@@ -95,7 +95,7 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   write a new desktop number to this file to move
  |       |                   the window to another desktop.
  |       |--------> pid: The PID of the process that owns the window
- |       |--------> command: Can be used to send a command to the window. When
+ |       |--------> control: Can be used to send a command to the window. When
  |       |                   read then a list of valid commands is returned.
  |       |                   Currently "destroy" or "delete" to force or ask
  |       |                   the window to be closed.
@@ -104,7 +104,14 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   basename of the file that changed.
  |       |--------> mapped:  Produces a boolean value (0, 1) whether this
  |       |                   window is currently mapped (visible)
- |
+ |       |--------> properties:
+ |       |                   Returns a line-wise list of all properties
+ |       |                   attached to the window. Format is "NAME<TYPE> =
+ |       |                   <VALUE>"
+ |       |--------> class:   Contains two newline separated string denoting
+ |       |                   the name of the application class and instance
+ |       |--------> command: Contains the command line that was used to start
+ |       |                   the application that created the window
 -wm: A directory containing global state information about the
  |   window manager
  |
