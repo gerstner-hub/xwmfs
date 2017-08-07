@@ -45,6 +45,7 @@ StandardProps::StandardProps()
 		atom_icccm_wm_protocols = mapper.getAtom("WM_PROTOCOLS");
 		atom_icccm_wm_delete_window = mapper.getAtom("WM_DELETE_WINDOW");
 		atom_icccm_wm_client_machine = mapper.getAtom("WM_CLIENT_MACHINE");
+		atom_icccm_wm_class = mapper.getAtom("WM_CLASS");
 	}
 	catch( const XDisplay::DisplayOpenError &ex )
 	{

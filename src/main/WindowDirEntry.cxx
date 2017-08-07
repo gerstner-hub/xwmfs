@@ -75,7 +75,10 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_ewmh_wm_pid),
 		EntrySpec("command", &WindowDirEntry::updateCommandControl, true),
 		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false),
-		EntrySpec("properties", &WindowDirEntry::updateProperties, false, true /* always update this entry */)
+		EntrySpec("properties", &WindowDirEntry::updateProperties, false, true /* always update this entry */),
+		EntrySpec("class", &WindowDirEntry::updateClass, false,
+			std_props.atom_icccm_wm_class
+		)
 	} );
 }
 
@@ -355,6 +358,12 @@ void WindowDirEntry::updateProperties(FileEntry &entry)
 		}
 		first = false;
 	}
+}
+
+void WindowDirEntry::updateClass(FileEntry &entry)
+{
+	const auto &class_pair = m_win.getClass();
+	entry << class_pair.first << "\n" << class_pair.second;
 }
 
 void WindowDirEntry::queryAttrs()

@@ -143,6 +143,28 @@ std::string XWindow::getClientMachine() const
 	return name.get();
 }
 
+XWindow::ClassStringPair XWindow::getClass() const
+{
+	/*
+	 * there's a special pair of functions X{Set,Get}ClassHint but that
+	 * would be more work for us, we get the raw property which consists
+	 * of two consecutive null terminated strings
+	 */
+	xwmfs::Property<const char *> clazz;
+
+	this->getProperty(m_std_props.atom_icccm_wm_class, clazz);
+
+	ClassStringPair ret;
+
+	ret.first = std::string( clazz.get() );
+	// this is not very safe but our Property modelling currently lacks
+	// support for strings containing null terminators (we can't get the
+	// complete size from the property)
+	ret.second = std::string( clazz.get() + ret.first.length() + 1 );
+
+	return ret;
+}
+
 void XWindow::destroy()
 {
 	auto &display = XDisplay::getInstance();

@@ -101,6 +101,9 @@ protected: // functions
 	//! adds/udpates a list of all properties of the window
 	void updateProperties(FileEntry &entry);
 
+	//! adds/updates the window instance and class name
+	void updateClass(FileEntry &entry);
+
 	//! Adds an entry for the ID of the parent window
 	void updateParent();
 

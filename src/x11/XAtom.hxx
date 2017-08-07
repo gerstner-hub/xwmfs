@@ -195,6 +195,9 @@ struct StandardProps
 	XAtom atom_icccm_wm_delete_window;
 	//! contains the name of the machine a window is running on
 	XAtom atom_icccm_wm_client_machine;
+	//! contains the name of application instance and class as two
+	//! consecutive, null terminated strings
+	XAtom atom_icccm_wm_class;
 
 	static const StandardProps& instance();
 

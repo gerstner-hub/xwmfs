@@ -5,6 +5,7 @@
 #include <set>
 #include <iosfwd>
 #include <vector>
+#include <utility>
 
 #include <unistd.h> // pid_t
 
@@ -116,6 +117,8 @@ public: // types
 
 	typedef std::vector<Atom> AtomVector;
 
+	typedef std::pair<std::string, std::string> ClassStringPair;
+
 public: // functions
 
 	//! Create an object without binding to a window
@@ -197,6 +200,17 @@ public: // functions
 
 	//! returns the client machine the window is associated with
 	std::string getClientMachine() const;
+
+	/**
+	 * \brief
+	 * 	Returns the window class parameters for this window
+	 * \details
+	 * 	The first returned string is the name of the application, the
+	 * 	second returned string is the class of the application.
+	 *
+	 * 	On error an exception is thrown.
+	 **/
+	ClassStringPair getClass() const;
 
 	/**
 	 * \brief

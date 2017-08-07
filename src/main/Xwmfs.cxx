@@ -235,6 +235,12 @@ int Xwmfs::init()
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error in FS operation: " << ex.what() << "\n";
 	}
+	catch( const std::exception &ex )
+	{
+		res = EXIT_FAILURE;
+		xwmfs::StdLogger::getInstance().error()
+			<< "Error in FS operation: " << ex.what() << "\n";
+	}
 	catch( ... )
 	{
 		res = EXIT_FAILURE;
