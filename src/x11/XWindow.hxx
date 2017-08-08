@@ -226,6 +226,13 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Returns the array of atoms representing the protocols
+	 * 	supported by the window
+	 **/
+	void getProtocols(AtomVector &protocols) const;
+
+	/**
+	 * \brief
 	 * 	Requests the X server to destroy the represented window and
 	 * 	all sub-windows
 	 * \details

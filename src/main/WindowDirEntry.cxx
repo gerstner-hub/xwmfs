@@ -80,7 +80,8 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_icccm_wm_class
 		),
 		EntrySpec("command", &WindowDirEntry::updateCommand, false),
-		EntrySpec("locale", &WindowDirEntry::updateLocale, false)
+		EntrySpec("locale", &WindowDirEntry::updateLocale, false),
+		EntrySpec("protocols", &WindowDirEntry::updateProtocols, false),
 	} );
 }
 
@@ -228,6 +229,22 @@ void WindowDirEntry::updateCommand(FileEntry &entry)
 void WindowDirEntry::updateLocale(FileEntry &entry)
 {
 	entry << m_win.getLocale();
+}
+
+void WindowDirEntry::updateProtocols(FileEntry &entry)
+{
+	XWindow::AtomVector prots;
+
+	m_win.getProtocols(prots);
+
+	const auto &mapper = XAtomMapper::getInstance();
+	bool first = true;
+
+	for( const auto &atom: prots )
+	{
+		entry << (first ? "" : "\n") << mapper.getName(XAtom(atom));
+		first = false;
+	}
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)

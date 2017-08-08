@@ -161,6 +161,33 @@ std::string XWindow::getLocale() const
 	return locale.get();
 }
 
+void XWindow::getProtocols(AtomVector &protocols) const
+{
+	protocols.clear();
+
+	Atom *ret = nullptr;
+	int ret_count = 0;
+
+	const auto status = XGetWMProtocols(
+		XDisplay::getInstance(),
+		m_win,
+		&ret,
+		&ret_count
+	);
+
+	if( status == 0 )
+	{
+		xwmfs_throw(X11Exception(XDisplay::getInstance(), status));
+	}
+
+	for( int num = 0; num < ret_count; num++ )
+	{
+		protocols.push_back(ret[num]);
+	}
+
+	XFree(ret);
+}
+
 XWindow::ClassStringPair XWindow::getClass() const
 {
 	/*

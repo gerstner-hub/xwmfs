@@ -98,6 +98,9 @@ protected: // functions
 	//! updates an entry for the window's locale name
 	void updateLocale(FileEntry &entry);
 
+	//! updates an entry for the window's supported protocols
+	void updateProtocols(FileEntry &entry);
+
 	//! adds/updates an entry for the command control file of a window
 	void updateCommandControl(FileEntry &entry);
 
