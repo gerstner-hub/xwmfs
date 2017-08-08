@@ -79,7 +79,8 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 		EntrySpec("class", &WindowDirEntry::updateClass, false,
 			std_props.atom_icccm_wm_class
 		),
-		EntrySpec("command", &WindowDirEntry::updateCommand, false)
+		EntrySpec("command", &WindowDirEntry::updateCommand, false),
+		EntrySpec("locale", &WindowDirEntry::updateLocale, false)
 	} );
 }
 
@@ -222,6 +223,11 @@ void WindowDirEntry::updatePID(FileEntry &entry)
 void WindowDirEntry::updateCommand(FileEntry &entry)
 {
 	entry << m_win.getCommand();
+}
+
+void WindowDirEntry::updateLocale(FileEntry &entry)
+{
+	entry << m_win.getLocale();
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)

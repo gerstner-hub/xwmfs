@@ -220,6 +220,12 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Returns the locale used by the window
+	 **/
+	std::string getLocale() const;
+
+	/**
+	 * \brief
 	 * 	Requests the X server to destroy the represented window and
 	 * 	all sub-windows
 	 * \details

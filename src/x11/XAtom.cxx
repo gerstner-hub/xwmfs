@@ -47,6 +47,7 @@ StandardProps::StandardProps()
 		atom_icccm_wm_client_machine = mapper.getAtom("WM_CLIENT_MACHINE");
 		atom_icccm_wm_class = mapper.getAtom("WM_CLASS");
 		atom_icccm_wm_command = mapper.getAtom("WM_COMMAND");
+		atom_icccm_wm_locale = mapper.getAtom("WM_LOCALE_NAME");
 	}
 	catch( const XDisplay::DisplayOpenError &ex )
 	{

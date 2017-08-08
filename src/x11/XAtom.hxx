@@ -200,6 +200,8 @@ struct StandardProps
 	XAtom atom_icccm_wm_class;
 	//! contains the command line used to create the window
 	XAtom atom_icccm_wm_command;
+	//! contains the locale used by a window's application
+	XAtom atom_icccm_wm_locale;
 
 	static const StandardProps& instance();
 

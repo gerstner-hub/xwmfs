@@ -112,6 +112,7 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   the name of the application class and instance
  |       |--------> command: Contains the command line that was used to start
  |       |                   the application that created the window
+ |       |--------> locale:  Contains the locale name used by the window's app
 -wm: A directory containing global state information about the
  |   window manager
  |

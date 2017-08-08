@@ -152,6 +152,15 @@ std::string XWindow::getCommand() const
 	return name.get();
 }
 
+std::string XWindow::getLocale() const
+{
+	xwmfs::Property<const char *> locale;
+
+	this->getProperty(m_std_props.atom_icccm_wm_locale, locale);
+
+	return locale.get();
+}
+
 XWindow::ClassStringPair XWindow::getClass() const
 {
 	/*
