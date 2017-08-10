@@ -141,6 +141,43 @@ public: // functions
 };
 
 template <>
+//! property trait specialization for integers
+class XPropTraits<XAtom>
+{
+public: // constants
+
+	static const Atom x_type = XA_ATOM;
+	static const unsigned long fixed_size = sizeof(Atom);
+	typedef long* XPtrType;
+	static const char format = 32;
+
+public: // functions
+
+	static
+	int getNumElements(const int &s)
+	{
+		(void)s;
+		return 1;
+	}
+
+
+	static
+	void x2native(XAtom &a, const XPtrType data, unsigned int count)
+	{
+		a = static_cast<Atom>(*data);
+		(void)count;
+	}
+
+	static
+	void native2x(const XAtom &a, XPtrType &data)
+	{
+		// We simply set the pointer to the PROPTYPE item as a flat
+		// copy.
+		data = (XPtrType)a.getPtr();
+	}
+};
+
+template <>
 //! property type specialization for strings
 class XPropTraits<const char*>
 {

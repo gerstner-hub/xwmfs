@@ -40,6 +40,7 @@ StandardProps::StandardProps()
 		atom_ewmh_desktop_nr = mapper.getAtom("_NET_WM_DESKTOP");
 		atom_ewmh_wm_window_list = mapper.getAtom("_NET_CLIENT_LIST");
 		atom_ewmh_wm_active_window = mapper.getAtom("_NET_ACTIVE_WINDOW");
+		atom_ewmh_wm_window_type = mapper.getAtom("_NET_WM_WINDOW_TYPE");
 		atom_icccm_client_machine = mapper.getAtom("WM_CLIENT_MACHINE");
 		atom_icccm_window_name = mapper.getAtom("WM_NAME");
 		atom_icccm_wm_protocols = mapper.getAtom("WM_PROTOCOLS");
@@ -48,6 +49,7 @@ StandardProps::StandardProps()
 		atom_icccm_wm_class = mapper.getAtom("WM_CLASS");
 		atom_icccm_wm_command = mapper.getAtom("WM_COMMAND");
 		atom_icccm_wm_locale = mapper.getAtom("WM_LOCALE_NAME");
+		atom_icccm_wm_client_leader = mapper.getAtom("WM_CLIENT_LEADER");
 	}
 	catch( const XDisplay::DisplayOpenError &ex )
 	{

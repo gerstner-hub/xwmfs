@@ -1,5 +1,6 @@
 // C++
 #include <sstream>
+#include <iostream>
 
 // xwmfs
 #include "main/WindowDirEntry.hxx"
@@ -79,9 +80,16 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 		EntrySpec("class", &WindowDirEntry::updateClass, false,
 			std_props.atom_icccm_wm_class
 		),
-		EntrySpec("command", &WindowDirEntry::updateCommand, false),
-		EntrySpec("locale", &WindowDirEntry::updateLocale, false),
-		EntrySpec("protocols", &WindowDirEntry::updateProtocols, false),
+		EntrySpec("command", &WindowDirEntry::updateCommand, false,
+			std_props.atom_icccm_wm_command),
+		EntrySpec("locale", &WindowDirEntry::updateLocale, false,
+			std_props.atom_icccm_wm_locale),
+		EntrySpec("protocols", &WindowDirEntry::updateProtocols, false,
+			std_props.atom_icccm_wm_protocols),
+		EntrySpec("client_leader", &WindowDirEntry::updateClientLeader, false,
+			std_props.atom_icccm_wm_client_leader),
+		EntrySpec("window_type", &WindowDirEntry::updateWindowType, false,
+			std_props.atom_ewmh_wm_window_type)
 	} );
 }
 
@@ -245,6 +253,22 @@ void WindowDirEntry::updateProtocols(FileEntry &entry)
 		entry << (first ? "" : "\n") << mapper.getName(XAtom(atom));
 		first = false;
 	}
+}
+
+void WindowDirEntry::updateClientLeader(FileEntry &entry)
+{
+	auto leader = m_win.getClientLeader();
+
+	entry << leader;
+}
+
+void WindowDirEntry::updateWindowType(FileEntry &entry)
+{
+	auto type = m_win.getWindowType();
+
+	const auto &mapper = XAtomMapper::getInstance();
+
+	entry << mapper.getName(XAtom(type));
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)

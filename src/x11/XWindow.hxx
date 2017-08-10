@@ -226,6 +226,27 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Returns the ID of the client leader window
+	 * \details
+	 * 	The client leader is part of the window manager session
+	 * 	management to identify windows that belong together.
+	 *
+	 * 	The client leader window itself also should have this property
+	 * 	set with its own window ID as value.
+	 **/
+	Window getClientLeader() const;
+
+	/**
+	 * \brief
+	 * 	Returns the type of the window
+	 * \details
+	 * 	The returned value is an atom of a predefined set of values
+	 * 	like _NET_WM_WINDOW_TYPE_NORMAL.
+	 **/
+	Atom getWindowType() const;
+
+	/**
+	 * \brief
 	 * 	Returns the array of atoms representing the protocols
 	 * 	supported by the window
 	 **/

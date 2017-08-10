@@ -161,6 +161,24 @@ std::string XWindow::getLocale() const
 	return locale.get();
 }
 
+Window XWindow::getClientLeader() const
+{
+	xwmfs::Property<Window> leader;
+
+	this->getProperty(m_std_props.atom_icccm_wm_client_leader, leader);
+
+	return leader.get();
+}
+
+Atom XWindow::getWindowType() const
+{
+	xwmfs::Property<XAtom> type;
+
+	this->getProperty(m_std_props.atom_ewmh_wm_window_type, type);
+
+	return type.get();
+}
+
 void XWindow::getProtocols(AtomVector &protocols) const
 {
 	protocols.clear();

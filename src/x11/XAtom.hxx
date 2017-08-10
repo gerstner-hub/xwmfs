@@ -70,6 +70,8 @@ public: // functions
 
 	Atom get() const { return m_atom; }
 
+	const Atom* getPtr() const { return &m_atom; }
+
 	bool valid() const { return m_atom != None; }
 
 protected: // data
@@ -185,6 +187,8 @@ struct StandardProps
 	XAtom atom_ewmh_wm_window_list;
 	//! property containing the ID of the currently active window
 	XAtom atom_ewmh_wm_active_window;
+	//! the type of the window
+	XAtom atom_ewmh_wm_window_type;
 	//! name of the machine running the client as seen from server
 	XAtom atom_icccm_client_machine;
 	//! window name property acc. to ICCCM spec.
@@ -202,6 +206,8 @@ struct StandardProps
 	XAtom atom_icccm_wm_command;
 	//! contains the locale used by a window's application
 	XAtom atom_icccm_wm_locale;
+	//! contains the ID of the client leader window
+	XAtom atom_icccm_wm_client_leader;
 
 	static const StandardProps& instance();
 

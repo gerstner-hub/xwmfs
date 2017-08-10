@@ -117,6 +117,11 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |--------> procotols:
  |       |                   The newline separated list of protocols supported
  |       |                   by the window (WM_PROTOCOLS)
+ |       |--------> client_leader:
+ |       |                   The window ID of the client leader window for
+ |       |                   this window
+ |       |--------> window_type:
+ |       |                   The type of this window, fixed set of constants
 -wm: A directory containing global state information about the
  |   window manager
  |

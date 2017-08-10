@@ -101,6 +101,12 @@ protected: // functions
 	//! updates an entry for the window's supported protocols
 	void updateProtocols(FileEntry &entry);
 
+	//! updates an entry for the window's client leader window
+	void updateClientLeader(FileEntry &entry);
+
+	//! updates an entry for the window's type
+	void updateWindowType(FileEntry &entry);
+
 	//! adds/updates an entry for the command control file of a window
 	void updateCommandControl(FileEntry &entry);
 
