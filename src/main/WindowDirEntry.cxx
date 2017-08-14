@@ -26,6 +26,14 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	m_mapped = new WindowFileEntry("mapped", m_win, m_modify_time, false);
 	addEntry(m_mapped);
 
+	m_geometry = new WindowFileEntry("geometry", m_win, m_modify_time, false);
+	addEntry(m_geometry);
+	{
+		XWindowAttrs attrs;
+		m_win.getAttrs(attrs);
+		updateGeometry(attrs);
+	}
+
 	// NOTE: might become a writeable entry, using XReparentWindow(),
 	// pretty obscure though
 	m_parent = new WindowFileEntry("parent", m_win, m_modify_time, false);
@@ -204,6 +212,17 @@ void WindowDirEntry::newMappedState(const bool mapped)
 	m_events->addEvent("mapped");
 }
 
+void WindowDirEntry::newGeometry(const XConfigureEvent &event)
+{
+	XWindowAttrs attrs;
+	attrs.x = event.x;
+	attrs.y = event.y;
+	attrs.width = event.width;
+	attrs.height = event.height;
+	updateGeometry(attrs);
+	m_events->addEvent("geometry");
+}
+
 void WindowDirEntry::forwardEvent(const EntrySpec &changed_entry)
 {
 	m_events->addEvent(changed_entry.name);
@@ -269,6 +288,12 @@ void WindowDirEntry::updateWindowType(FileEntry &entry)
 	const auto &mapper = XAtomMapper::getInstance();
 
 	entry << mapper.getName(XAtom(type));
+}
+
+void WindowDirEntry::updateGeometry(const XWindowAttrs &attrs)
+{
+	m_geometry->str("");
+	(*m_geometry) << attrs.x << "," << attrs.y << "," << attrs.width << "," << attrs.height << "\n";
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)

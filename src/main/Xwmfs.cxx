@@ -429,6 +429,12 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	// called upon window size/appearance changes
 	case ConfigureNotify:
 	{
+		XWindow w(ev.xconfigure.window);
+		updateTime();
+
+		FileSysWriteGuard write_guard(m_fs_root);
+
+		m_win_dir->updateGeometry(w, ev.xconfigure);
 		break;
 	}
 	case CirculateNotify:

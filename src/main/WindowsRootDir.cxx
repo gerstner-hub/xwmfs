@@ -128,6 +128,18 @@ void WindowsRootDir::updateProperty(const XWindow &win, Atom changed_atom)
 	win_dir->update(changed_atom);
 }
 
+void WindowsRootDir::updateGeometry(const XWindow &win, const XConfigureEvent &event)
+{
+	auto win_dir = getWindowDir(win);
+
+	if( !win_dir )
+	{
+		return missingWindow("geometry update");
+	}
+
+	win_dir->newGeometry(event);
+}
+
 void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped)
 {
 	auto win_dir = getWindowDir(win);

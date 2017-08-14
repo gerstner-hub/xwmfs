@@ -51,6 +51,9 @@ public: // functions
 	//! the window has been (un)mapped
 	void newMappedState(const bool mapped);
 
+	//! the window geometry changed according to \c event
+	void newGeometry(const XConfigureEvent &event);
+
 	//! the window's parent has been changed
 	void newParent(const XWindow &win);
 
@@ -122,6 +125,9 @@ protected: // functions
 	//! Adds an entry for the ID of the parent window
 	void updateParent();
 
+	//! Updates the geometry entry according to \c attrs
+	void updateGeometry(const XWindowAttrs &attrs);
+
 	//! Actively query some attributes
 	void queryAttrs();
 
@@ -140,6 +146,8 @@ protected: // data
 	WindowFileEntry *m_mapped = nullptr;
 	//! contains the ID of the parent of this window
 	WindowFileEntry *m_parent = nullptr;
+	//! contains the geometry of this window
+	WindowFileEntry *m_geometry = nullptr;
 };
 
 } // end ns

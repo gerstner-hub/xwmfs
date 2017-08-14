@@ -72,6 +72,14 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Called if a window's geometry has changed
+	 * \param[in] win
+	 * 	The window that changed
+	 **/
+	void updateGeometry(const XWindow &win, const XConfigureEvent &event);
+
+	/**
+	 * \brief
 	 * 	called if the mapped state of a window is to be updated
 	 * \param[in] win
 	 * 	The window that was (un)mapped
