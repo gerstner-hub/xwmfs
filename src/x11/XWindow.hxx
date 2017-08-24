@@ -431,6 +431,15 @@ public: // functions
 	 **/
 	void getAttrs(XWindowAttrs &attrs);
 
+	/**
+	 * \brief
+	 * 	Move and or resize the window
+	 * \details
+	 * 	The x, y, width and height parameters from \c attrs will be
+	 * 	used to perform the operation.
+	 **/
+	void moveResize(const XWindowAttrs &attrs);
+
 	void setParent(Window parent) { m_parent = parent; }
 	void setParent(const XWindow &parent) { setParent(parent.id()); }
 

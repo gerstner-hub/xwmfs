@@ -58,6 +58,8 @@ struct WindowFileEntry :
 
 	void writeCommand(const char *data, const size_t bytes);
 
+	void writeGeometry(const char *data, const size_t bytes);
+
 	/**
 	 * \brief
 	 * 	Compares this file system entries against the given window

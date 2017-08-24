@@ -26,7 +26,7 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	m_mapped = new WindowFileEntry("mapped", m_win, m_modify_time, false);
 	addEntry(m_mapped);
 
-	m_geometry = new WindowFileEntry("geometry", m_win, m_modify_time, false);
+	m_geometry = new WindowFileEntry("geometry", m_win, m_modify_time, true);
 	addEntry(m_geometry);
 	{
 		XWindowAttrs attrs;
@@ -293,7 +293,7 @@ void WindowDirEntry::updateWindowType(FileEntry &entry)
 void WindowDirEntry::updateGeometry(const XWindowAttrs &attrs)
 {
 	m_geometry->str("");
-	(*m_geometry) << attrs.x << "," << attrs.y << "," << attrs.width << "," << attrs.height << "\n";
+	(*m_geometry) << attrs.x << "," << attrs.y << ":" << attrs.width << "x" << attrs.height << "\n";
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry)

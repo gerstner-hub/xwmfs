@@ -1,6 +1,7 @@
 // xwmfs
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
+#include "x11/XWindowAttrs.hxx"
 #include "common/Helper.hxx"
 #include "fuse/DirEntry.hxx"
 
@@ -12,8 +13,45 @@ const WindowFileEntry::WriteMemberFunctionMap
 {
 	{ "name", &WindowFileEntry::writeName },
 	{ "desktop", &WindowFileEntry::writeDesktop },
-	{ "control", &WindowFileEntry::writeCommand }
+	{ "control", &WindowFileEntry::writeCommand },
+	{ "geometry", &WindowFileEntry::writeGeometry }
 };
+
+void WindowFileEntry::writeGeometry(const char *data, const size_t bytes)
+{
+	std::stringstream ss;
+	ss.str(std::string(data, bytes));
+
+	char c = '\0';
+	XWindowAttrs attrs;
+	bool good = true;
+
+	ss >> attrs.x;
+	good = good && ss.good();
+	ss >> c;
+	good = good && c == ',';
+	ss >> attrs.y;
+	good = good && ss.good();
+	ss >> c;
+	good = good && c == ':';
+	ss >> attrs.width;
+	good = good && ss.good();
+	ss >> c;
+	good = good && c == 'x';
+	ss >> attrs.height;
+	good = good && ss.good();
+
+	if( !good )
+	{
+		xwmfs_throw(
+			xwmfs::Exception("Couldn't parse new geometry")
+		);
+	}
+
+	m_win.moveResize(attrs);
+	// send the move request out immediately
+	XDisplay::getInstance().flush();
+}
 
 void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
 {

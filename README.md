@@ -122,6 +122,12 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   this window
  |       |--------> window_type:
  |       |                   The type of this window, fixed set of constants
+ |       |--------> geometry:
+ |       |                   Contains a string of the from "X,Y:WxH", denoting
+ |       |                   the x/y position of the upper left corner and the
+ |       |                   width and height of the window. When writing a
+ |       |                   correspondingly formatted value to this file then
+ |       |                   the window will be moved and/or resized accordingly.
 -wm: A directory containing global state information about the
  |   window manager
  |

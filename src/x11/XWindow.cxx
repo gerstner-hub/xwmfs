@@ -516,6 +516,19 @@ void XWindow::getAttrs(XWindowAttrs &attrs)
 	}
 }
 
+void XWindow::moveResize(const XWindowAttrs &attrs)
+{
+	auto &display = XDisplay::getInstance();
+	const auto status = XMoveResizeWindow(
+		display, m_win, attrs.x, attrs.y, attrs.width, attrs.height
+	);
+
+	if( status == 0 )
+	{
+		xwmfs_throw(X11Exception(display, status));
+	}
+}
+
 void XWindow::updateFamily()
 {
 	auto &display = XDisplay::getInstance();
