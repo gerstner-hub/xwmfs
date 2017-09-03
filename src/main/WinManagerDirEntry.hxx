@@ -35,6 +35,12 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Reflect delection of the denoted \c deleted_atom
+	 **/
+	void delProp(const Atom deleted_atom);
+
+	/**
+	 * \brief
 	 * 	To be called when a window was created or destroyed
 	 **/
 	void windowLifecycleEvent(

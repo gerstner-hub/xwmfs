@@ -72,6 +72,17 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Called if a window's property in the file system is to be
+	 * 	deleted
+	 * \param[in] win
+	 * 	The window that lost a property
+	 * \param[in] deleted_atom
+	 * 	The atom at the window that was deleted
+	 **/
+	void deleteProperty(const XWindow &win, Atom deleted_atom);
+
+	/**
+	 * \brief
 	 * 	Called if a window's geometry has changed
 	 * \param[in] win
 	 * 	The window that changed

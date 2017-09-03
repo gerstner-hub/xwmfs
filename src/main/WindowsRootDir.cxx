@@ -128,6 +128,18 @@ void WindowsRootDir::updateProperty(const XWindow &win, Atom changed_atom)
 	win_dir->update(changed_atom);
 }
 
+void WindowsRootDir::deleteProperty(const XWindow &win, Atom deleted_atom)
+{
+	auto win_dir = getWindowDir(win);
+
+	if( !win_dir )
+	{
+		return missingWindow("property delete");
+	}
+
+	win_dir->delProp(deleted_atom);
+}
+
 void WindowsRootDir::updateGeometry(const XWindow &win, const XConfigureEvent &event)
 {
 	auto win_dir = getWindowDir(win);

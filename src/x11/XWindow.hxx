@@ -360,6 +360,24 @@ public: // functions
 	template <typename PROPTYPE>
 	void setProperty(const Atom name_atom, const Property<PROPTYPE> &p);
 
+
+	/**
+	 * \brief
+	 * 	Removes the property of the given name identifier from the
+	 * 	window
+	 **/
+	void delProperty(const std::string &name)
+	{
+		delProperty( XDisplay::getInstance().getAtom(name) );
+	}
+
+	/**
+	 * \brief
+	 * 	Removes the property of the given atom identifier from the
+	 * 	window
+	 **/
+	void delProperty(const Atom name_atom);
+
 	//! compares the Xlib Window primitive for equality
 	bool operator==(const XWindow &o) const { return m_win == o.m_win; }
 

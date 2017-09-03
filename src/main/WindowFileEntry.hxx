@@ -60,6 +60,12 @@ struct WindowFileEntry :
 
 	void writeGeometry(const char *data, const size_t bytes);
 
+	void writeProperties(const char *data, const size_t bytes);
+
+	void setProperty(const std::string &name);
+
+	void delProperty(const std::string &name);
+
 	/**
 	 * \brief
 	 * 	Compares this file system entries against the given window

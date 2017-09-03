@@ -401,8 +401,12 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			<< "Property (" << XAtom(ev.xproperty.atom) << ")"
 			<< " on window " << ev.xproperty.window << " changed ("
 			<< std::dec << ev.xproperty.state << ")" << std::endl;
+
+		const bool is_delete = ev.xproperty.state == PropertyDelete;
+
 		switch( ev.xproperty.state )
 		{
+		case PropertyDelete:
 		case PropertyNewValue:
 		{
 			XWindow w(ev.xproperty.window);
@@ -412,16 +416,18 @@ void Xwmfs::handleEvent(const XEvent &ev)
 
 			if( w == m_root_win )
 			{
-				m_wm_dir->update(ev.xproperty.atom);
+				is_delete ?
+					m_wm_dir->delProp(ev.xproperty.atom) :
+					m_wm_dir->update(ev.xproperty.atom);
 			}
 			else
 			{
-				m_win_dir->updateProperty(w, ev.xproperty.atom);
+				is_delete ?
+					m_win_dir->deleteProperty(w, ev.xproperty.atom) :
+					m_win_dir->updateProperty(w, ev.xproperty.atom);
 			}
 			break;
 		}
-		case PropertyDelete:
-			// TODO: remove file system entry?
 		default:
 			break;
 		}

@@ -125,6 +125,12 @@ void WinManagerDirEntry::update(const Atom changed_atom)
 	forwardEvent(update_spec);
 }
 
+void WinManagerDirEntry::delProp(const Atom deleted_atom)
+{
+	(void)deleted_atom;
+	// TODO: do something here? is this a common use case?
+}
+
 void WinManagerDirEntry::windowLifecycleEvent(
 	const XWindow &win,
 	const bool created_else_destroyed

@@ -44,9 +44,13 @@ public: // functions
 	 * \brief
 	 * 	Update window data denoted by \c changed_atom
 	 **/
-	void update(Atom changed_atom);
+	void update(Atom changed_atom) { propertyChanged(changed_atom, false); }
 
 	void update(const EntrySpec &spec);
+
+	void delProp(Atom deleted_atom) { propertyChanged(deleted_atom, true); }
+
+	void delProp(const EntrySpec &spec);
 
 	//! the window has been (un)mapped
 	void newMappedState(const bool mapped);
@@ -67,6 +71,8 @@ public: // functions
 	void updateAll();
 
 protected: // functions
+
+	void propertyChanged(Atom changed_atom, bool is_delete);
 
 	//! adds all directory file entries for the represented window
 	void addEntries();

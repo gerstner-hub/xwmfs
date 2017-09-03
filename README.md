@@ -107,7 +107,10 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |--------> properties:
  |       |                   Returns a line-wise list of all properties
  |       |                   attached to the window. Format is "NAME<TYPE> =
- |       |                   <VALUE>"
+ |       |                   <VALUE>". You can also add or change properties
+ |       |                   by writing strings of the same format. You can
+ |       |                   delete a property by writing a string of the
+ |       |                   format "!<NAME>".
  |       |--------> class:   Contains two newline separated string denoting
  |       |                   the name of the application class and instance
  |       |--------> command: Contains the command line that was used to start

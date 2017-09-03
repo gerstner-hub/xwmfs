@@ -84,7 +84,8 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const
 			std_props.atom_ewmh_wm_pid),
 		EntrySpec("control", &WindowDirEntry::updateCommandControl, true),
 		EntrySpec("client_machine", &WindowDirEntry::updateClientMachine, false),
-		EntrySpec("properties", &WindowDirEntry::updateProperties, false, true /* always update this entry */),
+		EntrySpec("properties", &WindowDirEntry::updateProperties, true,
+			true /* always update this entry */),
 		EntrySpec("class", &WindowDirEntry::updateClass, false,
 			std_props.atom_icccm_wm_class
 		),
@@ -158,8 +159,12 @@ void WindowDirEntry::updateAll()
 	}
 }
 
-void WindowDirEntry::update(Atom changed_atom)
+void WindowDirEntry::propertyChanged(Atom changed_atom, bool is_delete)
 {
+	// do the same for delete and update at the moment
+	// upon delete empty files might remain in the process of updating
+	// them. Removal of those files is a TODO
+	(void)is_delete;
 	auto it = m_atom_update_map.find(XAtom(changed_atom));
 
 	if( it != m_atom_update_map.end() )
@@ -376,26 +381,6 @@ void getPropertyValue(
 	}
 }
 
-std::string getAtomTypeLabel(const XWindow::PropertyInfo &info)
-{
-	auto std_props = StandardProps::instance();
-
-	switch( info.type )
-	{
-	case XA_CARDINAL:
-		return "I";
-	case XA_STRING:
-		return "S";
-	case XA_WINDOW:
-		return "W";
-	}
-
-	if( info.type == std_props.atom_ewmh_utf8_string )
-		return "U";
-
-	return "?";
-}
-
 } // end ns
 
 void WindowDirEntry::updateProperties(FileEntry &entry)
@@ -413,6 +398,7 @@ void WindowDirEntry::updateProperties(FileEntry &entry)
 		const XAtom atom(plain_atom);
 		m_win.getPropertyInfo(atom, info);
 		const auto &name = mapper.getName(atom);
+		const auto &type = mapper.getName(XAtom(info.type));
 
 		logger.debug()
 			<< "Querying property " << atom << " on window "
@@ -420,7 +406,7 @@ void WindowDirEntry::updateProperties(FileEntry &entry)
 		logger.debug()
 			<< "type = " << info.type << ", items = " << info.items << ", format = " << info.format << std::endl;
 
-		entry << (first ? "" : "\n") << name << "(" << getAtomTypeLabel(info) << ") = ";
+		entry << (first ? "" : "\n") << name << "(" << type << ") = ";
 
 		try
 		{

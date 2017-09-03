@@ -504,6 +504,21 @@ void XWindow::setProperty(const Atom name_atom, const Property<PROPTYPE> &prop)
 	display.flush();
 }
 
+void XWindow::delProperty(const Atom name_atom)
+{
+	auto &display = XDisplay::getInstance();
+
+	const auto status = XDeleteProperty(display, m_win, name_atom);
+
+	if( status == 0 )
+	{
+		xwmfs_throw(X11Exception(display, status));
+	}
+
+	// see setProperty()
+	display.flush();
+}
+
 void XWindow::getAttrs(XWindowAttrs &attrs)
 {
 	auto &display = XDisplay::getInstance();
@@ -567,6 +582,9 @@ template void XWindow::getProperty(const Atom, Property<unsigned long>&, const P
 template void XWindow::getProperty(const Atom, Property<const char*>&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<unsigned long> >&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<int> >&, const PropertyInfo*) const;
+template void XWindow::setProperty(const Atom, const Property<const char*>&);
+template void XWindow::setProperty(const Atom, const Property<int>&);
+template void XWindow::setProperty(const Atom, const Property<utf8_string>&);
 
 } // end ns
 
