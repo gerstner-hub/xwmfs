@@ -5,6 +5,7 @@
 #include <map>
 #include <functional>
 #include <vector>
+#include <algorithm>
 
 // C
 #include <stdlib.h> // EXIT_*
@@ -295,15 +296,22 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 	m_display = XDisplay::getInstance();
 	auto &logger = xwmfs::StdLogger::getInstance();
 
+	const std::vector<int> fds(
+		{ m_dis_fd, m_wakeup_pipe[0], m_abort_pipe[0] }
+	);
+	const int max_fd = *(std::max_element( fds.begin(), fds.end() )) + 1;
+
 	while( t.getState() == xwmfs::Thread::RUN )
 	{
 		FD_ZERO(&m_select_set);
-		FD_SET(m_dis_fd, &m_select_set);
-		FD_SET(m_wakeup_pipe[0], &m_select_set);
-		FD_SET(m_abort_pipe[0], &m_select_set);
+		for( int fd: fds )
+		{
+			FD_SET(fd, &m_select_set);
+		}
+
 		// here we wait until one of the file descriptors is readable
 		const int sel_res = ::select(
-			FD_SETSIZE,
+			max_fd,
 			&m_select_set, nullptr, nullptr, nullptr
 		);
 
