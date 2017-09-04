@@ -101,6 +101,31 @@ private: // data
 	const Mutex &m_mutex;
 };
 
+/**
+ * \brief
+ * 	A reversed mutex guard object that unlocks a Mutex until it's
+ * 	destroyed
+ **/
+class MutexReverseGuard
+{
+public: // functions
+
+	MutexReverseGuard(const Mutex &m) :
+		m_mutex(m)
+	{
+		m_mutex.unlock();
+	}
+
+	~MutexReverseGuard()
+	{
+		m_mutex.lock();
+	}
+
+private: // data
+
+	const Mutex &m_mutex;
+};
+
 } // end ns
 
 #endif // inc. guard
