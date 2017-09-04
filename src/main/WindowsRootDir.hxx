@@ -112,7 +112,7 @@ public: // functions
 
 protected: // functions
 
-	void missingWindow(const std::string &action);
+	void missingWindow(const XWindow &win, const std::string &action);
 
 protected: // data
 

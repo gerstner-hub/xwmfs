@@ -122,7 +122,7 @@ void WindowsRootDir::updateProperty(const XWindow &win, Atom changed_atom)
 
 	if( !win_dir )
 	{
-		return missingWindow("property update");
+		return missingWindow(win, "property update");
 	}
 
 	win_dir->update(changed_atom);
@@ -134,7 +134,7 @@ void WindowsRootDir::deleteProperty(const XWindow &win, Atom deleted_atom)
 
 	if( !win_dir )
 	{
-		return missingWindow("property delete");
+		return missingWindow(win, "property delete");
 	}
 
 	win_dir->delProp(deleted_atom);
@@ -146,7 +146,7 @@ void WindowsRootDir::updateGeometry(const XWindow &win, const XConfigureEvent &e
 
 	if( !win_dir )
 	{
-		return missingWindow("geometry update");
+		return missingWindow(win, "geometry update");
 	}
 
 	win_dir->newGeometry(event);
@@ -158,7 +158,7 @@ void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped)
 
 	if( !win_dir )
 	{
-		return missingWindow("Mapping state update");
+		return missingWindow(win, "Mapping state update");
 	}
 
 	xwmfs::StdLogger::getInstance().info()
@@ -175,7 +175,7 @@ void WindowsRootDir::updateParent(const XWindow &win)
 
 	if( !win_dir )
 	{
-		return missingWindow("parent update");
+		return missingWindow(win, "parent update");
 	}
 
 	xwmfs::StdLogger::getInstance().info()
@@ -185,10 +185,10 @@ void WindowsRootDir::updateParent(const XWindow &win)
 	win_dir->newParent(XWindow(win.getParent()));
 }
 
-void WindowsRootDir::missingWindow(const std::string &action)
+void WindowsRootDir::missingWindow(const XWindow &win, const std::string &action)
 {
 	xwmfs::StdLogger::getInstance().warn()
-		<< "Window not found in hierarchy for: " << action
+		<< "Window " << win << " not found in hierarchy for: " << action
 		<< std::endl;
 }
 
