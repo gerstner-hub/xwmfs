@@ -88,7 +88,12 @@ void printXWMFSHelp()
 		"\t\toperate xlib calls synchronously for better error detection\n"
 		"\t--logger=EWID\n"
 		"\t\tset logger output for error (E), warning(W), info (I)\n"
-		"\t\tand debug (D) to on ('1') or off ('0'), i.e. a row of four bits\n");
+		"\t\tand debug (D) to on ('1') or off ('0'), i.e. a row of four bits\n"
+		"\t--handle-pseudo-windows\n"
+		"\t\talso include hidden and helper windows like popup menus\n"
+		"\t\tand window decorations"
+		"\n"
+	);
 }
 
 int main(int argc, char *argv[])
