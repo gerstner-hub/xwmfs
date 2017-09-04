@@ -343,12 +343,20 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 
 void Xwmfs::handlePendingEvents()
 {
+	MutexGuard g(m_event_lock);
+
 	do
 	{
 		XNextEvent(m_display, &m_ev);
 
 		try
 		{
+			// don't keep this lock for the duration of the
+			// handling, because otherwise we might run into
+			// cross-locking issues, because other threads may
+			// hold the FS lock and want our event lock, while he
+			// have the event lock but desire the FS lock.
+			MutexReverseGuard rg(m_event_lock);
 			handleEvent(m_ev);
 		}
 		catch(const xwmfs::Exception &ex)

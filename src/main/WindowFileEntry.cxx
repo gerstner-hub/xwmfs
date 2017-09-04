@@ -1,6 +1,7 @@
 // xwmfs
 #include "main/WindowFileEntry.hxx"
 #include "main/StdLogger.hxx"
+#include "main/Xwmfs.hxx"
 #include "x11/XWindowAttrs.hxx"
 #include "common/Helper.hxx"
 #include "fuse/DirEntry.hxx"
@@ -20,6 +21,7 @@ const WindowFileEntry::WriteMemberFunctionMap
 
 void WindowFileEntry::writeProperties(const char *data, const size_t bytes)
 {
+	MutexGuard g(Xwmfs::getInstance().getEventLock());
 	std::string input(data, bytes);
 
 	if( !input.empty() && input[0] == '!' )

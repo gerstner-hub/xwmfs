@@ -78,6 +78,29 @@ public: // functions
 		return w;
 	}
 
+	/**
+	 * \brief
+	 * 	Locks the X11 event handling in the separated event thread
+	 * \details
+	 * 	This is to work around issues in libX11 itself. It's
+	 * 	surrounding the multithreading, for example when calling
+	 * 	XInternAtom from other threads then neither the separte Event
+	 * 	thread nor the thread calling XInternAtom will unblock as long
+	 * 	as no additional events are occuring that the event thread can
+	 * 	consume.
+	 *
+	 * 	This is a FIXME in libX11 source file xcb_io.c in function
+	 * 	_XReply() we're running into here. This lock here is supposed
+	 * 	to prevent entering this situation by only calling into
+	 * 	XNextEvent() when no other threads are actually doing
+	 * 	asynchronous X calls.
+	 *
+	 * 	This currently mostly happens in the "properties" node where
+	 * 	custom atom names are handling in the context of a FUSE
+	 * 	thread.
+	 **/
+	Mutex& getEventLock() { return m_event_lock; }
+
 	//! Returns the root window held in the Xwmfs
 	xwmfs::RootWin& getRootWin() { return m_root_win; }
 
@@ -297,6 +320,8 @@ private: // data
 
 	//! currently existing windows that are ignored by us
 	WindowSet m_ignored_windows;
+
+	Mutex m_event_lock;
 
 private: // functions
 
