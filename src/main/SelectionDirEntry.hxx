@@ -14,6 +14,7 @@ namespace xwmfs
 
 class EventFile;
 class SelectionOwnerFile;
+class SelectionAccessFile;
 
 /**
  * \brief
@@ -54,6 +55,10 @@ class SelectionOwnerFile;
  * 	- events: will provide change notifications when selection's owners
  * 	change.
  *
+ *	The following page gives a good overview of the workings of X
+ *	selection buffers:
+ *
+ *	https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
  **/
 class SelectionDirEntry :
 	public DirEntry
@@ -61,7 +66,7 @@ class SelectionDirEntry :
 public: // types
 
 	typedef std::vector< std::pair<XAtom, std::string> > SelectionTypeVector;
-	
+	typedef std::vector< SelectionAccessFile* > SelectionAccessFileVector;
 
 public: // functions
 
@@ -84,13 +89,26 @@ public: // functions
 
 protected: // functions
 
+	/**
+	 * \brief
+	 * 	Collects the atoms for all covered selection types in
+	 * 	m_selection_types
+	 **/
 	void collectSelectionTypes();
+
+	/**
+	 * \brief
+	 * 	Creates a SelectionAccessFile child entry for each covered
+	 * 	selection type
+	 **/
+	void createSelectionAccessFiles();
 
 protected: // data
 
 	SelectionOwnerFile *m_owners = nullptr;
 	EventFile *m_events = nullptr;
 	SelectionTypeVector m_selection_types;
+	SelectionAccessFileVector m_selection_access_files;
 };
 
 } // end ns

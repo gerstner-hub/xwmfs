@@ -1,8 +1,10 @@
 // xwmfs
+#include "common/Helper.hxx"
 #include "fuse/FileEntry.hxx"
 #include "x11/XDisplay.hxx"
 #include "x11/XAtom.hxx"
 #include "main/SelectionDirEntry.hxx"
+#include "main/SelectionAccessFile.hxx"
 #include "main/SelectionOwnerFile.hxx"
 #include "main/Xwmfs.hxx"
 
@@ -15,6 +17,7 @@ SelectionDirEntry::SelectionDirEntry() :
 	collectSelectionTypes();
 	m_owners = new SelectionOwnerFile("owners", *this);
 	addEntry(m_owners);
+	createSelectionAccessFiles();
 }
 
 Window SelectionDirEntry::getSelectionOwner(const Atom type) const
@@ -48,6 +51,23 @@ void SelectionDirEntry::collectSelectionTypes()
 		XAtom atom = mapper.getAtom(type);
 
 		m_selection_types.push_back( { atom, type } );
+	}
+}
+
+void SelectionDirEntry::createSelectionAccessFiles()
+{
+	SelectionAccessFile *file;
+
+	for( const auto &info: m_selection_types )
+	{
+		file = new SelectionAccessFile(
+			tolower(info.second),
+			*this,
+			info.first
+		);
+
+		m_selection_access_files.push_back(file);
+		addEntry(file);
 	}
 }
 
