@@ -18,6 +18,7 @@
 namespace xwmfs
 {
 
+class SelectionDirEntry;
 class WinManagerDirEntry;
 class WindowDirEntry;
 class WindowsRootDir;
@@ -303,6 +304,8 @@ private: // data
 	WindowsRootDir *m_win_dir = nullptr;
 	//! directory node containing global wm information
 	WinManagerDirEntry *m_wm_dir = nullptr;
+	//! directory ndoe containing selection buffer information
+	SelectionDirEntry *m_selection_dir = nullptr;
 
 	//! abort pipe to signal abort requests for a specific thread
 	int m_abort_pipe[2];

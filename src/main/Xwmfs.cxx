@@ -28,6 +28,7 @@
 #include "main/WindowFileEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WinManagerDirEntry.hxx"
+#include "main/SelectionDirEntry.hxx"
 #include "main/WindowsRootDir.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "fuse/EventFile.hxx"
@@ -59,6 +60,9 @@ void Xwmfs::createFS()
 	// now add a directory that contains each window
 	m_win_dir = new WindowsRootDir();
 	m_fs_root.addEntry( m_win_dir );
+
+	m_selection_dir = new xwmfs::SelectionDirEntry();
+	m_fs_root.addEntry( m_selection_dir );
 
 	const std::vector<XWindow> *windows = nullptr;
 

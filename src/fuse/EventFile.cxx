@@ -4,8 +4,6 @@
 #include "fuse/DirEntry.hxx"
 #include "main/Xwmfs.hxx"
 
-#include <iostream>
-
 namespace xwmfs
 {
 
