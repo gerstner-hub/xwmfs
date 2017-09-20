@@ -345,7 +345,15 @@ void Xwmfs::handlePendingEvents()
 {
 	MutexGuard g(m_event_lock);
 
-	do
+	/*
+	 * this is important to avoid blocking while there are still events to
+	 * be processed. this is because the select() in the event thread only
+	 * wakes up when there's network data from the X server. But the
+	 * libX11 can read more than one event at once from the network in one
+	 * go, thus the socket might not be readable, still there would be
+	 * pending events that we wouldn't process
+	 */
+	while( XPending(m_display) != 0 )
 	{
 		XNextEvent(m_display, &m_ev);
 
@@ -367,15 +375,6 @@ void Xwmfs::handlePendingEvents()
 				<< std::dec << m_ev.type << ": " << ex.what();
 		}
 	}
-	/*
-	 * this is important to avoid blocking while there are still events to
-	 * be processed. this is because the select() in the event thread only
-	 * wakes up when there's network data from the X server. But the
-	 * libX11 can read more than one event at once from the network in one
-	 * go, thus the socket might not be readable, still there would be
-	 * pending events that we wouldn't process
-	 */
-	while( XPending(m_display) != 0 );
 }
 
 void Xwmfs::handleEvent(const XEvent &ev)
