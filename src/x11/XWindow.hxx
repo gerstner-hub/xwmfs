@@ -271,6 +271,37 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Creates a pseudo window as child of the current window
+	 * \details
+	 * 	For the dimensions and other properties of the window
+	 * 	currently sane defaults for a pseudo window that will never be
+	 * 	mapped are chosen.
+	 * \return
+	 * 	The ID of the newly created window
+	 **/
+	Window createChild();
+
+	/**
+	 * \brief
+	 * 	Requests the given selection buffer to be sent to this window
+	 * \details
+	 * 	The result will be received at the target window via a
+	 * 	SelectionNotify event.
+	 * \param[in] selection
+	 * 	The selection type to request
+	 * \param[in] target_type
+	 * 	The target format the selection buffer should be converted to
+	 * \param[in] target_prop
+	 * 	The target property the selection should be copied to
+	 **/
+	void convertSelection(
+		const XAtom &selection,
+		const XAtom &target_type,
+		const XAtom &target_prop
+	);
+
+	/**
+	 * \brief
 	 * 	Requests the targeted window to close itself
 	 * \details
 	 * 	In contrast to destroy() this is a cooperative call that

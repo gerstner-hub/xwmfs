@@ -240,6 +240,54 @@ void XWindow::destroy()
 	}
 }
 
+Window XWindow::createChild()
+{
+	auto &display = XDisplay::getInstance();
+
+	Window new_win = XCreateSimpleWindow(
+		display,
+		this->id(),
+		// dimensions and alike don't matter for this hidden window
+		-10, -10, 1, 1, 0, 0, 0
+	);
+
+	if( new_win == 0 )
+	{
+		xwmfs_throw(
+			xwmfs::Exception("Failed to create pseudo child window")
+		);
+	}
+
+	display.flush();
+
+	return new_win;
+}
+
+void XWindow::convertSelection(
+	const XAtom &selection,
+	const XAtom &target_type,
+	const XAtom &target_prop
+)
+{
+	auto &display = XDisplay::getInstance();
+
+	if( XConvertSelection(
+		display,
+		selection,
+		target_type,
+		target_prop,
+		m_win,
+		CurrentTime
+	) != 1 )
+	{
+		xwmfs_throw(
+			xwmfs::Exception("Failed to request selecton conversion")
+		);
+	}
+
+	display.flush();
+}
+
 void XWindow::sendDeleteRequest()
 {
 	long data[2];
