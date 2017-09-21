@@ -592,9 +592,8 @@ std::ostream& operator<<(std::ostream &o, const xwmfs::XWindow &w)
 {
 	const std::ostream::fmtflags f = o.flags();
 
-	o << std::setw(8)
+	o << "0x" << std::setw(8)
 		<< std::hex << std::setfill('0')
-		<< std::showbase
 		<< w.id()
 		<< std::dec << " (" << w.id() << ")";
 
