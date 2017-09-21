@@ -82,6 +82,8 @@ public: // functions
 		}
 	}
 
+	Mutex& getMutex() { return m_lock; }
+
 protected: // data
 
 	pthread_cond_t m_pcond;
