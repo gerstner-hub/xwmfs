@@ -31,6 +31,24 @@ private:
 
 /**
  * \brief
+ * 	A scope-guard object for temporarily releasing a real-lock of the
+ * 	complete file system
+ **/
+class FileSysRevReadGuard
+{
+public:
+	FileSysRevReadGuard( const RootEntry &root ) : m_root(root)
+	{
+		root.unlock();
+	}
+
+	~FileSysRevReadGuard() { m_root.readlock(); }
+private:
+	const RootEntry &m_root;
+};
+
+/**
+ * \brief
  * 	A scope-guard object for write-locking a complete file system
  **/
 class FileSysWriteGuard
