@@ -3,7 +3,6 @@
 
 // C++
 #include <deque>
-#include <set>
 
 // xwmfs
 #include "common/Condition.hxx"
@@ -68,12 +67,6 @@ public:
 
 	/**
 	 * \brief
-	 * 	Abort an ongoing blocking read call, if any
-	 **/
-	void abortBlockingCall(pthread_t thread);
-
-	/**
-	 * \brief
 	 * 	Always allow operations on event files, even if closed
 	 * \details
 	 * 	Otherwise the final destroy event might be lost to readers
@@ -91,7 +84,6 @@ public: // types
 	};
 
 	typedef std::deque<Event> EventQueue;
-	typedef std::set<pthread_t> AbortSet;
 
 protected: // functions
 
@@ -120,8 +112,6 @@ protected: // data
 	Condition m_cond;
 	EventQueue m_event_queue;
 	size_t m_next_id = 0;
-	//! holds threads for which blocking calls shall be aborted
-	AbortSet m_abort_set;
 };
 
 } // end ns

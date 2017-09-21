@@ -22,7 +22,7 @@ class SelectionDirEntry;
 class WinManagerDirEntry;
 class WindowDirEntry;
 class WindowsRootDir;
-class EventFile;
+class Entry;
 
 /**
  * \brief
@@ -129,7 +129,7 @@ public: // functions
 	 * 	In any case the caller must call unregisterBlockingCall()
 	 * 	after the blocking call is over, whether aborted or not.
 	 **/
-	bool registerBlockingCall(EventFile *f);
+	bool registerBlockingCall(Entry *f);
 
 	/**
 	 * \brief
@@ -247,7 +247,7 @@ protected: // functions
 
 private: // types
 
-	typedef std::map<pthread_t, EventFile*> BlockingCallMap;
+	typedef std::map<pthread_t, Entry*> BlockingCallMap;
 	typedef std::map<int, struct sigaction> SignalHandlerMap;
 
 	//! different abort signal contexts

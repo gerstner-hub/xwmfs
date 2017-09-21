@@ -16,7 +16,9 @@ namespace xwmfs
 // fwd. declarations
 struct DirEntry;
 struct FileEntry;
+class AbortHandler;
 class OpenContext;
+class Condition;
 
 /**
  * \brief
@@ -203,7 +205,15 @@ public: // functions
 	 **/
 	virtual bool enableDirectIO() const { return false; }
 
+	/**
+	 * \brief
+	 * 	Abort an ongoing blocking read call, if any and if supported
+	 **/
+	void abortBlockingCall(pthread_t thread);
+
 protected: // functions
+
+	void createAbortHandler(Condition &cond);
 
 	/**
 	 * \brief
@@ -286,6 +296,8 @@ protected: // data
 
 	//! pointer to the parent directory
 	DirEntry *m_parent = nullptr;
+
+	AbortHandler *m_abort_handler = nullptr;
 };
 
 } // end ns

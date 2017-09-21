@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 // xwmfs
+#include "fuse/AbortHandler.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/OpenContext.hxx"
 #include "main/Xwmfs.hxx"
@@ -29,6 +30,27 @@ Entry::~Entry()
 		delete m_parent,
 		m_parent = nullptr;
 	}
+
+	if( m_abort_handler )
+	{
+		delete m_abort_handler;
+		m_abort_handler = nullptr;
+	}
+}
+
+void Entry::createAbortHandler(Condition &cond)
+{
+	m_abort_handler = new AbortHandler(cond);
+}
+
+void Entry::abortBlockingCall(pthread_t thread)
+{
+	if( !m_abort_handler )
+	{
+		return;
+	}
+
+	return m_abort_handler->abort(thread);
 }
 
 int Entry::parseInteger(const char *data, const size_t bytes, int &result) const

@@ -31,7 +31,7 @@
 #include "main/SelectionDirEntry.hxx"
 #include "main/WindowsRootDir.hxx"
 #include "fuse/xwmfs_fuse.hxx"
-#include "fuse/EventFile.hxx"
+#include "fuse/Entry.hxx"
 #include "common/Helper.hxx"
 #include "x11/XAtom.hxx"
 
@@ -775,7 +775,7 @@ void Xwmfs::readAbortPipe()
 	}
 }
 
-bool Xwmfs::registerBlockingCall(EventFile *f)
+bool Xwmfs::registerBlockingCall(Entry *f)
 {
 	MutexGuard g(m_blocking_call_lock);
 

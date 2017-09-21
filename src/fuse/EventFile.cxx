@@ -2,6 +2,8 @@
 #include "fuse/EventFile.hxx"
 #include "fuse/OpenContext.hxx"
 #include "fuse/DirEntry.hxx"
+#include "fuse/AbortHandler.hxx"
+#include "fuse/xwmfs_fuse.hxx"
 #include "main/Xwmfs.hxx"
 
 namespace xwmfs
@@ -43,6 +45,7 @@ EventFile::EventFile(
 	m_max_backlog(max_backlog),
 	m_cond(parent.getLock())
 {
+	this->createAbortHandler(m_cond);
 }
 
 bool EventFile::markDeleted()
@@ -139,8 +142,6 @@ const EventFile::Event* EventFile::nextEvent(const size_t prev_id)
 
 int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size)
 {
-	auto &xwmfs = xwmfs::Xwmfs::getInstance();
-	const auto self = pthread_self();
 	const Event *event = nullptr;
 
 	MutexGuard g(m_parent->getLock());
@@ -158,18 +159,17 @@ int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size)
 			// available
 			return -EAGAIN;
 		}
-		else if( m_abort_set.find( self ) != m_abort_set.end() )
+		else if( m_abort_handler->wasAborted() )
 		{
-			m_abort_set.erase(self);
 			return -EINTR;
 		}
 
-		if( ! xwmfs.registerBlockingCall(this) )
+		if( ! m_abort_handler->prepareBlockingCall(this) )
 		{
 			return -EINTR;
 		}
 		m_cond.wait();
-		xwmfs.unregisterBlockingCall();
+		m_abort_handler->finishedBlockingCall();
 	}
 
 	const auto copy_size = std::min( (event->text).size(), size - 1);
@@ -207,20 +207,9 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset)
 	 * entry types and is taken in xwmfs_read early on.
 	 */
 
-	fs_lock.unlock();
+	FileSysRevReadGuard guard(fs_lock);
 	const int ret = readEvent(evt_ctx, buf, size);
-	fs_lock.readlock();
 	return ret;
-}
-
-void EventFile::abortBlockingCall(pthread_t thread)
-{
-	{
-		MutexGuard g(m_parent->getLock());
-		m_abort_set.insert( thread );
-	}
-
-	m_cond.broadcast();
 }
 
 int EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offset)
