@@ -74,6 +74,8 @@ public: // functions
 
 	bool valid() const { return m_atom != None; }
 
+	void reset() { m_atom = None; }
+
 protected: // data
 
 	Atom m_atom = None;
