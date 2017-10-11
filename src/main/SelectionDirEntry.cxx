@@ -71,5 +71,49 @@ void SelectionDirEntry::createSelectionAccessFiles()
 	}
 }
 
+
+std::string SelectionDirEntry::selectionBufferLabel(const XAtom &atom) const
+{
+	for( const auto &selection: m_selection_types )
+	{
+		if( selection.first == atom )
+		{
+			return selection.second;
+		}
+	}
+
+	return "unknown";
+}
+	
+void SelectionDirEntry::conversionResult(const XSelectionEvent &ev)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	logger.info() << "Got conversion result for selection buffer '"
+		<< selectionBufferLabel(XAtom(ev.selection)) << "'\n";
+		
+	for( auto &file: m_selection_access_files )
+	{
+		if( file->type() == ev.selection )
+		{
+			file->reportConversionResult(ev.property);
+			break;
+		}
+	}
+}
+
+void SelectionDirEntry::conversionRequest(const XSelectionRequestEvent &ev)
+{
+	(void)ev;
+}
+
+void SelectionDirEntry::lostOwnership(const XSelectionClearEvent &ev)
+{
+	// don't know if we should do anything here like clearing the
+	// selection data?
+	auto &logger = xwmfs::StdLogger::getInstance();
+	logger.info() << "Lost ownership of selection buffer '"
+		<< selectionBufferLabel(XAtom(ev.selection)) << "'\n";
+}
+
 } // end ns
 

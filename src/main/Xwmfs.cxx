@@ -100,6 +100,16 @@ void Xwmfs::createFS()
 	}
 }
 
+void Xwmfs::createSelectionWindow()
+{
+	m_selection_window = XWindow(m_root_win.createChild());
+
+	m_selection_window.setName("xwmfs selection buffer window");
+
+	xwmfs::StdLogger::getInstance().info()
+		<< "Created selection window " << m_selection_window << "\n";
+}
+
 void Xwmfs::exit()
 {
 	m_fs_root.clear();
@@ -220,6 +230,8 @@ int Xwmfs::init()
 
 			createFS();
 
+			createSelectionWindow();
+
 			m_ev_thread.start();
 
 			setupAbortSignals(true);
@@ -261,10 +273,11 @@ Xwmfs::Xwmfs() :
 	m_ev_thread(*this, "x11_event_thread"),
 	m_opts( xwmfs::Options::getInstance() )
 {
+	m_display = XDisplay::getInstance();
 	// to get X events in a blocking way but still be able to react to
 	// e.  g. a shutdown request we need to get the lower level file
 	// descriptor that X is operating on.
-	m_dis_fd = ::XConnectionNumber( XDisplay::getInstance() );
+	m_dis_fd = ::XConnectionNumber( m_display );
 
 	// this is a pipe that allows us to wake up the event handling thread
 	// in case of shutdown
@@ -284,6 +297,10 @@ Xwmfs::Xwmfs() :
 
 Xwmfs::~Xwmfs()
 {
+	if( m_selection_window.valid() )
+	{
+		m_selection_window.destroy();
+	}
 	FD_ZERO(&m_select_set);
 	m_wm_dir = nullptr;
 	m_win_dir = nullptr;
@@ -297,7 +314,6 @@ Xwmfs::~Xwmfs()
 
 void Xwmfs::threadEntry(const xwmfs::Thread &t)
 {
-	m_display = XDisplay::getInstance();
 	auto &logger = xwmfs::StdLogger::getInstance();
 
 	const std::vector<int> fds(
@@ -493,6 +509,13 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		m_win_dir->updateParent(w);
 		break;
 	}
+	case SelectionNotify:
+	case SelectionClear:
+	case SelectionRequest:
+	{
+		handleSelectionEvent(ev);
+		break;
+	}
 	default:
 		logger.debug()
 			<< __FUNCTION__
@@ -580,6 +603,37 @@ void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev)
 	FileSysWriteGuard write_guard(m_fs_root);
 	m_win_dir->removeWindow(w);
 	m_wm_dir->windowLifecycleEvent(w, false);
+}
+
+void Xwmfs::handleSelectionEvent(const XEvent &ev)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	XWindow w(ev.xany.window);
+
+	if( w != m_selection_window )
+	{
+		logger.warn() << "Got selection buffer related event, but it's not for our selection window?"
+			<< "\n";
+		return;
+	}
+
+	logger.debug() << "Selection buffer event of type " << ev.type << "\n";
+
+	if( ev.type == SelectionNotify )
+	{
+		// the conversion data has arrived
+		m_selection_dir->conversionResult(ev.xselection);
+	}
+	else if( ev.type == SelectionClear )
+	{
+		// we lost ownership of the selection
+		m_selection_dir->lostOwnership(ev.xselectionclear);
+	}
+	else if( ev.type == SelectionRequest )
+	{
+		// somebody wants to get the selection from us
+		m_selection_dir->conversionRequest(ev.xselectionrequest);
+	}
 }
 
 /*

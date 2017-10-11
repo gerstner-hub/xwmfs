@@ -108,6 +108,8 @@ public: // functions
 	//! returns the file system structure root entry
 	xwmfs::RootEntry& getFS() { return m_fs_root; }
 
+	XWindow& getSelectionWindow() { return m_selection_window; }
+
 	//! returns the options in effect for Xwmfs
 	xwmfs::Options& getOptions() { return m_opts; }
 
@@ -235,6 +237,12 @@ protected: // functions
 
 	/**
 	 * \brief
+	 * 	Handles any selection buffer related events
+	 **/
+	void handleSelectionEvent(const XEvent &ev);
+
+	/**
+	 * \brief
 	 * 	Returns whether the given CreateNotify event refers to a
 	 * 	pseudo window
 	 **/
@@ -326,6 +334,9 @@ private: // data
 
 	Mutex m_event_lock;
 
+	//! an XWindow created by the xwmfs for managing selection buffers
+	XWindow m_selection_window;
+
 private: // functions
 
 	//! private constructor to enforce singleton pattern
@@ -339,6 +350,8 @@ private: // functions
 	 * 	Creates the initial filesystem
 	 **/
 	void createFS();
+
+	void createSelectionWindow();
 
 	//! print application state for debugging purposes
 	void printWMInfo();

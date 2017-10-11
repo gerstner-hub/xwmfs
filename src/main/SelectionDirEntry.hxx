@@ -87,6 +87,24 @@ public: // functions
 	 **/
 	Window getSelectionOwner(const Atom type) const;
 
+	/**
+	 * \brief
+	 * 	A selection buffer request has been answered
+	 **/
+	void conversionResult(const XSelectionEvent &ev);
+
+	/**
+	 * \brief
+	 * 	Somebody requests a selection we own
+	 **/
+	void conversionRequest(const XSelectionRequestEvent &ev);
+
+	/**
+	 * \brief
+	 * 	Ownership of a selection was los
+	 **/
+	void lostOwnership(const XSelectionClearEvent &ev);
+
 protected: // functions
 
 	/**
@@ -102,6 +120,9 @@ protected: // functions
 	 * 	selection type
 	 **/
 	void createSelectionAccessFiles();
+
+	//! returns the label for the selection buffer identified by \c atom
+	std::string selectionBufferLabel(const XAtom &atom) const;
 
 protected: // data
 
