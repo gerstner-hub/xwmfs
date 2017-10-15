@@ -121,6 +121,11 @@ protected: // functions
 	 **/
 	void createSelectionAccessFiles();
 
+	void replyConversionRequest(
+		const XSelectionRequestEvent &ev,
+		const bool good
+	);
+
 	//! returns the label for the selection buffer identified by \c atom
 	std::string selectionBufferLabel(const XAtom &atom) const;
 

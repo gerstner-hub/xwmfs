@@ -48,7 +48,11 @@ public: // functions
 
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
+	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
+
 	void reportConversionResult(Atom result_prop);
+
+	void provideConversion(XWindow &requestor, const XAtom &target_prop) const;
 
 	//! \see EventFile::enableDirectIO()
 	bool enableDirectIO() const override { return true; }

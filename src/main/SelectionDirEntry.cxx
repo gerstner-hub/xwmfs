@@ -103,7 +103,52 @@ void SelectionDirEntry::conversionResult(const XSelectionEvent &ev)
 
 void SelectionDirEntry::conversionRequest(const XSelectionRequestEvent &ev)
 {
-	(void)ev;
+	SelectionAccessFile *selection_file = nullptr;
+
+	for( auto &file: m_selection_access_files )
+	{
+		if( file->type() == ev.selection )
+		{
+			selection_file = file;
+		}
+	}
+
+	auto &std_props = StandardProps::instance();
+
+	if( ev.target != std_props.atom_ewmh_utf8_string || !selection_file )
+	{
+		/* either an unsupported conversion target was requested or an
+		 * unknown selection buffer addressed */
+		replyConversionRequest(ev, false);
+		return;
+	}
+
+	// the file will cause the target property to be written correctly
+	XWindow requestor(ev.requestor);
+	selection_file->provideConversion(requestor, XAtom(ev.property));
+	replyConversionRequest(ev, true);
+}
+
+void SelectionDirEntry::replyConversionRequest(
+	const XSelectionRequestEvent &req, const bool good
+)
+{
+	auto &logger = xwmfs::StdLogger::getInstance();
+	logger.error() << "Failed to convert selection buffer '"
+		<< selectionBufferLabel(XAtom(req.selection))
+		<< "' to requested target format "
+		<< req.target << "\n";
+	XEvent reply_generic;
+	XSelectionEvent &reply = (reply_generic.xselection);
+	reply.type = SelectionNotify;
+	reply.requestor = req.requestor;
+	reply.selection = req.selection;
+	reply.target = req.target;
+	// None indicates that we can't comply to the request
+	reply.property = good ? req.property : None;
+	reply.time = req.time;
+	XWindow requestor(req.requestor);
+	requestor.sendEvent(reply_generic);
 }
 
 void SelectionDirEntry::lostOwnership(const XSelectionClearEvent &ev)

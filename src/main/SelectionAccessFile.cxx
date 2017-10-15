@@ -16,7 +16,7 @@ SelectionAccessFile::SelectionAccessFile(
 	FileEntry(n, true, 0),
 	m_parent(parent),
 	m_sel_type(type),
-	m_target_prop(XAtomMapper::getInstance().getAtom("CONVERSION")),
+	m_target_prop(XAtomMapper::getInstance().getAtom(n)),
 	m_result_cond(parent.getLock())
 {
 	this->createAbortHandler(m_result_cond);
@@ -27,16 +27,17 @@ int SelectionAccessFile::read(
 )
 {
 	updateOwner();
+	auto &xwmfs = xwmfs::Xwmfs::getInstance();
 
 	if( !m_owner.valid() )
 	{
 		// no one owns the selection at the moment
 		return -EAGAIN;
 	}
-
+	else if( m_owner != xwmfs.getSelectionWindow() )
 	{
 		// stupid situation here, see EventFile::read
-		FileSysRevReadGuard guard( xwmfs::Xwmfs::getInstance().getFS() );
+		FileSysRevReadGuard guard( xwmfs.getFS() );
 		const auto res = updateSelection();
 
 		if( res != 0 )
@@ -44,8 +45,41 @@ int SelectionAccessFile::read(
 			return res;
 		}
 	}
+	// else: we ourselves own the selection, so just return our local node
+	// data
 
 	return FileEntry::read(ctx, buf, size, offset);
+}
+
+int SelectionAccessFile::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset)
+{
+	(void)ctx;
+
+	// we don't support writing at offsets
+	if( offset )
+	{
+		return -EOPNOTSUPP;
+	}
+
+	auto &xwmfs = xwmfs::Xwmfs::getInstance();
+
+	if( XSetSelectionOwner(
+		XDisplay::getInstance(),
+		m_sel_type,
+		xwmfs.getSelectionWindow().id(),
+		CurrentTime) != 1 )
+	{
+		auto &logger = xwmfs::StdLogger::getInstance();
+		logger.error() << "Failed to become selection owner for "
+			<< m_sel_type << "\n";
+		return -EIO;
+	}
+
+	// store the data for later requests to provide the selection buffer
+	this->str("");
+	(*this) << std::string(data, bytes);
+
+	return bytes;
 }
 
 void SelectionAccessFile::reportConversionResult(Atom result_prop)
@@ -57,6 +91,16 @@ void SelectionAccessFile::reportConversionResult(Atom result_prop)
 	}
 
 	m_result_cond.signal();
+}
+
+void SelectionAccessFile::provideConversion(
+	XWindow &requestor, const XAtom &target_prop
+) const
+{
+	MutexGuard g(m_parent.getLock());
+	const auto copy = this->str();
+	Property<utf8_string> data(utf8_string(copy.c_str()));
+	requestor.setProperty(target_prop, data);
 }
 
 int SelectionAccessFile::updateSelection()
