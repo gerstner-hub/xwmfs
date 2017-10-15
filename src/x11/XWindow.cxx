@@ -324,8 +324,6 @@ void XWindow::sendRequest(
 		xwmfs_throw( Exception("XEvent data exceeds maximum") );
 	}
 
-	auto &display = XDisplay::getInstance();
-
 	event.xclient.type = ClientMessage;
 	event.xclient.serial = 0;
 	event.xclient.send_event = True;
@@ -334,12 +332,19 @@ void XWindow::sendRequest(
 	event.xclient.format = 32;
 	std::memcpy(event.xclient.data.b, data, len);
 
+	sendEvent(event);
+}
+
+void XWindow::sendEvent(const XEvent &event)
+{
+	auto &display = XDisplay::getInstance();
+
 	const Status s = XSendEvent(
 		display,
 		this->id(),
 		False,
 		m_send_event_mask,
-		&event
+		const_cast<XEvent*>(&event)
 	);
 
 	if( s == BadValue || s == BadWindow )

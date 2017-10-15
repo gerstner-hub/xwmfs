@@ -502,6 +502,9 @@ public: // functions
 	//! queries parent and child windows of this window and sets them acc.
 	void updateFamily();
 
+	//! sends the given XEvent structure to the represented X11 window
+	void sendEvent(const XEvent &event);
+
 protected: // functions
 
 	/**
