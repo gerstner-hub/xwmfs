@@ -1,5 +1,5 @@
 INSTALLATION INSTRUCTIONS
--------------------------
+=========================
 
 xwmfs uses autotools as a buildsystem. The following commands will build and
 install everything with default settings:
@@ -26,7 +26,7 @@ There are currently no special configure options available for xwmfs besides
 the default options provided by autotools.
 
 DEBUG BUILD
------------
+===========
 
 To create a debug build simply set CFLAGS and CXXFLAGS accordingly e.g.
 
@@ -36,7 +36,7 @@ To create a debug build simply set CFLAGS and CXXFLAGS accordingly e.g.
 before running configure.
 
 UNIT TESTS
-----------
+==========
 
 You can build `make check` to run a number of unit tests shipped with xwmfs.
 These are written in python and run automatically without user interaction.

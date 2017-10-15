@@ -16,16 +16,16 @@ Some of its features are:
 - some X operations are accessible via control files in the file system
 
 The file system can be used for easily implementing scripts that operate on
-the window manager and windows (for example arranging them in a specific
-order, moving them around etc).
+the window manager and windows (for example identifying specific windows,
+rename a window, move it around and so on).
 
 For build and installation instructions see INSTALL.
 
-EWMH is a specification of how a window manager makes information about the
-current state of itself and the windows it manages available to other
-programs. Not all window managers support all features of this specification
-and not all support all features correctly. The following window managers have
-been basically tested:
+EWMH (Extended Window Manager Hints) is a specification of how a window
+manager makes information about the current state of itself and the windows it
+manages available to other programs. Not all window managers support all
+features of this specification and not all support all features correctly. The
+following window managers have been basically tested:
 
 - fluxbox
 - i3 (does not support the desktop property per window)
@@ -37,8 +37,8 @@ been basically tested:
 - kde
 - gnome
 
-xwmfs is currently in a beta release status. Thus it is far from feature
-complete, not well or broadly tested and thus not necessarily very stable.
+xwmfs is currently not broadly tested. Thus it is not necessarily very stable.
+Bug reports via the github issue tracker are welcome.
 
 USAGE
 =====
@@ -63,7 +63,7 @@ permissions for the mount-location as is the case with any regular mount of
 file systems.
 
 Because the xwmfs acts as an X11 client on the X server it requires to have a
-valid DISPLAY environment variable set and the authority to access the X11
+valid `DISPLAY` environment variable set and the authority to access the X11
 display. Otherwise the xwmfs program will print an error and exit immediately.
 
 To unmount the xwmfs file system the command
@@ -149,20 +149,41 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |                             instead
  |--------> pid: Contains the PID of the running window manager process
  |--------> events: Produces one line for each event related to the wm
- |		    directory. Each line will consist of the basename of the
- |		    file that changed
+ |                    directory. Each line will consist of the basename of the
+ |                    file that changed
  |--------> parent: Returns the window ID of the parent window of this window.
  |                  Note that this window might not be known by xwmfs, because
  |                  it can be a "pseudo window", a decoration window created
  |                  by the window manager or similar. Use the parameter
  |                  --handle-pseudo-windows to also display these kind of
  |                  windows in xwmfs. Contains 0 for the root window.
+-selections: A directory containing files that allow access to the X server
+ |           selection buffers also known as clipboard buffers
+ |
+ |--------> owners: contains one line per well-known selection buffer,
+ |                  identifying the current window ID that _owns_ the
+ |                  selection buffer in question.
+ |--------> primary: On read this returns the content of the primary selection
+ |                   formatted as UTF8 text. This is the selection that is
+ |                   typically pasted when pressing the middle mouse button.
+ |                   If there is currently no owner for the primary selection
+ |                   then an error of EAGAIN is returned.
+ |                   On write the xwmfs file system will become owner of
+ |                   the primary selection and store the data written to
+ |                   this node as the new selection content which will be
+ |                   served when other X clients query the selection. Simply
+ |                   put: The written data will become the new content of the
+ |                   primary selection.
+ |--------> clipboard: Just like primary above but operating on the clipboard
+ |                     selection buffer instead. This is the selection buffer
+ |                     that is typically operated on by using the ctrl-c /
+ |                     ctrl-v key combinations.
+</pre>
 
 Should the window manager not support some of the properties like
 "show_desktop_mode" then a value of -1 is contained in the file if the file
 represents an integer value or the value "N/A" if the file represents a string
 value.
-</pre>
 
 CURRENT STATE OF DEVELOPMENT
 ============================
@@ -179,14 +200,19 @@ to work around some of these limitations.
 This is not currently the case. This means if anything unexcepted happens then
 xwmfs might behave strangely or simply not be able to provide all features.
 
-xwmfs is able to detect changes to windows (windows appearing and disappearing
-or changing properties) in an event based way. This feature has not been
-thoroughly tested yet. The details of the X client protocol regarding this are
-not too well documented and a lot of research and experimentation was
-necessary to get things as far as they are now.
+xwmfs is able to detect changes to windows (windows appearing and
+(dis)appearing or changing properties) in an event based way. This makes is
+rather efficient and the `events` file nodes can be used for efficiently
+waiting for changes on a given window similar to what the `xev` program does.
 
-A good source of information about how things can be done is the 'wmctrl'
-program that allows to query and alter some state of X11 windows.
+CONTRIBUTION
+============
+
+xwmfs now has the feature set I originally intended for it. There will still
+be a plethora of additional features and compatibility one could think of. But
+I'm not actively developing new features at the moment. If you have a request
+or problem, then please use the github issue tracker and pull request
+interface. You can also email me directly if you like (see AUTHORS file).
 
 TIPS AND TRICKS
 ===============
@@ -197,15 +223,8 @@ TIPS AND TRICKS
 FUTURE DIRECTIONS
 =================
 
-The feature set I initially intended for xwmfs is roughly the following:
+Some features that might still be worth implementing:
 
-- high stability in all situations
-- coverage of all major and popular window managers, if necessary using a set
-  of proprietary adaptions to the code
-- lots of more contextual information in the file system like:
-	* position and size of windows
-	* visibility status of windows (raised/lowered)
-	* possibility to resize, move, lower/raise windows and influence
-	  other properties of them
-	* possibility to get and change names of virtual desktops as
-	  applicable
+* visibility status of windows (raised/lowered)
+* actively lower/raise windows
+* possibility to change names of virtual desktops as applicable

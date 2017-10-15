@@ -3,3 +3,50 @@
 	version 0.1
 
 	First running version. Alpha release.
+
+2017-03-03 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.4
+
+	Beta version with improved stability and large scale refactoring:
+	
+	- improved stability regarding to parallel access to the file system.
+	- improved documentation content and documentation formats (now in
+	markdown)
+	- file permissions are now shown correctly as `rw-` for the user that
+	mounted the file system
+	- the umask in effect when mounting the file system is now also
+	applied
+	- added a basic test suite written in python to test for bugs and
+	general stability
+
+2017-10-15 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.8
+
+	First full featured release that can be considered for production use:
+
+	- added some example scripts in the examples folder that show what can
+	be done with the file system
+	- fixed a bug that could cause events not to show up immediately but
+	only after some unrelated events occured in the X server.
+	- added man page for the main xwmfs binary
+	- added parent/child relationship to the file system
+	- added --handle-pseudo-windows parameter to include hidden and
+	special windows in the file system
+	- added 'events' node to the 'wm' directory to allow waiting for
+	window manager wide events
+	- added 'properties' node for each window containing all window
+	properties and allows for adding, removing and changing arbitrary
+	window properties
+	- added window 'class' file node
+	- renamed 'command' file node to 'control', because 'command' already
+	has a meaning
+	- added 'locale' file node for each window
+	- added 'protocols' file node for each window
+	- added 'window_type' and 'client_leader' file nodes
+	- added 'geometry' node for each window which can also be used for
+	changing size and location of windows
+	- added 'selections' top level directory that allows interaction with
+	the X server selection buffers very much like what the 'xsel' tool can
+	do
