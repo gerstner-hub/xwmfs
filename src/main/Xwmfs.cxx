@@ -441,7 +441,7 @@ void Xwmfs::handleEvent(const XEvent &ev)
 
 		switch( ev.xproperty.state )
 		{
-		case PropertyDelete:
+		case PropertyDelete: /* FALLTHROUGH */
 		case PropertyNewValue:
 		{
 			XWindow w(ev.xproperty.window);
@@ -466,6 +466,8 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		default:
 			break;
 		}
+
+		break;
 	}
 	// called upon window size/appearance changes
 	case ConfigureNotify:
