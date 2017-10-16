@@ -1,24 +1,13 @@
-2016-11-09 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+2017-10-16 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
-	version 0.1
+	version 0.81
 
-	First running version. Alpha release.
+	Bugfix release
 
-2017-03-03 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
-
-	version 0.4
-
-	Beta version with improved stability and large scale refactoring:
-	
-	- improved stability regarding to parallel access to the file system.
-	- improved documentation content and documentation formats (now in
-	markdown)
-	- file permissions are now shown correctly as `rw-` for the user that
-	mounted the file system
-	- the umask in effect when mounting the file system is now also
-	applied
-	- added a basic test suite written in python to test for bugs and
-	general stability
+	- fixed an issue in the X11 event handling that caused property events
+	to also be erronously processed as geometry update events. this could
+	cause invalid content of the "geometry" file for windows.
+	- fixed distribution tarball (make dist)
 
 2017-10-15 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
@@ -50,3 +39,25 @@
 	- added 'selections' top level directory that allows interaction with
 	the X server selection buffers very much like what the 'xsel' tool can
 	do
+
+2017-03-03 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.4
+
+	Beta version with improved stability and large scale refactoring:
+	
+	- improved stability regarding to parallel access to the file system.
+	- improved documentation content and documentation formats (now in
+	markdown)
+	- file permissions are now shown correctly as `rw-` for the user that
+	mounted the file system
+	- the umask in effect when mounting the file system is now also
+	applied
+	- added a basic test suite written in python to test for bugs and
+	general stability
+
+2016-11-09 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.1
+
+	First running version. Alpha release.
