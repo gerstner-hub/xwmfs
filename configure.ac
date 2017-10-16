@@ -43,4 +43,5 @@ dnl (i.e. for every subdirectory, too)
 AC_OUTPUT([
 	src/Makefile
 	docs/Makefile
+	tests/Makefile
 ])
