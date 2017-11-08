@@ -1,3 +1,12 @@
+2017-11-08 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.82
+
+	Minor bugfix release
+
+	- skip tests during `make check` if no DISPLAY variable is set
+	  (bgo#636814)
+
 2017-10-16 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
 	version 0.81
