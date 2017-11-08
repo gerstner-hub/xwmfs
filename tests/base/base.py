@@ -195,6 +195,17 @@ class TestBase(object):
 
 	def run(self):
 
+		if not "DISPLAY" in os.environ:
+			# don't fail tests because of a missing DISPLAY. this
+			# is typically the case on automated build servers and
+			# alike. our tests are mor for interactive testing.
+
+			# according to autotools documentation this is the
+			# exit code to signal a skipped test:
+
+			# https://www.gnu.org/software/automake/manual/html_node/Scripts_002dbased-Testsuites.html
+			return 77
+
 		self.parseArgs()
 		self.m_xwmfs = self.getBinary()
 		self.mount()
