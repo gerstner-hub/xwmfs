@@ -1,0 +1,181 @@
+#!/usr/bin/python
+
+# this script performs a series of steps necessary to perform a new release on
+# GitHub
+
+from __future__ import print_function
+import os, sys
+import subprocess
+
+git = "/usr/bin/git"
+xwmfs_root = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
+
+os.chdir(xwmfs_root)
+
+def callGit(pars, pipe = False):
+
+	if not isinstance(pars, list):
+		pars = [pars]
+
+	cmdline = [git] + pars
+
+	proc_func = subprocess.check_output if pipe else subprocess.check_call
+
+	ret = proc_func(
+		cmdline,
+		close_fds = True,
+		shell = False
+	)
+
+	if pipe:
+		ret = ret.decode().strip()
+
+	return ret
+
+def getPath(which):
+	return os.path.join(xwmfs_root, which)
+
+def readValue(what):
+
+	ret = None
+
+	while not ret:
+		print(what)
+		print(">>> ", end = '')
+		sys.stdout.flush()
+		ret = sys.stdin.readline().strip()
+
+	return ret
+
+def getNewVersion():
+	print("Previous version determined:", old_version)
+	return readValue("Enter new version number like '0.14'")
+
+def getOldVersion():
+	latest_tag = callGit( ["describe", "--abbrev=0"], pipe = True )
+	if not latest_tag.startswith("v"):
+		print("Latest tag is no version tag?", file = sys.stderr)
+		sys.exit(1)
+
+	latest_version = latest_tag.strip("v")
+	return latest_version
+
+def updateVersion():
+
+	replace_lines = []
+	version_needle = "[{}]".format(old_version)
+	configure_ac = getPath("configure.ac")
+
+	def replaceVersion(line):
+		if line.find(version_needle) == -1:
+			print("Failed to find old version '{}' in {}".format(
+				version_needle,
+				configure_ac
+			))
+			sys.exit(1)
+
+		return line.replace(version_needle, "[{}]".format(new_version))
+
+	for line in open(configure_ac).readlines():
+		if line.startswith("AC_INIT"):
+			line = replaceVersion(line)
+
+		replace_lines.append(line)
+
+	with open(configure_ac, 'w') as new_ac:
+		new_ac.write(''.join(replace_lines))
+
+def haveUncommitedChanges():
+
+	for line in callGit(["status"], pipe = True).splitlines():
+
+		if line.lower().find("nothing to commit") != -1:
+			return False
+
+	return True
+
+def getConfirmation():
+	print("Press ENTER to continue")
+	sys.stdout.flush()
+	sys.stdin.readline()
+
+def editFile(fl, why):
+
+	print("Next {} will be edited to {}".format(fl, why))
+	getConfirmation()
+
+	subprocess.check_call(
+		[ os.environ["EDITOR"], fl ],
+		close_fds = True,
+		shell = False
+	)
+
+def commitChanges():
+
+	print("Next the current diff will be shown before it will be commited")
+	getConfirmation()
+	callGit("diff")
+	callGit(["add", "."])
+	callGit("commit")
+
+def createTag():
+
+	print("Next a new git version tag will be created")
+	getConfirmation()
+	callGit(["tag", "-s", "v{}".format(new_version)])
+
+def bootstrap():
+
+	subprocess.check_call(
+		[ getPath("bootstrap") ],
+		close_fds = True,
+		shell = False
+	)
+
+def makeDistCheck():
+
+	import tempfile
+
+	buildtree = tempfile.mkdtemp()
+
+	print("Running 'make distcheck' in", buildtree)
+	getConfirmation()
+
+	try:
+		bootstrap()
+
+		subprocess.check_call(
+			[ getPath("configure") ],
+			close_fds = True,
+			shell = False,
+			cwd = buildtree
+		)
+
+		subprocess.check_call(
+			[ "/usr/bin/make", "distcheck" ],
+			close_fds = True,
+			shell = False,
+			cwd = buildtree
+		)
+	except Exception as e:
+		print(e)
+		print("make distcheck failed, not performing release")
+		sys.exit(1)
+
+if haveUncommitedChanges():
+	print("It seems there are still uncommited changes.")
+	print("Refusing to make new release in this state")
+	sys.exit(1)
+
+
+old_version = getOldVersion()
+new_version = getNewVersion()
+
+makeDistCheck()
+updateVersion()
+editFile(getPath("ChangeLog"), "document changes since last version")
+commitChanges()
+createTag()
+
+print()
+print("Release preparations finished. Do a manual 'git push' to publish.")
