@@ -7,3 +7,6 @@ config_aux
 configure
 __pycache__
 *.pyc
+*.o
+.deps
+*.log
