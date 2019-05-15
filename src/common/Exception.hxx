@@ -45,12 +45,6 @@ public: // types
 		) :
 			file(p_file), line(p_line), func(p_func) { }
 
-		SourceLocation(const SourceLocation &other) :
-			file(other.file),
-			line(other.line),
-			func(other.func)
-		{ }
-
 		const char* getFile() const { return file; }
 		int getLine() const { return line; }
 		const char* getFunction() const { return func; }

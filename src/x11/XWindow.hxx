@@ -126,6 +126,8 @@ public: // functions
 		m_std_props(StandardProps::instance())
 	{ }
 
+	XWindow(const XWindow &other) : XWindow() { *this = other; }
+
 	/**
 	 * \brief
 	 * 	Create an object representing \c win on the current Display
