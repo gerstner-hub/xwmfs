@@ -382,7 +382,7 @@ public: // functions
 	/**
 	 * \brief
 	 * 	The same as
-	 * 
+	 *
 	 * 	setProperty(const std::string&, const Property<PROPTYPE>&)
 	 *
 	 * 	but for the case when you already have an atom mapping for the
