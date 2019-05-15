@@ -1,5 +1,6 @@
 *.swp
 tags
+.tags
 *.in
 *.cache
 config_aux
