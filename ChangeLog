@@ -1,3 +1,11 @@
+2019-05-15 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.83
+
+	Minor bugfix release
+
+	- fix build with gcc-9 (-Wdeprecated-copy)
+
 2017-11-08 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
 	version 0.82
