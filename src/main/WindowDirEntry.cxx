@@ -326,9 +326,24 @@ void getPropertyValue(
 	 * be more complex ...
 	 */
 	auto std_props = StandardProps::instance();
+	const auto &mapper = XAtomMapper::getInstance();
 
 	switch(info.type)
 	{
+		case XA_ATOM:
+		{
+			Property<std::vector<XAtom>> prop;
+			win.getProperty(prop_atom, prop, &info);
+			int i = 0;
+			for( const auto &val: prop.get() )
+			{
+				const auto &name = mapper.getName(val);
+				if (i++)
+					value << " ";
+				value << name;
+			}
+			break;
+		}
 		case XA_CARDINAL:
 		{
 			if( info.items == 1 )

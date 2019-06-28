@@ -280,6 +280,29 @@ public: // functions
 	}
 };
 
+template <>
+//! property type specialization for arrays of Window identifiers
+class XPropTraits< std::vector<XAtom> >
+{
+public: // constants
+
+	static const Atom x_type = XA_ATOM;
+	static const unsigned long fixed_size = 0;
+	static const char format = 32;
+	typedef long* XPtrType;
+
+public: // functions
+
+	static
+	void x2native(std::vector<XAtom> &v, XPtrType data, unsigned int count)
+	{
+		for( unsigned int e = 0; e < count; e++ )
+		{
+			v.push_back(XAtom(data[e]));
+		}
+	}
+};
+
 /**
  * \brief
  * 	A type used for differentiation between a plain ASCII string and an
