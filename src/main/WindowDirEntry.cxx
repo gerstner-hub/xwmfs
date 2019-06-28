@@ -329,6 +329,25 @@ void getPropertyValue(
 
 	switch(info.type)
 	{
+		case XA_ATOM:
+		{
+			Property<std::vector<XAtom>> prop;
+			win.getProperty(prop_atom, prop, &info);
+			int i = 0;
+			for( const auto &val: prop.get() )
+			{
+				char *name(XGetAtomName(
+					    XDisplay::getInstance(), val));
+				if (name)
+				{
+					if (i++)
+						value << " ";
+					value << name;
+					XFree(name);
+				}
+			}
+			break;
+		}
 		case XA_CARDINAL:
 		{
 			if( info.items == 1 )

@@ -50,7 +50,7 @@ public: // functions
 
 	XAtom( const XAtom &atom ) : m_atom(atom.m_atom) { }
 
-	explicit XAtom( const Atom &atom ) :
+	XAtom( const Atom &atom ) :
 		m_atom(atom)
 	{ }
 
