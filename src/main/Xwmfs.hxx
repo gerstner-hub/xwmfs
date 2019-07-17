@@ -3,6 +3,7 @@
 
 // POSIX
 #include <sys/select.h>
+#include <signal.h>
 
 // C++
 #include <map>

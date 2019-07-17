@@ -16,7 +16,6 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <signal.h>
 
 // FUSE
 #include <fuse.h>
