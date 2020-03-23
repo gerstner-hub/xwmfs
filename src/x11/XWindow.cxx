@@ -429,7 +429,15 @@ void XWindow::getPropertyInfo(const XAtom &property, PropertyInfo &info)
 		xwmfs_throw(X11Exception(XDisplay::getInstance(), res));
 	}
 
-	info.items = bytes_left / (actual_format / 8);
+	if( actual_format != 0 )
+	{
+		info.items = bytes_left / (actual_format / 8);
+	}
+	else
+	{
+		info.items = 0;
+	}
+
 	info.format = actual_format;
 
 	XFree(prop_data);
