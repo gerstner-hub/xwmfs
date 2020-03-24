@@ -20,7 +20,7 @@ SelectionDirEntry::SelectionDirEntry() :
 	createSelectionAccessFiles();
 }
 
-Window SelectionDirEntry::getSelectionOwner(const Atom type) const
+Window SelectionDirEntry::getSelectionOwner(const Atom _type) const
 {
 	// it seems there is no general event mechanism available to keep
 	// track of the selection owner when we're not currently involved in a
@@ -28,7 +28,7 @@ Window SelectionDirEntry::getSelectionOwner(const Atom type) const
 	// selection owner content upon each read in m_owners.
 	//
 	// https://stackoverflow.com/questions/28578220/process-receiving-x11-selectionnotify-event-xev-doesnt-show-the-event-why-is#28595450
-	auto res = XGetSelectionOwner( XDisplay::getInstance(), type );
+	auto res = XGetSelectionOwner( XDisplay::getInstance(), _type );
 
 	return res;
 }
@@ -46,11 +46,11 @@ void SelectionDirEntry::collectSelectionTypes()
 	const char *selections[] = { "PRIMARY", "CLIPBOARD" };
 	auto &mapper = XAtomMapper::getInstance();
 
-	for( const auto type: selections )
+	for( const auto _type: selections )
 	{
-		XAtom atom = mapper.getAtom(type);
+		XAtom atom = mapper.getAtom(_type);
 
-		m_selection_types.push_back( { atom, type } );
+		m_selection_types.push_back( { atom, _type } );
 	}
 }
 

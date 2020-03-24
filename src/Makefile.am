@@ -6,7 +6,7 @@ xwmfs_SOURCES += fuse/xwmfs_fuse_ops.h common/Condition.hxx common/Exception.hxx
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse
 # makes it possible to include headers from fuse or x11, to select a recent fuse API version
-AM_CFLAGS = -Wall -Werror -Wextra -I${top_srcdir}/src/ -DFUSE_USE_VERSION=26 @fuse_CFLAGS@ @x11_CFLAGS@
+AM_CFLAGS = -Wall -Werror -Wextra -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wdouble-promotion -Wshadow -Wformat=2 -I${top_srcdir}/src/ -DFUSE_USE_VERSION=26 @fuse_CFLAGS@ @x11_CFLAGS@
 AM_CXXFLAGS =${AM_CFLAGS} -std=c++11
 # use this instead of AM_LDFLAGS to have the libraries appear AFTER the object
 # files. Otherwise we get trouble on distros where as-needed linking is

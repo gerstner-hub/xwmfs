@@ -288,11 +288,11 @@ void WindowDirEntry::updateClientLeader(FileEntry &entry)
 
 void WindowDirEntry::updateWindowType(FileEntry &entry)
 {
-	auto type = m_win.getWindowType();
+	auto _type = m_win.getWindowType();
 
 	const auto &mapper = XAtomMapper::getInstance();
 
-	entry << mapper.getName(XAtom(type));
+	entry << mapper.getName(XAtom(_type));
 }
 
 void WindowDirEntry::updateGeometry(const XWindowAttrs &attrs)
@@ -413,7 +413,7 @@ void WindowDirEntry::updateProperties(FileEntry &entry)
 		const XAtom atom(plain_atom);
 		m_win.getPropertyInfo(atom, info);
 		const auto &name = mapper.getName(atom);
-		const auto &type = mapper.getName(XAtom(info.type));
+		const auto &_type = mapper.getName(XAtom(info.type));
 
 		logger.debug()
 			<< "Querying property " << atom << " on window "
@@ -421,7 +421,7 @@ void WindowDirEntry::updateProperties(FileEntry &entry)
 		logger.debug()
 			<< "type = " << info.type << ", items = " << info.items << ", format = " << info.format << std::endl;
 
-		entry << (first ? "" : "\n") << name << "(" << type << ") = ";
+		entry << (first ? "" : "\n") << name << "(" << _type << ") = ";
 
 		try
 		{
