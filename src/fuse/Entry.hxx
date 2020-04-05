@@ -4,6 +4,9 @@
 // C++
 #include <atomic>
 
+// POSIX
+#include <unistd.h>
+
 // xwmfs
 #include "common/Helper.hxx"
 
