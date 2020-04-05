@@ -36,6 +36,9 @@ private: // members
 	XWMFS_EXCEPTION_IMPL;
 };
 
+//! wrapper that exports the XSI compliant version of strerror_r
+int xsi_strerror_r(int errnum, char *buf, size_t buflen);
+
 } // end ns
 
 #endif // inc. guard

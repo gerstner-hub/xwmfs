@@ -37,10 +37,19 @@ SystemException::SystemException(const std::string &err) :
 	std::stringstream ss;
 	m_errno = errno;
 
-	char msg[256];
+	char msg[512];
 
-	char *m = ::strerror_r(m_errno, msg, 256);
-	ss << " (\"" << m << "\", errno = " << m_errno << ")";
+	/* we're using a wrapper for the XSI version of strerror_r here */
+	auto ret = xwmfs::xsi_strerror_r(m_errno, msg, sizeof(msg));
+	auto code = ret == -1 ? errno : ret;
+	if( code != 0 )
+	{
+		std::string fallback;
+		fallback = "failed to format error message (errno = " + std::to_string(code) + ")";
+		snprintf(msg, sizeof(msg), "%s", fallback.c_str());
+	}
+
+	ss << " (\"" << msg << "\", errno = " << m_errno << ")";
 	m_error.append( ss.str() );
 }
 
