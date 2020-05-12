@@ -1,3 +1,12 @@
+2020-05-12 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.85
+
+	Bugfix release
+
+	- fix build with gcc-10 (undefined references to getProperty<int>)
+	- fix build against MUSL libc (`uid_t does not name a type`)
+
 2020-03-24 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
 	version 0.84
