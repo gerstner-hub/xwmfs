@@ -60,6 +60,8 @@ public: // functions
 
 	Exception(const std::string &err) : m_error(err) {}
 
+	virtual ~Exception() {}
+
 	std::string what(const uint32_t level=0) const;
 
 	void addError(const xwmfs::Exception &ex)
