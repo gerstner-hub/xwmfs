@@ -47,10 +47,11 @@ namespace xwmfs
  * 	via specializations of FileEntry that overwrite the write-function
  * 	accordingly to do something sensible.
  **/
-struct FileEntry :
+class FileEntry :
 	public Entry,
 	public std::stringstream
 {
+public:
 	/**
 	 * \brief
 	 * 	Create a new FileEntry with name \c n, being read-write if \c

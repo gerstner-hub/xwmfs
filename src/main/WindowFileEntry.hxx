@@ -16,9 +16,10 @@ namespace xwmfs
  * 	the file system. Depending on the actual file called the right
  * 	operations are performed at the associated window.
  **/
-struct WindowFileEntry :
+class WindowFileEntry :
 	public FileEntry
 {
+public:
 	//! Creates a WindowFileEntry associated with \c win
 	WindowFileEntry(
 		const std::string &n,

@@ -17,8 +17,8 @@ namespace xwmfs
 {
 
 // fwd. declarations
-struct DirEntry;
-struct FileEntry;
+class DirEntry;
+class FileEntry;
 class AbortHandler;
 class OpenContext;
 class Condition;
@@ -31,7 +31,7 @@ class Condition;
  * 	use an enumeration for differentiation of specific types to avoid too
  * 	high performance penalties due to RTTI.
  **/
-struct Entry
+class Entry
 {
 public: // types
 

@@ -23,7 +23,7 @@ namespace xwmfs
  * 	For now DirEntries are always read-only as we can't create new files
  * 	in the XWMFS (yet).
  **/
-struct DirEntry :
+class DirEntry :
 	public Entry
 {
 public: // types
