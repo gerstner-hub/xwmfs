@@ -21,8 +21,10 @@ const char COLOR_ESCAPE = '\033';
 const char COLOR_FINISH = 'm';
 const char COLOR_RESET[] = "[0";
 const char COLOR_FG[] = "[3";
+#if 0
 const char COLOR_BRIGHT[] = "[1";
 const char COLOR_NORMAL[] = "[22";
+#endif
 
 std::ostream& ILogger::startColor(std::ostream &o, const Color &c)
 {
