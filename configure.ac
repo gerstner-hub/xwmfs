@@ -23,6 +23,16 @@ dnl check for asciidoc availibility, optional
 AC_CHECK_PROG([asciidoc], [a2x], [yes], [no])
 AM_CONDITIONAL([FOUND_ASCIIDOC], [test "x$asciidoc" = xyes])
 
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[[#ifdef __clang__
+	#error no gcc
+#elif !defined(__GNUC__)
+	#error no gcc
+#endif
+]])], [is_gcc=true], [is_gcc=false])
+
+AM_CONDITIONAL([IS_GCC], $is_gcc)
+
 dnl we need fuse
 dnl AC_CHECK_LIB([fuse], [fuse_main], [], [AC_MSG_ERROR([You need the fuse userspace library to build this package])])
 PKG_CHECK_MODULES([fuse], [ fuse >= 2.8.1 ])
