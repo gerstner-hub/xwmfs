@@ -10,6 +10,8 @@ AM_CFLAGS = -Wall -Werror -Wextra -Wnull-dereference -Wdouble-promotion -Wshadow
 # add some more advanced warnings for gcc
 if IS_GCC
 AM_CFLAGS += -Wduplicated-cond -Wduplicated-branches -Wlogical-op
+else
+AM_CFLAGS += -Wno-unused-parameter
 endif
 AM_CXXFLAGS =${AM_CFLAGS} -std=c++11
 # use this instead of AM_LDFLAGS to have the libraries appear AFTER the object
