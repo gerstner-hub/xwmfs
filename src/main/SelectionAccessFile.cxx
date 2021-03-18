@@ -163,7 +163,7 @@ int SelectionAccessFile::updateSelection()
 		sel_win.getProperty(m_target_prop, selection_data);
 
 		this->str("");
-		(*this) << selection_data.get().data;
+		(*this) << selection_data.get().str;
 	}
 	catch( const xwmfs::Exception &ex )
 	{

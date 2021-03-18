@@ -90,7 +90,7 @@ void WindowFileEntry::setProperty(const std::string &input)
 	else if( type_name == "UTF8_STRING" )
 	{
 		utf8_string string_u8;
-		string_u8.data = value.c_str();
+		string_u8.str = value;
 		Property<utf8_string> prop;
 		prop = string_u8;
 		m_win.setProperty(prop_name, prop);

@@ -16,7 +16,7 @@ RootWin::RootWin() :
 	m_windows()
 {
 	xwmfs::StdLogger::getInstance().debug()
-		<< "root window has id: " 
+		<< "root window has id: "
 		<< std::hex << std::showbase << this->id() << std::dec
 		<< std::endl;
 	this->getInfo();
@@ -202,7 +202,7 @@ void RootWin::queryPID()
 				<< alt_pid_atom << "\": " << ex.what();
 		}
 	}
-}	
+}
 
 void RootWin::queryBasicWMProperties()
 {
@@ -240,7 +240,7 @@ void RootWin::queryBasicWMProperties()
 
 		xwmfs::StdLogger::getInstance().debug()
 			<< "wm_class acquired: "
-			<< m_wm_class.get().data << "\n";
+			<< m_wm_class.get().str << "\n";
 	}
 	catch( const xwmfs::Exception &ex )
 	{

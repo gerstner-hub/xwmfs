@@ -383,7 +383,7 @@ void getPropertyValue(
 			{
 				Property<utf8_string> prop;
 				win.getProperty(prop_atom, prop, &info);
-				value << prop.get().data;
+				value << prop.get().str;
 			}
 			else
 			{

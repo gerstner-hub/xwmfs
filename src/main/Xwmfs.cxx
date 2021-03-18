@@ -178,6 +178,7 @@ void Xwmfs::early_init()
 	}
 
 	XPropTraits<utf8_string>::init();
+	XPropTraits<std::vector<utf8_string>>::init();
 }
 
 int Xwmfs::init()

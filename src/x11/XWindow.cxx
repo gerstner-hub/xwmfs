@@ -60,7 +60,7 @@ std::string XWindow::getName() const
 
 		this->getProperty(m_std_props.atom_ewmh_window_name, utf8_name);
 
-		return utf8_name.get().data;
+		return utf8_name.get().str;
 	}
 	catch( ... )
 	{ }
@@ -645,6 +645,7 @@ template void XWindow::getProperty(const Atom, Property<const char*>&, const Pro
 template void XWindow::getProperty(const Atom, Property<std::vector<XAtom> >&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<unsigned long> >&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<int> >&, const PropertyInfo*) const;
+template void XWindow::getProperty(const Atom, Property<std::vector<utf8_string> >&, const PropertyInfo*) const;
 template void XWindow::setProperty(const Atom, const Property<const char*>&);
 template void XWindow::setProperty(const Atom, const Property<int>&);
 template void XWindow::setProperty(const Atom, const Property<utf8_string>&);

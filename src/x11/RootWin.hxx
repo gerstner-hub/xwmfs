@@ -1,12 +1,13 @@
 #ifndef XWMFS_ROOTWINDOW_HXX
 #define XWMFS_ROOTWINDOW_HXX
 
+// C++
 #include <vector>
 
-// display representation class
+// xwmfs
 #include "x11/XDisplay.hxx"
-// window representation class
 #include "x11/XWindow.hxx"
+#include "x11/utf8_string.hxx"
 
 namespace xwmfs
 {
@@ -99,7 +100,7 @@ public: // functions
 	int getWM_Pid() const { return m_wm_pid; }
 
 	//! returns the window manager class, if found
-	const char* getWM_Class() const { return m_wm_class.get().data; }
+	const char* getWM_Class() const { return m_wm_class.get().str.c_str(); }
 
 	//! returns the show the desktop mode, if found
 	bool getWM_ShowDesktopMode() const { return m_wm_showing_desktop == 1; }
@@ -212,7 +213,7 @@ private: // data
 	//! the process ID of the window manager (or -1 if N/A)
 	int m_wm_pid = -1;
 	//! queried class of the window manager in UTF8 (or NULL if N/A)
-	xwmfs::Property<xwmfs::utf8_string> m_wm_class;
+	xwmfs::Property<utf8_string> m_wm_class;
 	//! \brief
 	//! integer specifying whether currently the "show desktop mode" is
 	//! active (or -1 if N/A)
