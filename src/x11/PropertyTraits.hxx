@@ -1,5 +1,5 @@
-#ifndef XWMFS_PROPERTY
-#define XWMFS_PROPERTY
+#ifndef XWMFS_PROPERTY_TRAITS
+#define XWMFS_PROPERTY_TRAITS
 
 // C++
 #include <cstring>
@@ -42,7 +42,7 @@ namespace xwmfs
  * 	versa.
  **/
 template <typename PROPTYPE>
-class XPropTraits
+class PropertyTraits
 {
 public: // constants
 
@@ -103,12 +103,12 @@ public: // functions
 	{}
 
 	// never instantiate this type
-	XPropTraits() = delete;
+	PropertyTraits() = delete;
 };
 
 template <>
 //! property trait specialization for integers
-class XPropTraits<int>
+class PropertyTraits<int>
 {
 public: // constants
 
@@ -145,7 +145,7 @@ public: // functions
 
 template <>
 //! property trait specialization for integers
-class XPropTraits<XAtom>
+class PropertyTraits<XAtom>
 {
 public: // constants
 
@@ -182,7 +182,7 @@ public: // functions
 
 template <>
 //! property type specialization for strings
-class XPropTraits<const char*>
+class PropertyTraits<const char*>
 {
 public: // constants
 
@@ -218,7 +218,7 @@ public: // functions
 
 template <>
 //! property type specialization for Window identifiers
-class XPropTraits<Window>
+class PropertyTraits<Window>
 {
 public: // constants
 
@@ -239,7 +239,7 @@ public: // functions
 
 template <>
 //! property type specialization for utf8 strings
-class XPropTraits<utf8_string>
+class PropertyTraits<utf8_string>
 {
 public: // constants
 
@@ -283,14 +283,14 @@ public: // functions
 
 template <typename ELEM>
 //! property type specialization for vectors of primitives
-class XPropTraits< std::vector<ELEM> >
+class PropertyTraits< std::vector<ELEM> >
 {
 public: // constants
 
-	static const Atom x_type = XPropTraits<ELEM>::x_type;
+	static const Atom x_type = PropertyTraits<ELEM>::x_type;
 	static const unsigned long fixed_size = 0;
-	static const char format = XPropTraits<ELEM>::format;
-	typedef typename XPropTraits<ELEM>::XPtrType XPtrType;
+	static const char format = PropertyTraits<ELEM>::format;
+	typedef typename PropertyTraits<ELEM>::XPtrType XPtrType;
 
 public: // functions
 
@@ -306,13 +306,13 @@ public: // functions
 
 template <>
 //! property type specialization for vectors of primitives
-class XPropTraits< std::vector<utf8_string> >
+class PropertyTraits< std::vector<utf8_string> >
 {
 public: // constants
 
 	static XAtom x_type;
 	static const unsigned long fixed_size = 0;
-	static const char format = XPropTraits<utf8_string>::format;
+	static const char format = PropertyTraits<utf8_string>::format;
 	typedef const char* XPtrType;
 
 public: // functions
@@ -322,7 +322,7 @@ public: // functions
 	{
 		// correct order of runtime initialization is necessary in
 		// Xwmfs::early_init().
-		x_type = XPropTraits<utf8_string>::x_type;
+		x_type = PropertyTraits<utf8_string>::x_type;
 	}
 
 	static
@@ -343,7 +343,7 @@ public: // functions
 
 template <>
 //! property type specialization for arrays of Window identifiers
-class XPropTraits< std::vector<int> >
+class PropertyTraits< std::vector<int> >
 {
 public: // constants
 
@@ -368,7 +368,7 @@ public: // functions
 
 template <>
 //! property type specialization for arrays of XAtoms
-class XPropTraits< std::vector<XAtom> >
+class PropertyTraits< std::vector<XAtom> >
 {
 public: // constants
 
@@ -387,153 +387,6 @@ public: // functions
 			v.push_back(XAtom(data[e]));
 		}
 	}
-};
-
-/**
- * \brief
- *	X11 property representation
- * \details
- * 	Based on the XPropTraits definitions above this class allows to
- * 	have C++ Property objects that can get and set data
- * 	transparently from/to the X server and transform the data from
- * 	the native C++ world into the X world and vice versa.
- **/
-template <typename PROPTYPE>
-class Property
-{
-	// The XWindow class is actually doing the communication via Xlib so
-	// it needs to mess with the Property internals
-	friend class XWindow;
-
-public: // types
-
-	//! the matching traits for our property type
-	typedef XPropTraits<PROPTYPE> Traits;
-	//! The correct pointer type for our property type
-	typedef typename XPropTraits<PROPTYPE>::XPtrType XPtrType;
-
-public: // functions
-
-	//! construct an empty/default property value
-	Property() : m_native() { }
-
-	//! forbid copying to avoid trouble with memory mgm.
-	Property(const Property&) = delete;
-
-	//! construct a property holding the value from \c p
-	Property(const PROPTYPE &p) : m_native()
-	{
-		// our own assignment operator knows how to deal with this
-		*this = p;
-	}
-
-	//! frees unneeded memory, if required
-	~Property()
-	{
-		checkDelete();
-	}
-
-	/**
-	 * \brief
-	 * 	Retrieves a reference to the currently stored property value
-	 * \details
-	 * 	If there happens to be no valid data stored then an exception
-	 * 	is thrown.
-	 **/
-	const PROPTYPE& get() const
-	{
-		if( !m_data )
-		{
-			xwmfs_throw(Exception("No valid property stored"));
-		}
-
-		return m_native;
-	}
-
-	/**
-	 * \brief
-	 * 	Retrieves a pointer to the raw data associated with the
-	 * 	property
-	 **/
-	typename Traits::XPtrType getRawData() const { return m_data; }
-
-	//! returns whether valid property data is set
-	bool valid() const { return m_data != nullptr; }
-
-	/**
-	 * \brief
-	 * 	Assigns the given property value from \c p
-	 **/
-	Property& operator=(const PROPTYPE &p)
-	{
-		checkDelete();
-
-		m_native = p;
-		Traits::native2x( m_native, m_data );
-
-		return *this;
-	}
-
-protected: // functions
-
-	/**
-	 * \brief
-	 * 	Set the current value of the stored native PROPTYPE from the
-	 * 	given X data found in \c data
-	 * \details
-	 * 	\c data is a pointer to the data received from Xlib. It needs
-	 * 	to be freed at an appropriate time via XFree().
-	 *
-	 * 	\c size determines the number of bytes present in \c data.
-	 **/
-	void takeData(unsigned char *data, unsigned long size)
-	{
-		checkDelete();
-
-		if( Traits::fixed_size && size > Traits::fixed_size)
-		{
-			xwmfs_throw(Exception("size is larger than fixed_size"));
-		}
-
-		m_data_is_from_x = true;
-		m_data = reinterpret_cast<XPtrType>(data);
-
-		Traits::x2native(
-			m_native,
-			m_data,
-			size / (Traits::format / 8)
-		);
-	}
-
-	//! Retrieves the associated XAtom type from the traits of PROPTYPE
-	static Atom getXType() { return Traits::x_type; }
-
-	/**
-	 * \brief
-	 * 	If the current Property instance contains data allocated by
-	 * 	Xlib then it is deleted
-	 **/
-	void checkDelete()
-	{
-		// frees the m_data ptr if it comes from xlib
-		if( m_data_is_from_x )
-		{
-			// note: XFree returns strange codes ...
-
-			/*const int res = */XFree( (void*)m_data);
-			m_data_is_from_x = false;
-		}
-	}
-
-private: // data
-
-	//! The native property type
-	PROPTYPE m_native;
-	//! determines whether the pointer m_data is from Xlib and needs to be
-	//! freed
-	bool m_data_is_from_x = false;
-	//! A pointer to m_native that can be fed to Xlib
-	typename Traits::XPtrType m_data = nullptr;
 };
 
 } // end ns

@@ -19,7 +19,7 @@
 // Display wrapper
 #include "x11/XDisplay.hxx"
 // property helper classes
-#include "x11/property.hxx"
+#include "x11/Property.hxx"
 
 namespace xwmfs
 {
