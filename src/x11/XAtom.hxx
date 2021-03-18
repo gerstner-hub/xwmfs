@@ -54,7 +54,7 @@ public: // functions
 		m_atom(atom)
 	{ }
 
-	XAtom& operator=(const Atom &atom) 
+	XAtom& operator=(const Atom &atom)
 	{
 		m_atom = atom;
 		return *this;
@@ -229,4 +229,3 @@ private:
 std::ostream& operator<<(std::ostream &o, const xwmfs::XAtom &atom);
 
 #endif // inc. guard
-

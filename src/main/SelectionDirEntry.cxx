@@ -84,13 +84,13 @@ std::string SelectionDirEntry::selectionBufferLabel(const XAtom &atom) const
 
 	return "unknown";
 }
-	
+
 void SelectionDirEntry::conversionResult(const XSelectionEvent &ev)
 {
 	auto &logger = xwmfs::StdLogger::getInstance();
 	logger.info() << "Got conversion result for selection buffer '"
 		<< selectionBufferLabel(XAtom(ev.selection)) << "'\n";
-		
+
 	for( auto &file: m_selection_access_files )
 	{
 		if( file->type() == ev.selection )
@@ -161,4 +161,3 @@ void SelectionDirEntry::lostOwnership(const XSelectionClearEvent &ev)
 }
 
 } // end ns
-

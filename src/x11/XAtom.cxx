@@ -23,7 +23,7 @@ const StandardProps& StandardProps::instance()
 	return singleton;
 }
 
-StandardProps::StandardProps() 
+StandardProps::StandardProps()
 {
 	try
 	{
@@ -133,4 +133,3 @@ std::ostream& operator<<(std::ostream &o, const xwmfs::XAtom &atom)
 
 	return o;
 }
-

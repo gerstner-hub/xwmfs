@@ -42,4 +42,3 @@ int xsi_strerror_r(int errnum, char *buf, size_t buflen);
 } // end ns
 
 #endif // inc. guard
-

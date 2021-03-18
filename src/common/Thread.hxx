@@ -19,7 +19,7 @@ namespace xwmfs
  * 	Thread::State for more details.
  *
  * 	The thread is created during construction time but only enters the
- * 	specified functions after start() has been called. 
+ * 	specified functions after start() has been called.
  **/
 class Thread
 {
@@ -83,7 +83,6 @@ public: // functions
 	 * \details
 	 * 	If the thread is currently inside client code then the client
 	 * 	code is responsible for reacting to this state change.
-	 * 	
 	 **/
 	void requestExit() { this->setState( EXIT ); }
 
@@ -133,4 +132,3 @@ private: // data
 } // end ns
 
 #endif // inc. guard
-

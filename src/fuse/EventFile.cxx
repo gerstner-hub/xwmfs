@@ -224,7 +224,7 @@ int EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offse
 	return -EINVAL;
 }
 
-OpenContext* EventFile::createOpenContext() 
+OpenContext* EventFile::createOpenContext()
 {
 	auto ret = new EventOpenContext(
 		this,
@@ -238,4 +238,3 @@ OpenContext* EventFile::createOpenContext()
 }
 
 } // end ns
-

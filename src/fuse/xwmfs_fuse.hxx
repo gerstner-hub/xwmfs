@@ -67,4 +67,3 @@ private:
 } // end ns
 
 #endif // inc. guard
-

@@ -118,4 +118,3 @@ inline std::ostream& operator<<(
 }
 
 #endif // inc. guard
-

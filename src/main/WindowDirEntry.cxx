@@ -483,4 +483,3 @@ void WindowDirEntry::newParent(const XWindow &win)
 }
 
 } // end ns
-

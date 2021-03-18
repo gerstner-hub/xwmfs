@@ -511,4 +511,3 @@ void RootWin::setWM_NumDesktops(const int &num)
 }
 
 } // end ns
-

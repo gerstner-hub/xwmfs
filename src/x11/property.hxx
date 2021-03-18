@@ -444,7 +444,7 @@ public: // functions
 	{
 		if( !m_data )
 		{
-			xwmfs_throw(Exception("No valid property stored")); 
+			xwmfs_throw(Exception("No valid property stored"));
 		}
 
 		return m_native;
@@ -492,7 +492,7 @@ protected: // functions
 
 		if( Traits::fixed_size && size > Traits::fixed_size)
 		{
-			xwmfs_throw(Exception("size is larger than fixed_size")); 
+			xwmfs_throw(Exception("size is larger than fixed_size"));
 		}
 
 		m_data_is_from_x = true;
@@ -539,4 +539,3 @@ private: // data
 } // end ns
 
 #endif // inc. guard
-

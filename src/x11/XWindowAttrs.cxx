@@ -10,4 +10,3 @@ bool XWindowAttrs::isMapped() const
 }
 
 } // end ns
-

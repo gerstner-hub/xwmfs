@@ -20,4 +20,3 @@ public:
 } // end ns
 
 #endif // inc. guard
-

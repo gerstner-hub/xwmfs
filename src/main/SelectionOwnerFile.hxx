@@ -29,11 +29,11 @@ class SelectionOwnerFile :
 public: // functions
 
 	SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent);
-	
+
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
-	
+
 protected: // functions
-	
+
 	void updateOwners();
 
 protected: // data
@@ -44,4 +44,3 @@ protected: // data
 } // end ns
 
 #endif // inc. guard
-

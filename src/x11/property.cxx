@@ -8,4 +8,3 @@ XAtom XPropTraits<utf8_string>::x_type = XAtom(0);
 XAtom XPropTraits<std::vector<utf8_string>>::x_type = XAtom(0);
 
 } // end ns
-

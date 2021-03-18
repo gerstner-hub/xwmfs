@@ -3,7 +3,7 @@
 
 // C++
 #include <algorithm>
-#include <cctype> 
+#include <cctype>
 
 namespace xwmfs
 {
@@ -32,4 +32,3 @@ void strip(std::string &s)
 }
 
 } // end ns
-

@@ -193,4 +193,3 @@ void WindowsRootDir::missingWindow(const XWindow &win, const std::string &action
 }
 
 } // end ns
-

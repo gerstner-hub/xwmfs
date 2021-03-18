@@ -44,4 +44,3 @@ inline std::ostream& operator<<(std::ostream &o, const xwmfs::utf8_string &s)
 }
 
 #endif // inc. guard
-

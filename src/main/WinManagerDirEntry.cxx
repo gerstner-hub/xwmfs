@@ -203,4 +203,3 @@ void WinManagerDirEntry::updateClass(FileEntry &entry)
 }
 
 } // end ns
-

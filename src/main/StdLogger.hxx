@@ -33,4 +33,3 @@ protected:
 } // end ns
 
 #endif // inc. guard
-

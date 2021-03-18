@@ -200,4 +200,3 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 }
 
 } // end ns
-

@@ -15,10 +15,10 @@ namespace xwmfs
  * objects in a format that is defined by the fuse part of the code. The main
  * reason is that we need to be able to quickly traverse the virtual file
  * system such that we can e.g. lookup specific paths and list their contents.
- * 
+ *
  * This would become costly if for each lookup the information needed first to
  * be gathered from complex objects and requiring a lot of checks etc.
- * 
+ *
  * Thus we compile the information once into a ready-to-use data structure
  * that is optimized for fuse needs.
  *
@@ -86,4 +86,3 @@ public:
 } // end ns
 
 #endif // inc. guard
-

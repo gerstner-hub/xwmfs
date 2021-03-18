@@ -6,7 +6,7 @@
 
 namespace xwmfs
 {
-	
+
 SelectionOwnerFile::SelectionOwnerFile(
 	const std::string &n, const SelectionDirEntry &parent) :
 	FileEntry(n, false, 0),
@@ -47,7 +47,7 @@ void SelectionOwnerFile::updateOwners()
 	this->str("");
 
 	XWindow owner;
-	
+
 	for( const auto &selection: m_selection_dir.getSelectionTypes() )
 	{
 		owner = XWindow( m_selection_dir.getSelectionOwner( selection.first ) );
@@ -57,4 +57,3 @@ void SelectionOwnerFile::updateOwners()
 }
 
 } // end ns
-

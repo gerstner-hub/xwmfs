@@ -20,7 +20,7 @@ class XWindow;
  * 	contains a number of sub-entries that contain global window manager
  * 	properties and controls.
  **/
-class WinManagerDirEntry : 
+class WinManagerDirEntry :
 	public UpdateableDir<WinManagerDirEntry>
 {
 public: // functions
@@ -79,4 +79,3 @@ protected: // data
 } // end ns
 
 #endif // inc. guard
-

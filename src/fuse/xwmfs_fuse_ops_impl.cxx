@@ -90,7 +90,7 @@ int xwmfs_readdir(
 	xwmfs::DirEntry *dir_entry = xwmfs::Entry::tryCastDirEntry(entry);
 
 	if( ! entry )
-	{ 
+	{
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << ": no such entity: "
 			<< path << "\n";
@@ -122,7 +122,7 @@ int xwmfs_readdir(
  * \details
  *	This call is used to check whether the given flags are okay for
  *	opening the file
- *	
+ *
  *	We can set fi->fh (file handle) here and it will be available in any
  *	other operations coming up.
  **/
@@ -339,4 +339,3 @@ void xwmfs_destroy(void* data)
 
 	xwmfs::filesystem = nullptr;
 }
-

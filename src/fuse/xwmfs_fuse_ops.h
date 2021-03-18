@@ -84,4 +84,3 @@ extern struct fuse_operations xwmfs_oper;
 #endif
 
 #endif // inc. guard
-

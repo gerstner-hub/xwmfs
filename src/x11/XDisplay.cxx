@@ -31,7 +31,7 @@ XDisplay& XDisplay::getInstance()
 XDisplay::AtomMappingError::AtomMappingError(
 	Display *dis, const int errcode, const std::string &s
 ) :
-	X11Exception(dis, errcode)	
+	X11Exception(dis, errcode)
 {
 	m_error += ". While trying to map " + \
 		s + " to a valid atom.";
@@ -47,4 +47,3 @@ XDisplay::DisplayOpenError::DisplayOpenError() :
 }
 
 } // end ns
-

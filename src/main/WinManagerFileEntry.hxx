@@ -21,7 +21,7 @@ class XWindow;
  * 	to the window manager. Mostly this is only used for writable files to
  * 	relay the write request correctly.
  **/
-struct WinManagerFileEntry : 
+struct WinManagerFileEntry :
 	public FileEntry
 {
 	WinManagerFileEntry(const std::string &n, const time_t &t = 0) :
@@ -45,4 +45,3 @@ protected: // types
 } // end ns
 
 #endif // inc. guard
-

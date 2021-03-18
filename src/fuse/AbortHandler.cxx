@@ -47,4 +47,3 @@ void AbortHandler::finishedBlockingCall()
 }
 
 } // end ns
-

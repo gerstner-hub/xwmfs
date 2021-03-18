@@ -8,7 +8,7 @@
 namespace xwmfs
 {
 
-std::string Exception::what(const uint32_t level) const 
+std::string Exception::what(const uint32_t level) const
 {
 	std::stringstream ret;
 
@@ -54,4 +54,3 @@ SystemException::SystemException(const std::string &err) :
 }
 
 } // end ns
-

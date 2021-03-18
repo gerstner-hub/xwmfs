@@ -17,4 +17,3 @@ StdLogger::~StdLogger()
 }
 
 } // end ns
-

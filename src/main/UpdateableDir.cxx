@@ -59,4 +59,3 @@ template class UpdateableDir<WinManagerDirEntry>;
 template class UpdateableDir<WindowDirEntry>;
 
 } // end ns
-

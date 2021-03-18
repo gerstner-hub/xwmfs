@@ -93,4 +93,3 @@ protected: // data
 } // end ns
 
 #endif // inc. guard
-

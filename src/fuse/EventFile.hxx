@@ -12,7 +12,7 @@ namespace xwmfs
 {
 
 // fwd. decl.
-struct EventOpenContext; 
+struct EventOpenContext;
 
 /**
  * \brief
@@ -117,4 +117,3 @@ protected: // data
 } // end ns
 
 #endif // inc. guard
-

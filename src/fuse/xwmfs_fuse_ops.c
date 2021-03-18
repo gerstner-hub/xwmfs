@@ -18,4 +18,3 @@ struct fuse_operations xwmfs_oper =
 	.destroy = xwmfs_destroy,
 	.create = xwmfs_create
 };
-

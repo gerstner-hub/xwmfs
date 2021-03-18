@@ -84,4 +84,3 @@ void ILogger::setStreams(
 }
 
 } // end ns
-

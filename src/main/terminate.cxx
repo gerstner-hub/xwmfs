@@ -95,4 +95,3 @@ TerminateHandler* TerminateHandler::m_instance = nullptr;
 TerminateHandler terminate_handler;
 
 } // end ns
-

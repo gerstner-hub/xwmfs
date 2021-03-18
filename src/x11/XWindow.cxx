@@ -666,4 +666,3 @@ std::ostream& operator<<(std::ostream &o, const xwmfs::XWindow &w)
 
 	return o;
 }
-

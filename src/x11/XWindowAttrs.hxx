@@ -18,4 +18,3 @@ public: // functions
 } // end ns
 
 #endif // inc. guard
-

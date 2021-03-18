@@ -90,4 +90,3 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 }
 
 } // end ns
-

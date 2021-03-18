@@ -44,7 +44,7 @@ class SelectionAccessFile;
  *
  * 	- owners: will contain a line per selection buffer followed by the
  * 	current owner window ID
- * 	- primary: 
+ * 	- primary:
  * 		- on read will produce the current PRIMARY selection,
  * 		implemented via an EventFile, because the xwmfs process needs
  * 		to request the selection from the owning window first.
@@ -140,4 +140,3 @@ protected: // data
 } // end ns
 
 #endif // inc. guard
-

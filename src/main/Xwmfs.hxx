@@ -364,4 +364,3 @@ private: // functions
 } // end ns
 
 #endif // inc. guard
-
