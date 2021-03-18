@@ -61,6 +61,7 @@ protected: // functions
 	void forwardEvent(const EntrySpec &changed_entry);
 
 	void updateNumberOfDesktops(FileEntry &entry);
+	void updateDesktopNames(FileEntry &entry);
 	void updateActiveDesktop(FileEntry &entry);
 	void updateActiveWindow(FileEntry &entry);
 	void updateShowDesktopMode(FileEntry &entry);

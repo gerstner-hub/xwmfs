@@ -29,6 +29,8 @@ WinManagerDirEntry::SpecVector WinManagerDirEntry::getSpecVector() const
 	return SpecVector( {
 		EntrySpec("number_of_desktops", &WinManagerDirEntry::updateNumberOfDesktops, true,
 			std_props.atom_ewmh_wm_nr_desktops),
+		EntrySpec("desktop_names", &WinManagerDirEntry::updateDesktopNames, false,
+			std_props.atom_ewmh_wm_desktop_names),
 		EntrySpec("active_desktop", &WinManagerDirEntry::updateActiveDesktop, true,
 			std_props.atom_ewmh_wm_cur_desktop),
 		EntrySpec("active_window", &WinManagerDirEntry::updateActiveWindow, true,
@@ -145,6 +147,30 @@ void WinManagerDirEntry::updateNumberOfDesktops(FileEntry &entry)
 {
 	m_root_win.updateNumberOfDesktops();
 	entry << m_root_win.getWM_NumDesktops();
+}
+
+void WinManagerDirEntry::updateDesktopNames(FileEntry &entry)
+{
+	m_root_win.updateDesktopNames();
+
+	bool first = true;
+	size_t pos;
+
+	for(auto name: m_root_win.getDesktopNames())
+	{
+		// protect against newlines in desktop names
+		while( (pos = name.find('\n')) != name.npos )
+		{
+			name.replace(pos, 1, "\\n");
+		}
+
+		if( first )
+			first = false;
+		else
+			entry << "\n";
+
+		entry << name;
+	}
 }
 
 void WinManagerDirEntry::updateActiveDesktop(FileEntry &entry)

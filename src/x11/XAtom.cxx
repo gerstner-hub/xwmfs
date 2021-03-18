@@ -36,6 +36,7 @@ StandardProps::StandardProps()
 		atom_ewmh_wm_pid = mapper.getAtom("_NET_WM_PID");
 		atom_ewmh_wm_desktop_shown = mapper.getAtom("_NET_SHOWING_DESKTOP");
 		atom_ewmh_wm_nr_desktops = mapper.getAtom("_NET_NUMBER_OF_DESKTOPS");
+		atom_ewmh_wm_desktop_names = mapper.getAtom("_NET_DESKTOP_NAMES");
 		atom_ewmh_wm_cur_desktop = mapper.getAtom("_NET_CURRENT_DESKTOP");
 		atom_ewmh_desktop_nr = mapper.getAtom("_NET_WM_DESKTOP");
 		atom_ewmh_wm_window_list = mapper.getAtom("_NET_CLIENT_LIST");

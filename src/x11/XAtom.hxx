@@ -181,6 +181,8 @@ struct StandardProps
 	XAtom atom_ewmh_wm_desktop_shown;
 	//! property giving the number of desktops available
 	XAtom atom_ewmh_wm_nr_desktops;
+	//! property containing a list of utf8 strings denoting the desktops names
+	XAtom atom_ewmh_wm_desktop_names;
 	//! property denoting the currently active desktop number
 	XAtom atom_ewmh_wm_cur_desktop;
 	//! property denoting EWMH comp. wm desktop number for a window

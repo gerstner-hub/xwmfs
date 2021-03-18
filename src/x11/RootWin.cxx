@@ -250,6 +250,7 @@ void RootWin::queryBasicWMProperties()
 
 	updateShowingDesktop();
 	updateNumberOfDesktops();
+	updateDesktopNames();
 	updateActiveDesktop();
 	updateActiveWindow();
 }
@@ -295,6 +296,19 @@ void RootWin::updateNumberOfDesktops()
 	);
 }
 
+void RootWin::updateDesktopNames()
+{
+	std::vector<utf8_string> desktop_names;
+
+	updateProperty(m_std_props.atom_ewmh_wm_desktop_names, desktop_names);
+
+	m_wm_desktop_names.clear();
+
+	for(const auto &name: desktop_names)
+	{
+		m_wm_desktop_names.push_back(name.str);
+	}
+}
 
 template <typename TYPE>
 void RootWin::updateProperty(const XAtom &atom, TYPE &property)

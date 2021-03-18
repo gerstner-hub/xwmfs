@@ -129,6 +129,9 @@ public: // functions
 	//! returns the list of windows managed by the window manager
 	const std::vector<XWindow>& getWindowList() const { return m_windows; }
 
+	//! returns the vector of known desktop names in order of occurence
+	const std::vector<std::string>& getDesktopNames() const { return m_wm_desktop_names; }
+
 	/**
 	 * \brief
 	 * 	returns the complete hierarchy of windows, actively queried
@@ -150,6 +153,7 @@ public: // functions
 	void updateShowingDesktop();
 	void updateActiveDesktop();
 	void updateNumberOfDesktops();
+	void updateDesktopNames();
 	void updateActiveWindow();
 
 	/**
