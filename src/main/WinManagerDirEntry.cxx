@@ -1,7 +1,9 @@
 // xwmfs
+#include "main/DesktopsRootDir.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/WinManagerFileEntry.hxx"
 #include "main/StdLogger.hxx"
+#include "main/Xwmfs.hxx"
 #include "x11/RootWin.hxx"
 #include "fuse/EventFile.hxx"
 
@@ -156,7 +158,7 @@ void WinManagerDirEntry::updateDesktopNames(FileEntry &entry)
 	bool first = true;
 	size_t pos;
 
-	for(auto name: m_root_win.getDesktopNames())
+	for( auto name: m_root_win.getDesktopNames() )
 	{
 		// protect against newlines in desktop names
 		while( (pos = name.find('\n')) != name.npos )
@@ -170,6 +172,13 @@ void WinManagerDirEntry::updateDesktopNames(FileEntry &entry)
 			entry << "\n";
 
 		entry << name;
+	}
+
+	// update the sibbling desktops directory structure
+	auto desktops = Xwmfs::getInstance().getDesktopsDir();
+	if( desktops )
+	{
+		desktops->handleDesktopsChanged();
 	}
 }
 

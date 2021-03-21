@@ -179,6 +179,16 @@ public: // functions
 
 	/**
 	 * \brief
+	 * 	Retrieves the last known value of the desktop nr. as returned
+	 * 	by getDesktop()
+	 * \details
+	 * 	If there is no last known value then an active query via
+	 * 	getDesktop() will be made and cached for future invocations.
+	 **/
+	int getCachedDesktop() const;
+
+	/**
+	 * \brief
 	 * 	Set \c name as the new name of the current window
 	 * \details
 	 * 	If the window name cannot be set then an exception is thrown.
@@ -579,6 +589,8 @@ protected: // data
 	mutable long m_send_event_mask = NoEventMask;
 
 	const StandardProps &m_std_props;
+
+	mutable int m_cached_desktop_nr = -1;
 };
 
 } // end ns

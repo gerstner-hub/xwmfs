@@ -22,6 +22,7 @@
 
 // xwmfs
 #include "main/Xwmfs.hxx"
+#include "main/DesktopsRootDir.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 #include "main/WindowFileEntry.hxx"
@@ -60,6 +61,9 @@ void Xwmfs::createFS()
 	m_win_dir = new WindowsRootDir();
 	m_fs_root.addEntry( m_win_dir );
 
+	m_desktop_dir = new DesktopsRootDir(m_root_win);
+	m_fs_root.addEntry( m_desktop_dir );
+
 	m_selection_dir = new xwmfs::SelectionDirEntry();
 	m_fs_root.addEntry( m_selection_dir );
 
@@ -91,12 +95,16 @@ void Xwmfs::createFS()
 
 	// add each window found in the list
 
-	FileSysWriteGuard write_guard(m_fs_root);
-
-	for( const auto &win: *windows )
 	{
-		m_win_dir->addWindow( win, true, win == m_root_win );
+		FileSysWriteGuard write_guard(m_fs_root);
+
+		for( const auto &win: *windows )
+		{
+			m_win_dir->addWindow( win, true, win == m_root_win );
+		}
 	}
+
+	m_desktop_dir->handleDesktopsChanged();
 }
 
 void Xwmfs::createSelectionWindow()
@@ -399,7 +407,8 @@ void Xwmfs::handlePendingEvents()
 
 void Xwmfs::handleEvent(const XEvent &ev)
 {
-	auto &logger = xwmfs::StdLogger::getInstance();
+	auto &logger = StdLogger::getInstance();
+	auto &std_props = StandardProps::instance();
 #if 0
 	logger.debug() << "Received event #" << ev.xany.serial << " of type "
 		<< std::dec << ev.type << std::endl;
@@ -457,9 +466,19 @@ void Xwmfs::handleEvent(const XEvent &ev)
 			}
 			else
 			{
-				is_delete ?
-					m_win_dir->deleteProperty(w, ev.xproperty.atom) :
+				if( is_delete )
+				{
+					m_win_dir->deleteProperty(w, ev.xproperty.atom);
+				}
+				else
+				{
 					m_win_dir->updateProperty(w, ev.xproperty.atom);
+
+					if( ev.xproperty.atom == std_props.atom_ewmh_window_desktop )
+					{
+						m_desktop_dir->handleWindowDesktopChanged(w);
+					}
+				}
 			}
 			break;
 		}
@@ -585,6 +604,7 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev)
 		FileSysWriteGuard write_guard(m_fs_root);
 		m_win_dir->addWindow(w);
 		m_wm_dir->windowLifecycleEvent(w, true);
+		m_desktop_dir->handleWindowCreated(w);
 	}
 	catch( const xwmfs::Exception &ex )
 	{
@@ -605,6 +625,7 @@ void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev)
 	FileSysWriteGuard write_guard(m_fs_root);
 	m_win_dir->removeWindow(w);
 	m_wm_dir->windowLifecycleEvent(w, false);
+	m_desktop_dir->handleWindowDestroyed(w);
 }
 
 void Xwmfs::handleSelectionEvent(const XEvent &ev)

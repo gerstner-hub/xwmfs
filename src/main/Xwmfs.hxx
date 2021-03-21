@@ -19,11 +19,12 @@
 namespace xwmfs
 {
 
+class Entry;
+class DesktopsRootDir;
 class SelectionDirEntry;
-class WinManagerDirEntry;
 class WindowDirEntry;
 class WindowsRootDir;
-class Entry;
+class WinManagerDirEntry;
 
 /**
  * \brief
@@ -117,8 +118,11 @@ public: // functions
 	//! returns the umask of the current process
 	static mode_t getUmask() { return m_umask; }
 
-	//! returns the current time (update for each new X event)
+	//! returns the current time (updated for each new X event)
 	time_t getCurrentTime() const { return m_current_time; }
+
+	//! returns the "desktops" directory node
+	DesktopsRootDir* getDesktopsDir() { return m_desktop_dir; }
 
 	/**
 	 * \brief
@@ -311,6 +315,8 @@ private: // data
 
 	//! directory node containing all windows
 	WindowsRootDir *m_win_dir = nullptr;
+	//! directory node containing all desktops and their windows
+	DesktopsRootDir *m_desktop_dir = nullptr;
 	//! directory node containing global wm information
 	WinManagerDirEntry *m_wm_dir = nullptr;
 	//! directory ndoe containing selection buffer information

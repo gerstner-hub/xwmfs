@@ -94,9 +94,18 @@ int XWindow::getDesktop() const
 
 	this->getProperty(m_std_props.atom_ewmh_window_desktop, desktop_nr);
 
-	return desktop_nr.get();
+	auto ret = desktop_nr.get();
+	m_cached_desktop_nr = ret;
+	return ret;
 }
 
+int XWindow::getCachedDesktop() const
+{
+	if( m_cached_desktop_nr != -1 )
+		return m_cached_desktop_nr;
+	else
+		return getDesktop();
+}
 
 void XWindow::setName(const std::string &name)
 {

@@ -11,6 +11,7 @@ xwmfs_SOURCES = \
 		main/WindowFileEntry.cxx main/WinManagerFileEntry.cxx main/WinManagerDirEntry.cxx \
 		main/WindowsRootDir.cxx main/UpdateableDir.cxx main/SelectionDirEntry.cxx \
 		main/SelectionOwnerFile.cxx main/SelectionAccessFile.cxx \
+		main/DesktopsRootDir.cxx main/DesktopDirEntry.cxx \
 		x11/XAtom.cxx x11/PropertyTraits.cxx x11/XWindow.cxx x11/XWindowAttrs.cxx \
 		x11/XDisplay.cxx x11/RootWin.cxx
 xwmfs_SOURCES += \
@@ -24,8 +25,9 @@ xwmfs_SOURCES += \
 		main/SelectionAccessFile.hxx main/SelectionDirEntry.hxx main/SelectionOwnerFile.hxx \
 		main/StdLogger.hxx main/UpdateableDir.hxx main/WinManagerDirEntry.hxx \
 		main/WinManagerFileEntry.hxx main/WindowDirEntry.hxx main/WindowFileEntry.hxx \
-		main/WindowsRootDir.hxx main/Xwmfs.hxx x11/RootWin.hxx \
-		x11/X11Exception.hxx x11/XAtom.hxx x11/XDisplay.hxx x11/XWindow.hxx \
+		main/WindowsRootDir.hxx main/Xwmfs.hxx \
+		main/DesktopsRootDir.hxx main/DesktopDirEntry.hxx \
+		x11/RootWin.hxx x11/X11Exception.hxx x11/XAtom.hxx x11/XDisplay.hxx x11/XWindow.hxx \
 		x11/XWindowAttrs.hxx x11/Property.hxx x11/PropertyTraits.hxx x11/utf8_string.hxx
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse
