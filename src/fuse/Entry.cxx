@@ -79,20 +79,24 @@ void Entry::getStat(struct stat *s)
 	s->st_atime = s->st_mtime = getModifyTime();
 	s->st_ctime = getStatusTime();
 
-	if( this->isDir() )
+	switch(m_type)
 	{
+	default:
+		// ???
+		s->st_mode = 0;
+		break;
+	case DIRECTORY:
 		s->st_mode = S_IFDIR | 0755;
 		// a directory is always linked at least twice due to '.'
 		s->st_nlink = 2;
-	}
-	else if( this->isRegular() )
-	{
+		break;
+	case REG_FILE:
 		s->st_mode = S_IFREG | (this->isWritable() ? 0664 : 0444);
 		s->st_nlink = 1;
-	}
-	else
-	{
-		// ???
+		break;
+	case SYMLINK:
+		s->st_mode = S_IFLNK | 0777;
+		break;
 	}
 
 	// apply the current process's umask to the file permissions

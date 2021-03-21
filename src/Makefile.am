@@ -6,7 +6,7 @@ xwmfs_SOURCES = \
 		common/Thread.cxx common/strerror.cxx \
 		fuse/xwmfs_fuse_ops.c fuse/xwmfs_fuse_ops_impl.cxx fuse/Entry.cxx \
 		fuse/FileEntry.cxx fuse/DirEntry.cxx fuse/RootEntry.cxx \
-		fuse/EventFile.cxx fuse/AbortHandler.cxx \
+		fuse/SymlinkEntry.cxx fuse/EventFile.cxx fuse/AbortHandler.cxx \
 		main/Xwmfs.cxx main/main.cxx main/StdLogger.cxx main/terminate.cxx main/WindowDirEntry.cxx \
 		main/WindowFileEntry.cxx main/WinManagerFileEntry.cxx main/WinManagerDirEntry.cxx \
 		main/WindowsRootDir.cxx main/UpdateableDir.cxx main/SelectionDirEntry.cxx \
@@ -19,7 +19,7 @@ xwmfs_SOURCES += \
 		common/Thread.hxx \
 		fuse/xwmfs_fuse_ops.h fuse/AbortHandler.hxx fuse/DirEntry.hxx fuse/Entry.hxx \
 		fuse/EventFile.hxx fuse/FileEntry.hxx fuse/OpenContext.hxx fuse/RootEntry.hxx \
-		fuse/xwmfs_fuse.hxx \
+		fuse/SymlinkEntry.hxx fuse/xwmfs_fuse.hxx \
 		main/Options.hxx \
 		main/SelectionAccessFile.hxx main/SelectionDirEntry.hxx main/SelectionOwnerFile.hxx \
 		main/StdLogger.hxx main/UpdateableDir.hxx main/WinManagerDirEntry.hxx \

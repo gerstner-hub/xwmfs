@@ -12,6 +12,7 @@ struct fuse_operations xwmfs_oper =
 	.open = xwmfs_open,
 	.release = xwmfs_release,
 	.read = xwmfs_read,
+	.readlink = xwmfs_readlink,
 	.write = xwmfs_write,
 	.truncate = xwmfs_truncate,
 	.init = xwmfs_init,

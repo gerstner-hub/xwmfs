@@ -43,6 +43,7 @@ public: // types
 	{
 		DIRECTORY,
 		REG_FILE,
+		SYMLINK,
 		INVAL_TYPE
 	};
 
@@ -96,6 +97,9 @@ public: // functions
 	//! returns whether this entry is of the REG_FILE type
 	bool isRegular() const { return type() == REG_FILE; }
 
+	//! returns whether this entry is of the SYMLINK type
+	bool isSymlink() const { return type() == SYMLINK; }
+
 	//! returns whether the file system entry is writable
 	bool isWritable() const { return m_writable; }
 
@@ -138,7 +142,14 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes read on success.
 	 **/
-	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset) = 0;
+	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset)
+	{
+		(void)ctx;
+		(void)buf;
+		(void)size;
+		(void)offset;
+		return -EINVAL;
+	}
 
 	/**
 	 * \brief
@@ -150,7 +161,29 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes written on success
 	 **/
-	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) = 0;
+	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset)
+	{
+		(void)ctx;
+		(void)buf;
+		(void)size;
+		(void)offset;
+		return -EINVAL;
+	}
+
+	/**
+	 * \brief
+	 * 	Read the link target from a symlink
+	 * \details
+	 * 	\c buf should be terminated with a null terminator. If the
+	 * 	link target does not fit into the buffer then it should be
+	 * 	truncated.
+	 **/
+	virtual int readlink(char *buf, size_t size)
+	{
+		(void)buf;
+		(void)size;
+		return -EINVAL;
+	}
 
 	/**
 	 * \brief

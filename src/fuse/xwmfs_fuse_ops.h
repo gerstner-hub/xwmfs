@@ -50,6 +50,12 @@ extern int xwmfs_read(
 	struct fuse_file_info *fi
 );
 
+extern int xwmfs_readlink(
+	const char *path,
+	char *buf,
+	size_t size
+);
+
 extern int xwmfs_write(
 	const char *path,
 	const char *data,

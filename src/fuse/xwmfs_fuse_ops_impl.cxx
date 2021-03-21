@@ -211,6 +211,27 @@ int xwmfs_read(
 	}
 }
 
+int xwmfs_readlink(const char *path, char *buf, size_t size)
+{
+	auto &fs = *xwmfs::filesystem;
+	xwmfs::FileSysReadGuard read_guard( fs );
+
+	auto entry = fs.findEntry(path);
+
+	try
+	{
+		auto res = entry->isOperationAllowed();
+
+		return res ? res : entry->readlink(buf, size);
+	}
+	catch( const xwmfs::Exception &ex )
+	{
+		xwmfs::StdLogger::getInstance().error()
+			<< "Failed to readlink from " << path << ": " << ex.what() << "\n";
+		return -EFAULT;
+	}
+}
+
 int xwmfs_write(
 	const char *path, const char *buf, size_t size,
 	off_t offset, struct fuse_file_info *fi)

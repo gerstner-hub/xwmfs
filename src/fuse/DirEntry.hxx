@@ -171,7 +171,7 @@ public: // functions
 	 **/
 	void removeEntry(const char *s);
 
-	//! Retrieves the constant map of all contained entries
+	//! Retrieves the non-modifiable map of all contained entries
 	const NameEntryMap& getEntries() const { return m_objs; }
 
 	bool markDeleted() override
@@ -195,7 +195,7 @@ protected: // data
 
 	/**
 	 * \brief
-	 * 	A look for this directory and all its direct children
+	 * 	A lock for this directory and all its direct children
 	 * \details
 	 * 	For serializing parallel access to individual fs entries we
 	 * 	need some kind of locking strategy. A global lock would

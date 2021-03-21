@@ -2,8 +2,8 @@
 #include <sys/stat.h>
 
 // xwmfs
-#include "fuse/FileEntry.hxx"
 #include "fuse/DirEntry.hxx"
+#include "fuse/FileEntry.hxx"
 
 namespace xwmfs
 {
