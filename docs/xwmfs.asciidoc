@@ -25,8 +25,9 @@ display. Otherwise the xwmfs program will print an error and exit immediately.
 To unmount the xwmfs file system the command `fusermount -u 'MOUNPOINT'` can
 be used.
 
-For information about the semantics of the file presented in the file system
-see <<X1,*ENTRIES PER WINDOW*>> and <<X2,*ENTRIES FOR WINDOW MANAGER*>>.
+For information about the semantics of the files presented in the file system
+see <<X1,*ENTRIES PER WINDOW*>>, <<X2,*ENTRIES FOR WINDOW MANAGER*>>
+and <<X3, *ENTRIES PER VIRTUAL DESKTOP*>>.
 
 OPTIONS
 -------
@@ -145,6 +146,31 @@ directory may contain the following files:
 	example if the number of desktops changed then an event
 	'number_of_desktops' is produced.
 
+*desktop_names*::
+        A regular, read-only file that produces a list of the virtual desktops
+        existing in the window manager. One line per desktop.
+
+[[X3]]
+ENTRIES PER VIRTUAL DESKTOP
+---------------------------
+
+The `desktops` directory contains one directory per virtual desktop managed
+by the window manager on the current DISPLAY. Each virtual desktop is assigned
+a zero-based index. The desktop index is not unique. Depending on the window
+manager desktop indices can shuffle in unexpected ways. For example the `i3`
+window manager dynamically creates new virtual desktops which can change the
+numbering of existing virtual desktops.
+
+Each desktop sub-directory like `0` contains the following files:
+
+*name*::
+	The human readable name of the virtual desktop.
+*windows*::
+	A sub-directory which contains symlinks to all windows that are
+        assigned to this virtual desktop. The symlinks are relative symlinks
+        pointing to the `windows/<ID>` directory on the top level of the xwmfs
+        file system.
+
 NOTES
 -----
 
@@ -185,6 +211,6 @@ GitHub: <https://github.com/gerstner-hub/xwmfs>
 
 COPYING
 -------
-Copyright \(C) 2017 Matthias Gerstner. Free use of this software is
+Copyright \(C) 2021 Matthias Gerstner. Free use of this software is
 granted under the terms of the GNU General Public License (GPL).
 

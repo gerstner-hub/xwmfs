@@ -2,12 +2,12 @@
 .\"     Title: xwmfs
 .\"    Author: [see the "AUTHOR" section]
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 05/23/2017
+.\"      Date: 04/06/2021
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "XWMFS" "1" "05/23/2017" "\ \&" "\ \&"
+.TH "XWMFS" "1" "04/06/2021" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -40,7 +40,7 @@ Because the xwmfs acts as an X11 client on the X server it requires to have a va
 .sp
 To unmount the xwmfs file system the command fusermount \-u \*(AqMOUNPOINT\*(Aq can be used\&.
 .sp
-For information about the semantics of the file presented in the file system see \fBENTRIES PER WINDOW\fR and \fBENTRIES FOR WINDOW MANAGER\fR\&.
+For information about the semantics of the files presented in the file system see \fBENTRIES PER WINDOW\fR, \fBENTRIES FOR WINDOW MANAGER\fR and \fBENTRIES PER VIRTUAL DESKTOP\fR\&.
 .SH "OPTIONS"
 .PP
 \fB\-f\fR
@@ -161,6 +161,28 @@ A regular, read\-only file that produces one event per line that affects the glo
 \fInumber_of_desktops\fR
 is produced\&.
 .RE
+.PP
+\fBdesktop_names\fR
+.RS 4
+A regular, read\-only file that produces a list of the virtual desktops existing in the window manager\&. One line per desktop\&.
+.RE
+.SH "ENTRIES PER VIRTUAL DESKTOP"
+.sp
+The desktops directory contains one directory per virtual desktop managed by the window manager on the current DISPLAY\&. Each virtual desktop is assigned a zero\-based index\&. The desktop index is not unique\&. Depending on the window manager desktop indices can shuffle in unexpected ways\&. For example the i3 window manager dynamically creates new virtual desktops which can change the numbering of existing virtual desktops\&.
+.sp
+Each desktop sub\-directory like 0 contains the following files:
+.PP
+\fBname\fR
+.RS 4
+The human readable name of the virtual desktop\&.
+.RE
+.PP
+\fBwindows\fR
+.RS 4
+A sub\-directory which contains symlinks to all windows that are assigned to this virtual desktop\&. The symlinks are relative symlinks pointing to the
+windows/<ID>
+directory on the top level of the xwmfs file system\&.
+.RE
 .SH "NOTES"
 .sp
 Depending on the window manager in use some features may not be available or may behave differently than with other window managers\&. This has nothing to do with xwmfs\&.
@@ -193,4 +215,4 @@ xwmfs was written by Matthias Gerstner <matthias\&.gerstner@nefkom\&.net>\&.
 GitHub: https://github\&.com/gerstner\-hub/xwmfs
 .SH "COPYING"
 .sp
-Copyright (C) 2017 Matthias Gerstner\&. Free use of this software is granted under the terms of the GNU General Public License (GPL)\&.
+Copyright (C) 2021 Matthias Gerstner\&. Free use of this software is granted under the terms of the GNU General Public License (GPL)\&.

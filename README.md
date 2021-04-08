@@ -131,6 +131,28 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |       |                   width and height of the window. When writing a
  |       |                   correspondingly formatted value to this file then
  |       |                   the window will be moved and/or resized accordingly.
+ |       |--------> parent: Returns the window ID of the parent window of this
+ |                  window.
+ |                  Note that this window might not be known by xwmfs, because
+ |                  it can be a "pseudo window", a decoration window created
+ |                  by the window manager or similar. Use the parameter
+ |                  --handle-pseudo-windows to also display these kind of
+ |                  windows in xwmfs. Contains 0 for the root window.
+-desktops: A directory containing a sub-directory for each virtual desktop
+ |         present in the window manager.
+ |--------> <desktop-nr>: A directory representing a single virtual desktop.
+ |       |                The number is not unique but simply a zero-based
+ |       |                index. Depending on the window manager IDs may be
+ |       |                shuffled around e.g. in the i3 window manager new
+ |       |                virtual desktops are created on the fly and the
+ |       |                order might change completely.
+ |       |--------> name: The human readable name of the virtual desktop this
+ |       |                directory represents
+ |       |--------> windows: A directory containing symlinks to the windows
+ |               |           that are assigned to this virtual desktop.
+ |               |--------> <window-id>: relative symlink to the windows
+ |                          directory representing a window assigned to the
+ |                          related virtual desktop.
 -wm: A directory containing global state information about the
  |   window manager
  |
@@ -151,12 +173,8 @@ Once mounted the xwmfs file system presents the following hierarchy:
  |--------> events: Produces one line for each event related to the wm
  |                    directory. Each line will consist of the basename of the
  |                    file that changed
- |--------> parent: Returns the window ID of the parent window of this window.
- |                  Note that this window might not be known by xwmfs, because
- |                  it can be a "pseudo window", a decoration window created
- |                  by the window manager or similar. Use the parameter
- |                  --handle-pseudo-windows to also display these kind of
- |                  windows in xwmfs. Contains 0 for the root window.
+ |--------> desktop_names: Returns the names of the existing virtual desktops
+ |                         one name per line.
 -selections: A directory containing files that allow access to the X server
  |           selection buffers also known as clipboard buffers
  |
