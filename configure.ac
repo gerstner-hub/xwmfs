@@ -4,7 +4,7 @@ dnl we want to have a current autoconf for producing the configure script
 AC_PREREQ(2.61)
 
 dnl Our wmfs application
-AC_INIT([xwmfs], [0.86], [Matthias.Gerstner@nefkom.net])
+AC_INIT([xwmfs], [0.90], [Matthias.Gerstner@nefkom.net])
 
 dnl Stores some generated files in a separate directory for cleaner structure
 AC_CONFIG_AUX_DIR(config_aux)
