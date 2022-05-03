@@ -59,7 +59,7 @@ public: // functions
 	std::ostream& warn()
 	{
 		return getStream(
-			*m_err, "Warning: ", Color::YELLOW,
+			*m_warn, "Warning: ", Color::YELLOW,
 			m_warn_enabled, m_warn_is_tty
 		);
 	}
