@@ -1,22 +1,22 @@
 dnl process this file with autoconf to produce a configure script.
 
 dnl we want to have a current autoconf for producing the configure script
-AC_PREREQ(2.61)
+AC_PREREQ([2.71])
 
 dnl Our wmfs application
-AC_INIT([xwmfs], [0.90], [Matthias.Gerstner@nefkom.net])
+AC_INIT([xwmfs],[0.90],[Matthias.Gerstner@nefkom.net])
 
 dnl Stores some generated files in a separate directory for cleaner structure
 AC_CONFIG_AUX_DIR(config_aux)
 
 dnl produces config.h to be the config header produced by configure
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 dnl pull in automake in a current version
 AM_INIT_AUTOMAKE([1.10.1 gnu])
 
 dnl check for C and C++ compilers (we need a C99 compiler for fuse structure setup)
-AC_PROG_CC_C99
+AC_PROG_CC
 AC_PROG_CXX
 
 dnl check for asciidoc availibility, optional
@@ -50,8 +50,9 @@ AC_CONFIG_FILES([Makefile])
 
 dnl We need to specify an output file for every single Makefile that is generated in the project
 dnl (i.e. for every subdirectory, too)
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	src/Makefile
 	docs/Makefile
 	tests/Makefile
 ])
+AC_OUTPUT
