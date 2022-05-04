@@ -32,13 +32,18 @@ xwmfs_SOURCES += \
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse
 # makes it possible to include headers from fuse or x11, to select a recent fuse API version
-AM_CFLAGS = -Wall -Werror -Wextra -Wnull-dereference -Wdouble-promotion -Wshadow -Wformat=2 -I${top_srcdir}/src/ -DFUSE_USE_VERSION=26 @fuse_CFLAGS@ @x11_CFLAGS@
+AM_CFLAGS = -DFUSE_USE_VERSION=26 @fuse_CFLAGS@ @x11_CFLAGS@ -I${top_srcdir}/src
+if DEV
+AM_CFLAGS += -Wall -Werror -Wextra -Wnull-dereference -Wdouble-promotion -Wshadow -Wformat=2
+
 # add some more advanced warnings for gcc
 if IS_GCC
 AM_CFLAGS += -Wduplicated-cond -Wduplicated-branches -Wlogical-op
 else
 AM_CFLAGS += -Wno-unused-parameter
-endif
+endif # IS_GCC
+endif # DEV
+
 AM_CXXFLAGS =${AM_CFLAGS} -std=c++11
 # use this instead of AM_LDFLAGS to have the libraries appear AFTER the object
 # files. Otherwise we get trouble on distros where as-needed linking is

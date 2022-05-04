@@ -33,6 +33,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 
 AM_CONDITIONAL([IS_GCC], $is_gcc)
 
+AC_ARG_ENABLE(dev, AS_HELP_STRING([--enable-dev],[set extra developer mode options like -Werror compiler flags]), [enable_dev=${enableval}])
+AM_CONDITIONAL(DEV, test "${enable_dev}" = "yes")
+
 dnl we need fuse
 dnl AC_CHECK_LIB([fuse], [fuse_main], [], [AC_MSG_ERROR([You need the fuse userspace library to build this package])])
 PKG_CHECK_MODULES([fuse], [ fuse >= 2.8.1 ])
