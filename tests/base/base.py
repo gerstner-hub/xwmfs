@@ -3,9 +3,15 @@
 import argparse
 import atexit
 import os
+import shutil
 import subprocess
 import sys
 import time
+
+
+def printe(*args, **kwargs):
+    kwargs['file'] = sys.stderr
+    print(*args, **kwargs)
 
 
 class File(object):
@@ -62,7 +68,7 @@ class Window(DirBase):
         windir = os.path.join(self.m_base.m_windows, self.m_id)
 
         if not os.path.isdir(windir):
-            print("Test window directory", windir, "is not existing?")
+            printe("Test window directory", windir, "is not existing?")
             sys.exit(1)
 
         return windir
@@ -138,11 +144,11 @@ class TestBase(object):
             ret = None
 
         if not ret:
-            print("Expecting path to xwmfs binary as parameter or in the XWMFS environment variable")
+            printe("Expecting path to xwmfs binary as parameter or in the XWMFS environment variable")
             sys.exit(1)
 
         if not os.path.isfile(ret):
-            print("Not a regular file:", ret)
+            printe("Not a regular file:", ret)
             sys.exit(1)
 
         return ret
@@ -163,7 +169,7 @@ class TestBase(object):
     def mount(self):
 
         if os.path.exists(self.m_mount_dir):
-            print("Refusing to operate on existing mount dir", self.m_mount_dir)
+            printe("Refusing to operate on existing mount dir", self.m_mount_dir)
             sys.exit(1)
 
         os.makedirs(self.m_mount_dir)
@@ -180,7 +186,7 @@ class TestBase(object):
             # poll until the directory is actually mounted
             try:
                 res = self.m_proc.wait(timeout=0.25)
-                print("Failed to mount xwmfs, exited with", res)
+                printe("Failed to mount xwmfs, exited with", res)
                 sys.exit(1)
             except subprocess.TimeoutExpired:
                 pass
@@ -195,7 +201,7 @@ class TestBase(object):
         os.rmdir(self.m_mount_dir)
 
         if res != 0:
-            print("xwmfs exited with non-zero code of", res)
+            printe("xwmfs exited with non-zero code of", res)
             sys.exit(res)
 
     def run(self):
@@ -246,11 +252,20 @@ class TestBase(object):
             raise Exception("Double create of test window, without closeTestWindow()")
 
         print("Creating test window")
-        try:
-            self.m_test_window = subprocess.Popen("xterm")
-        except Exception:
-            print("Failed to run xterm to create a test window")
-            raise
+        PROG_CANDS = ("xterm", "st", "xclock")
+        for prog in PROG_CANDS:
+            prog = shutil.which(prog)
+            if not prog:
+                continue
+
+            try:
+                self.m_test_window = subprocess.Popen(prog)
+                break
+            except Exception:
+                printe(f"Failed to run {prog} to create a test window", file=sys.stderr)
+                raise
+        else:
+            raise Exception(f"Failed to find X11 test program to create a test window. Looked for any of {PROG_CANDS}")
 
         our_win = None
 
