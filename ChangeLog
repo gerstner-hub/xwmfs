@@ -1,3 +1,15 @@
+2022-05-04 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
+
+	version 0.91
+
+	- Fix non-symptomatic programming error detected by gcc-12.
+	- Apply PEP coding standard to all Python scripts, require Python3 by
+	  default, make tests a bit more robust.
+	- Update to current Autotools versions.
+	- Don't apply compiler policy by default (especially -Werror), instead
+	  only increase compiler diagnostic and policy if the new
+	  `--enable-dev` switch is passed.
+
 2021-04-09 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
 	version 0.90
