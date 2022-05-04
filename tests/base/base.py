@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -119,7 +120,8 @@ class TestBase(object):
         atexit.register(self._cleanup)
         self.m_proc = None
         self.m_test_window = None
-        self.m_mount_dir = "/tmp/xwmfs"
+        self.m_tmp_dir = tempfile.TemporaryDirectory()
+        self.m_mount_dir = self.m_tmp_dir.name
         Window.setBase(self)
 
     def _cleanup(self):
@@ -167,12 +169,6 @@ class TestBase(object):
         return debug_opts if self.m_args.debug else []
 
     def mount(self):
-
-        if os.path.exists(self.m_mount_dir):
-            printe("Refusing to operate on existing mount dir", self.m_mount_dir)
-            sys.exit(1)
-
-        os.makedirs(self.m_mount_dir)
 
         self.m_proc = subprocess.Popen(
             [
