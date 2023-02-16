@@ -651,6 +651,7 @@ void XWindow::updateFamily()
 template void XWindow::getProperty(const Atom, Property<int>&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<unsigned long>&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<const char*>&, const PropertyInfo*) const;
+template void XWindow::getProperty(const Atom, Property<utf8_string>&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<XAtom> >&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<unsigned long> >&, const PropertyInfo*) const;
 template void XWindow::getProperty(const Atom, Property<std::vector<int> >&, const PropertyInfo*) const;
