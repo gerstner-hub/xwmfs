@@ -119,8 +119,6 @@ void Xwmfs::createSelectionWindow()
 
 void Xwmfs::exit()
 {
-	m_fs_root.clear();
-
 	if( m_ev_thread.getState() == xwmfs::Thread::RUN )
 	{
 		m_ev_thread.requestExit();
@@ -136,6 +134,8 @@ void Xwmfs::exit()
 		// finally join the thread
 		m_ev_thread.join();
 	}
+
+	m_fs_root.clear();
 }
 
 int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
