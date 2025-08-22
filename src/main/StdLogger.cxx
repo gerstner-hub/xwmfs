@@ -1,17 +1,16 @@
-#include "main/StdLogger.hxx"
-
+// C++
 #include <iostream>
 
-namespace xwmfs
-{
+// xwmfs
+#include "main/StdLogger.hxx"
 
-StdLogger::StdLogger()
-{
+namespace xwmfs {
+
+StdLogger::StdLogger() {
 	setStreams(std::cout, std::cout, std::cout, std::cerr);
 }
 
-StdLogger::~StdLogger()
-{
+StdLogger::~StdLogger() {
 	// make sure any outstanding data is displayed by now
 	std::cout << std::flush;
 }

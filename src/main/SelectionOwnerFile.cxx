@@ -1,24 +1,18 @@
 // xwmfs
-#include "x11/XWindow.hxx"
-#include "main/SelectionOwnerFile.hxx"
 #include "main/SelectionDirEntry.hxx"
+#include "main/SelectionOwnerFile.hxx"
 #include "main/Xwmfs.hxx"
+#include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-SelectionOwnerFile::SelectionOwnerFile(
-	const std::string &n, const SelectionDirEntry &parent) :
-	FileEntry(n, false, 0),
-	m_selection_dir(parent)
-{
+SelectionOwnerFile::SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent) :
+		FileEntry{n, false, 0}, m_selection_dir{parent} {
 	updateOwners();
 }
 
 int SelectionOwnerFile::read(
-	OpenContext *ctx, char *buf, size_t size, off_t offset
-)
-{
+		OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	{
 		// see getSelectionOwner() for an explanation of why this
 		// isn't even based
@@ -35,22 +29,20 @@ int SelectionOwnerFile::read(
 		//
 		// Don't know what to do against this at the moment.
 		auto &xwmfs = Xwmfs::Xwmfs::getInstance();
-		MutexGuard g(xwmfs.getEventLock());
+		MutexGuard g{xwmfs.getEventLock()};
 		updateOwners();
 	}
 
 	return FileEntry::read(ctx, buf, size, offset);
 }
 
-void SelectionOwnerFile::updateOwners()
-{
+void SelectionOwnerFile::updateOwners() {
 	this->str("");
 
 	XWindow owner;
 
-	for( const auto &selection: m_selection_dir.getSelectionTypes() )
-	{
-		owner = XWindow( m_selection_dir.getSelectionOwner( selection.first ) );
+	for (const auto &selection: m_selection_dir.getSelectionTypes()) {
+		owner = XWindow{m_selection_dir.getSelectionOwner(selection.first)};
 
 		(*this) << selection.second << ": " << owner << "\n";
 	}

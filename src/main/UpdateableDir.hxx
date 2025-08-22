@@ -1,5 +1,4 @@
-#ifndef XWMFS_UPDATEABLEDIR_HXX
-#define XWMFS_UPDATEABLEDIR_HXX
+#pragma once
 
 // C++
 #include <map>
@@ -7,9 +6,9 @@
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
+#include "x11/XAtom.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
@@ -17,16 +16,14 @@ namespace xwmfs
  **/
 template <typename CLASS>
 class UpdateableDir :
-	public DirEntry
-{
+		public DirEntry {
 protected: // types
 
-	typedef void (CLASS::*UpdateFunction)(FileEntry &entry);
-	typedef std::vector<XAtom> AtomVector;
+	using UpdateFunction = void (CLASS::*)(FileEntry &entry);
+	using AtomVector = std::vector<XAtom>;
 
 	//! holds information about a single file entry
-	struct EntrySpec
-	{
+	struct EntrySpec {
 		//! the name of the entry
 		const char *name = nullptr;
 		//! whether this is a read-only or read-write entry
@@ -40,31 +37,22 @@ protected: // types
 		//! the associated XAtoms, if any
 		AtomVector atoms;
 
-		EntrySpec(
-			const char *n,
-			UpdateFunction f,
-			const bool rw = false,
-			const bool au = false
-		) : name(n), read_write(rw), always_update(au), member_func(f), atoms({}) {}
+		EntrySpec(const char *n, UpdateFunction f, const bool rw = false, const bool au = false) :
+			name{n}, read_write{rw}, always_update{au}, member_func{f}, atoms{{}} {
+		}
 
-		EntrySpec(
-			const char *n,
-			UpdateFunction f,
-			const bool rw,
-			XAtom a
-		) : name(n), read_write(rw), member_func(f), atoms({a}) {}
+		EntrySpec(const char *n, UpdateFunction f, const bool rw, XAtom a) :
+			name{n}, read_write{rw}, member_func{f}, atoms{{a}} {
+		}
 
-		EntrySpec(
-			const char *n,
-			UpdateFunction f,
-			const bool rw,
-			AtomVector av
-		) : name(n), read_write(rw), member_func(f), atoms(av) {}
+		EntrySpec(const char *n, UpdateFunction f, const bool rw, AtomVector av) :
+			name(n), read_write(rw), member_func(f), atoms(av) {
+		}
 	};
 
 	//! a mapping of XAtom values to the corresponding file entry specs
-	typedef std::map<XAtom, EntrySpec> AtomSpecMap;
-	typedef std::vector<EntrySpec> SpecVector;
+	using AtomSpecMap = std::map<XAtom, EntrySpec>;
+	using SpecVector = std::vector<EntrySpec>;
 
 protected: // functions
 
@@ -83,5 +71,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

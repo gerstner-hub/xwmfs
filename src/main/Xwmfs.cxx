@@ -1,52 +1,49 @@
 // C++
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <map>
-#include <functional>
-#include <vector>
 #include <algorithm>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 
 // C
-#include <stdlib.h> // EXIT_*
 #include <stdio.h>
+#include <stdlib.h> // EXIT_*
 
 // POSIX
-#include <unistd.h> // pipe
+#include <fcntl.h>
 #include <sys/select.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h> // pipe
 
 // FUSE
 #include <fuse.h>
 
 // xwmfs
-#include "main/Xwmfs.hxx"
+#include "common/Helper.hxx"
+#include "fuse/Entry.hxx"
+#include "fuse/xwmfs_fuse.hxx"
 #include "main/DesktopsRootDir.hxx"
 #include "main/Options.hxx"
-#include "main/StdLogger.hxx"
-#include "main/WindowFileEntry.hxx"
-#include "main/WindowDirEntry.hxx"
-#include "main/WinManagerDirEntry.hxx"
 #include "main/SelectionDirEntry.hxx"
+#include "main/StdLogger.hxx"
+#include "main/WinManagerDirEntry.hxx"
+#include "main/WindowDirEntry.hxx"
+#include "main/WindowFileEntry.hxx"
 #include "main/WindowsRootDir.hxx"
-#include "fuse/xwmfs_fuse.hxx"
-#include "fuse/Entry.hxx"
-#include "common/Helper.hxx"
+#include "main/Xwmfs.hxx"
 #include "x11/XAtom.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 mode_t Xwmfs::m_umask = 0777;
 
-void Xwmfs::updateTime()
-{
+void Xwmfs::updateTime() {
 	m_current_time = time(nullptr);
 }
 
-void Xwmfs::createFS()
-{
+void Xwmfs::createFS() {
 	updateTime();
 
 	m_fs_root.setModifyTime(m_current_time);
@@ -54,23 +51,22 @@ void Xwmfs::createFS()
 
 	// window manager (wm) directory that contains files for wm
 	// information
-	m_wm_dir = new xwmfs::WinManagerDirEntry(m_root_win);
-	m_fs_root.addEntry( m_wm_dir );
+	m_wm_dir = new xwmfs::WinManagerDirEntry{m_root_win};
+	m_fs_root.addEntry(m_wm_dir);
 
 	// now add a directory that contains each window
-	m_win_dir = new WindowsRootDir();
-	m_fs_root.addEntry( m_win_dir );
+	m_win_dir = new WindowsRootDir{};
+	m_fs_root.addEntry(m_win_dir);
 
-	m_desktop_dir = new DesktopsRootDir(m_root_win);
-	m_fs_root.addEntry( m_desktop_dir );
+	m_desktop_dir = new DesktopsRootDir{m_root_win};
+	m_fs_root.addEntry(m_desktop_dir);
 
-	m_selection_dir = new xwmfs::SelectionDirEntry();
-	m_fs_root.addEntry( m_selection_dir );
+	m_selection_dir = new xwmfs::SelectionDirEntry{};
+	m_fs_root.addEntry(m_selection_dir);
 
 	const std::vector<XWindow> *windows = nullptr;
 
-	if( m_opts.handlePseudoWindows() )
-	{
+	if (m_opts.handlePseudoWindows()) {
 		/*
 		 * if we want to display all pseudo windows then we can't rely
 		 * on the client list the window manager provides, because
@@ -86,9 +82,7 @@ void Xwmfs::createFS()
 		 */
 		m_root_win.queryTree();
 		windows = &(m_root_win.getWindowTree());
-	}
-	else
-	{
+	} else {
 		m_root_win.queryWindows();
 		windows = &(m_root_win.getWindowList());
 	}
@@ -96,20 +90,18 @@ void Xwmfs::createFS()
 	// add each window found in the list
 
 	{
-		FileSysWriteGuard write_guard(m_fs_root);
+		FileSysWriteGuard write_guard{m_fs_root};
 
-		for( const auto &win: *windows )
-		{
-			m_win_dir->addWindow( win, true, win == m_root_win );
+		for (const auto &win: *windows) {
+			m_win_dir->addWindow(win, true, win == m_root_win);
 		}
 	}
 
 	m_desktop_dir->handleDesktopsChanged();
 }
 
-void Xwmfs::createSelectionWindow()
-{
-	m_selection_window = XWindow(m_root_win.createChild());
+void Xwmfs::createSelectionWindow() {
+	m_selection_window = XWindow{m_root_win.createChild()};
 
 	m_selection_window.setName("xwmfs selection buffer window");
 
@@ -117,10 +109,8 @@ void Xwmfs::createSelectionWindow()
 		<< "Created selection window " << m_selection_window << "\n";
 }
 
-void Xwmfs::exit()
-{
-	if( m_ev_thread.getState() == xwmfs::Thread::RUN )
-	{
+void Xwmfs::exit() {
+	if (m_ev_thread.getState() == xwmfs::Thread::RUN) {
 		m_ev_thread.requestExit();
 
 		const int dummy_data = 1;
@@ -129,7 +119,7 @@ void Xwmfs::exit()
 		const ssize_t write_res =
 			::write(m_wakeup_pipe[1], &dummy_data, 1);
 
-		assert( write_res != -1 );
+		assert(write_res != -1);
 
 		// finally join the thread
 		m_ev_thread.join();
@@ -138,14 +128,13 @@ void Xwmfs::exit()
 	m_fs_root.clear();
 }
 
-int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
-{
+int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
 	(void)disp;
 	(void)error;
 
 	char err_msg[512];
 
-	XGetErrorText(disp, error->error_code, &err_msg[0], 512);
+	XGetErrorText(disp, error->error_code, &err_msg[0], sizeof(err_msg));
 
 	StdLogger::getInstance().warn()
 		<< "An async X error occured: \"" << err_msg << "\"" << std::endl;
@@ -153,8 +142,7 @@ int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error)
 	return 0;
 }
 
-int Xwmfs::XIOErrorHandler(Display *disp)
-{
+int Xwmfs::XIOErrorHandler(Display *disp) {
 	(void)disp;
 
 	StdLogger::getInstance().error()
@@ -166,8 +154,7 @@ int Xwmfs::XIOErrorHandler(Display *disp)
 	::_exit(1);
 }
 
-void Xwmfs::early_init()
-{
+void Xwmfs::early_init() {
 	// to get the current umask we need to temporarily change the umask.
 	// There seems to be no better system call. Starting from Linux 4.7 an
 	// entry will be in /proc/<pid>/status, so we could read it from there
@@ -178,8 +165,7 @@ void Xwmfs::early_init()
 	// this asks the Xlib to be thread-safe
 	// be careful that this must be the first Xlib call in the
 	// process otherwise it won't work!
-	if( ! ::XInitThreads() )
-	{
+	if (!::XInitThreads()) {
 		xwmfs_throw(
 			xwmfs::Exception("Error initialiizing X11 threads")
 		);
@@ -189,22 +175,17 @@ void Xwmfs::early_init()
 	PropertyTraits<std::vector<utf8_string>>::init();
 }
 
-int Xwmfs::init()
-{
+int Xwmfs::init() {
 	int res = EXIT_SUCCESS;
 
-	try
-	{
+	try {
 		// sets the asynchronous error handler
-		::XSetErrorHandler( & Xwmfs::XErrorHandler );
-		::XSetIOErrorHandler( & Xwmfs::XIOErrorHandler );
+		::XSetErrorHandler(&Xwmfs::XErrorHandler);
+		::XSetIOErrorHandler(&Xwmfs::XIOErrorHandler);
 
-		try
-		{
-			if( m_opts.xsync() )
-			{
-				::XSynchronize( XDisplay::getInstance(),
-					true);
+		try {
+			if (m_opts.xsync()) {
+				::XSynchronize(XDisplay::getInstance(), true);
 
 				xwmfs::StdLogger::getInstance().info()
 					<< "Operating in Xlib synchronous mode\n";
@@ -243,9 +224,7 @@ int Xwmfs::init()
 			m_ev_thread.start();
 
 			setupAbortSignals(true);
-		}
-		catch( const xwmfs::RootWin::QueryError &ex )
-		{
+		} catch (const xwmfs::RootWin::QueryError &ex) {
 			xwmfs::Exception main_error(
 				"Error querying window manager properties."
 			);
@@ -253,21 +232,15 @@ int Xwmfs::init()
 			main_error.addError(ex);
 			xwmfs_throw(main_error);
 		}
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch (const xwmfs::Exception &ex) {
 		res = EXIT_FAILURE;
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error in FS operation: " << ex.what() << "\n";
-	}
-	catch( const std::exception &ex )
-	{
+	} catch (const std::exception &ex) {
 		res = EXIT_FAILURE;
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error in FS operation: " << ex.what() << "\n";
-	}
-	catch( ... )
-	{
+	} catch(...) {
 		res = EXIT_FAILURE;
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error in FS operation: Unknown exception caught."
@@ -278,62 +251,53 @@ int Xwmfs::init()
 }
 
 Xwmfs::Xwmfs() :
-	m_ev_thread(*this, "x11_event_thread"),
-	m_opts( xwmfs::Options::getInstance() )
-{
+		m_ev_thread{*this, "x11_event_thread"},
+		m_opts{xwmfs::Options::getInstance()} {
 	m_display = XDisplay::getInstance();
 	// to get X events in a blocking way but still be able to react to
 	// e.  g. a shutdown request we need to get the lower level file
 	// descriptor that X is operating on.
-	m_dis_fd = ::XConnectionNumber( m_display );
+	m_dis_fd = ::XConnectionNumber(m_display);
 
 	// this is a pipe that allows us to wake up the event handling thread
 	// in case of shutdown
-	if( ::pipe2(m_wakeup_pipe, O_CLOEXEC) != 0 )
-	{
-		xwmfs_throw( SystemException("Unable to create wakeup pipe") );
+	if (::pipe2(m_wakeup_pipe, O_CLOEXEC) != 0) {
+		xwmfs_throw(SystemException("Unable to create wakeup pipe"));
 	}
 
 	// this is a pipe that allows to pass thread IDs to abort blocking
 	// calls for to the event handling thread
-	if( ::pipe2(m_abort_pipe, O_CLOEXEC) != 0 )
-	{
-		xwmfs_throw( SystemException("Unable to create abort pipe") );
+	if (::pipe2(m_abort_pipe, O_CLOEXEC) != 0) {
+		xwmfs_throw(SystemException("Unable to create abort pipe"));
 	}
-
 }
 
-Xwmfs::~Xwmfs()
-{
-	if( m_selection_window.valid() )
-	{
+Xwmfs::~Xwmfs() {
+	if (m_selection_window.valid()) {
 		m_selection_window.destroy();
 	}
 	FD_ZERO(&m_select_set);
 	m_wm_dir = nullptr;
 	m_win_dir = nullptr;
 
-	::close( m_wakeup_pipe[0] );
-	::close( m_wakeup_pipe[1] );
+	::close(m_wakeup_pipe[0]);
+	::close(m_wakeup_pipe[1]);
 
-	::close( m_abort_pipe[0] );
-	::close( m_abort_pipe[1] );
+	::close(m_abort_pipe[0]);
+	::close(m_abort_pipe[1]);
 }
 
-void Xwmfs::threadEntry(const xwmfs::Thread &t)
-{
+void Xwmfs::threadEntry(const xwmfs::Thread &t) {
 	auto &logger = xwmfs::StdLogger::getInstance();
 
 	const std::vector<int> fds(
 		{ m_dis_fd, m_wakeup_pipe[0], m_abort_pipe[0] }
 	);
-	const int max_fd = *(std::max_element( fds.begin(), fds.end() )) + 1;
+	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
 
-	while( t.getState() == xwmfs::Thread::RUN )
-	{
+	while (t.getState() == xwmfs::Thread::RUN) {
 		FD_ZERO(&m_select_set);
-		for( int fd: fds )
-		{
+		for (int fd: fds) {
 			FD_SET(fd, &m_select_set);
 		}
 
@@ -343,22 +307,18 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 			&m_select_set, nullptr, nullptr, nullptr
 		);
 
-		if( sel_res == -1 )
-		{
+		if (sel_res == -1) {
 			::perror("unable to select on event fds");
 			return;
 		}
 
 		// if the pipe is readable then we have to shutdown
-		if( FD_ISSET(m_wakeup_pipe[0], &m_select_set) )
-		{
+		if (FD_ISSET(m_wakeup_pipe[0], &m_select_set)) {
 			logger.info()
 				<< "Caught cancel request. Shutting down..."
 				<< std::endl;
 			return;
-		}
-		else if( FD_ISSET(m_abort_pipe[0], &m_select_set) )
-		{
+		} else if (FD_ISSET(m_abort_pipe[0], &m_select_set)) {
 			readAbortPipe();
 			continue;
 		}
@@ -369,9 +329,8 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t)
 	}
 }
 
-void Xwmfs::handlePendingEvents()
-{
-	MutexGuard g(m_event_lock);
+void Xwmfs::handlePendingEvents() {
+	MutexGuard g{m_event_lock};
 
 	/*
 	 * this is important to avoid blocking while there are still events to
@@ -381,22 +340,18 @@ void Xwmfs::handlePendingEvents()
 	 * go, thus the socket might not be readable, still there would be
 	 * pending events that we wouldn't process
 	 */
-	while( XPending(m_display) != 0 )
-	{
+	while (XPending(m_display) != 0) {
 		XNextEvent(m_display, &m_ev);
 
-		try
-		{
+		try {
 			// don't keep this lock for the duration of the
 			// handling, because otherwise we might run into
 			// cross-locking issues, because other threads may
 			// hold the FS lock and want our event lock, while he
 			// have the event lock but desire the FS lock.
-			MutexReverseGuard rg(m_event_lock);
+			MutexReverseGuard rg{m_event_lock};
 			handleEvent(m_ev);
-		}
-		catch(const xwmfs::Exception &ex)
-		{
+		} catch (const xwmfs::Exception &ex) {
 			auto &logger = xwmfs::StdLogger::getInstance();
 			logger.error()
 				<< "Failed to handle X11 event of type "
@@ -405,8 +360,7 @@ void Xwmfs::handlePendingEvents()
 	}
 }
 
-void Xwmfs::handleEvent(const XEvent &ev)
-{
+void Xwmfs::handleEvent(const XEvent &ev) {
 	auto &logger = StdLogger::getInstance();
 	auto &std_props = StandardProps::instance();
 #if 0
@@ -414,24 +368,19 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		<< std::dec << ev.type << std::endl;
 #endif
 
-	switch( ev.type )
-	{
+	switch (ev.type) {
 	// a new window came into existence
-	case CreateNotify:
-	{
-		if( ! handleCreateEvent(ev.xcreatewindow) )
-		{
-			m_ignored_windows.insert( ev.xcreatewindow.window );
+	case CreateNotify: {
+		if (!handleCreateEvent(ev.xcreatewindow)) {
+			m_ignored_windows.insert(ev.xcreatewindow.window);
 		}
 		break;
 	}
 	// a window was destroyed
-	case DestroyNotify:
-	{
+	case DestroyNotify: {
 		handleDestroyEvent(ev.xdestroywindow);
-		auto it = m_ignored_windows.find( ev.xdestroywindow.window );
-		if( it != m_ignored_windows.end() )
-		{
+		auto it = m_ignored_windows.find(ev.xdestroywindow.window);
+		if (it != m_ignored_windows.end()) {
 			// don't need to process a window we've ignored
 			// before
 			m_ignored_windows.erase(it);
@@ -439,43 +388,33 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		}
 		break;
 	}
-	case PropertyNotify:
-	{
+	case PropertyNotify: {
 		logger.debug()
-			<< "Property (" << XAtom(ev.xproperty.atom) << ")"
+			<< "Property (" << XAtom{ev.xproperty.atom} << ")"
 			<< " on window " << ev.xproperty.window << " changed ("
 			<< std::dec << ev.xproperty.state << ")" << std::endl;
 
 		const bool is_delete = ev.xproperty.state == PropertyDelete;
 
-		switch( ev.xproperty.state )
-		{
+		switch (ev.xproperty.state) {
 		case PropertyDelete: /* FALLTHROUGH */
-		case PropertyNewValue:
-		{
+		case PropertyNewValue: {
 			XWindow w(ev.xproperty.window);
 			updateTime();
 
 			FileSysWriteGuard write_guard(m_fs_root);
 
-			if( w == m_root_win )
-			{
+			if (w == m_root_win) {
 				is_delete ?
 					m_wm_dir->delProp(ev.xproperty.atom) :
 					m_wm_dir->update(ev.xproperty.atom);
-			}
-			else
-			{
-				if( is_delete )
-				{
+			} else {
+				if (is_delete) {
 					m_win_dir->deleteProperty(w, ev.xproperty.atom);
-				}
-				else
-				{
+				} else {
 					m_win_dir->updateProperty(w, ev.xproperty.atom);
 
-					if( ev.xproperty.atom == std_props.atom_ewmh_window_desktop )
-					{
+					if (ev.xproperty.atom == std_props.atom_ewmh_window_desktop) {
 						m_desktop_dir->handleWindowDesktopChanged(w);
 					}
 				}
@@ -489,51 +428,44 @@ void Xwmfs::handleEvent(const XEvent &ev)
 		break;
 	}
 	// called upon window size/appearance changes
-	case ConfigureNotify:
-	{
-		XWindow w(ev.xconfigure.window);
+	case ConfigureNotify: {
+		XWindow w{ev.xconfigure.window};
 		updateTime();
 
-		FileSysWriteGuard write_guard(m_fs_root);
+		FileSysWriteGuard write_guard{m_fs_root};
 
 		m_win_dir->updateGeometry(w, ev.xconfigure);
 		break;
 	}
-	case CirculateNotify:
-	{
+	case CirculateNotify: {
 		break;
 	}
 	// called if parts of the window become
 	// visible/invisible
 	case UnmapNotify:
-	case MapNotify:
-	{
-		XWindow w(ev.xmap.window);
-		if( isIgnored(w) )
-		{
+	case MapNotify: {
+		XWindow w{ev.xmap.window};
+		if (isIgnored(w)) {
 			break;
 		}
 		updateTime();
-		FileSysWriteGuard write_guard(m_fs_root);
-		m_win_dir->updateMappedState( w, ev.type == MapNotify );
+		FileSysWriteGuard write_guard{m_fs_root};
+		m_win_dir->updateMappedState(w, ev.type == MapNotify);
 		break;
 	}
-	case GravityNotify:
-	{
+	case GravityNotify: {
 		break;
 	}
-	case ReparentNotify:
-	{
-		XWindow w(ev.xreparent.window);
+	case ReparentNotify: {
+		XWindow w{ev.xreparent.window};
 		w.setParent(ev.xreparent.parent);
-		FileSysWriteGuard write_guard(m_fs_root);
+		FileSysWriteGuard write_guard{m_fs_root};
 		m_win_dir->updateParent(w);
 		break;
 	}
 	case SelectionNotify:
 	case SelectionClear:
-	case SelectionRequest:
-	{
+	case SelectionRequest: {
 		handleSelectionEvent(ev);
 		break;
 	}
@@ -547,22 +479,18 @@ void Xwmfs::handleEvent(const XEvent &ev)
 	}
 }
 
-bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const
-{
+bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const {
 	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 
 	// Xlib manual says one should generally ignore these
 	// events as they come from popups
-	if( ev.override_redirect )
-	{
+	if (ev.override_redirect) {
 		debug_log << "Ignoring override_redirect window " << ev.window << std::endl;
 		return true;
-	}
-	// this is grand-kid or something. we could add these
-	// in a hierarchical manner as sub-windows but for now
-	// we ignore them
-	else if( ev.parent != m_root_win.id() )
-	{
+	} else if (ev.parent != m_root_win.id()) {
+		// this is grand-kid or something. we could add these
+		// in a hierarchical manner as sub-windows but for now
+		// we ignore them
 		debug_log << "Ignoring grand-child-window" << ev.window << std::endl;
 		return true;
 	}
@@ -570,71 +498,58 @@ bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const
 	return false;
 }
 
-bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev)
-{
-	if( ! m_opts.handlePseudoWindows() )
-	{
-		if( isPseudoWindow(ev) )
-		{
+bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
+	if (!m_opts.handlePseudoWindows()) {
+		if (isPseudoWindow(ev)) {
 			return false;
 		}
 	}
 
 	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 
-	XWindow w(ev.window);
+	XWindow w{ev.window};
 	w.setParent(ev.parent);
 
 	debug_log << "Window " << w << " was created!" << std::endl;
 	debug_log << "\tParent: " << XWindow(w.getParent()) << std::endl;
 	debug_log << "\twin name = ";
 
-	try
-	{
+	try {
 		debug_log << w.getName() << std::endl;
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch (const xwmfs::Exception &ex) {
 		debug_log << "error getting win name: " << ex << std::endl;
 	}
 
-	try
-	{
+	try {
 		updateTime();
-		FileSysWriteGuard write_guard(m_fs_root);
+		FileSysWriteGuard write_guard{m_fs_root};
 		m_win_dir->addWindow(w);
 		m_wm_dir->windowLifecycleEvent(w, true);
 		m_desktop_dir->handleWindowCreated(w);
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch (const xwmfs::Exception &ex) {
 		debug_log << "\terror adding window: " << ex << std::endl;
 	}
-
 
 	return true;
 }
 
-void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev)
-{
+void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev) {
 	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
-	XWindow w(ev.window);
+	XWindow w{ev.window};
 
 	debug_log << "Window " << w << " was destroyed!" << std::endl;
 
-	FileSysWriteGuard write_guard(m_fs_root);
+	FileSysWriteGuard write_guard{m_fs_root};
 	m_win_dir->removeWindow(w);
 	m_wm_dir->windowLifecycleEvent(w, false);
 	m_desktop_dir->handleWindowDestroyed(w);
 }
 
-void Xwmfs::handleSelectionEvent(const XEvent &ev)
-{
+void Xwmfs::handleSelectionEvent(const XEvent &ev) {
 	auto &logger = xwmfs::StdLogger::getInstance();
-	XWindow w(ev.xany.window);
+	XWindow w{ev.xany.window};
 
-	if( w != m_selection_window )
-	{
+	if (w != m_selection_window) {
 		logger.warn() << "Got selection buffer related event, but it's not for our selection window?"
 			<< "\n";
 		return;
@@ -642,18 +557,13 @@ void Xwmfs::handleSelectionEvent(const XEvent &ev)
 
 	logger.debug() << "Selection buffer event of type " << ev.type << "\n";
 
-	if( ev.type == SelectionNotify )
-	{
+	if (ev.type == SelectionNotify) {
 		// the conversion data has arrived
 		m_selection_dir->conversionResult(ev.xselection);
-	}
-	else if( ev.type == SelectionClear )
-	{
+	} else if (ev.type == SelectionClear) {
 		// we lost ownership of the selection
 		m_selection_dir->lostOwnership(ev.xselectionclear);
-	}
-	else if( ev.type == SelectionRequest )
-	{
+	} else if (ev.type == SelectionRequest) {
 		// somebody wants to get the selection from us
 		m_selection_dir->conversionRequest(ev.xselectionrequest);
 	}
@@ -662,8 +572,7 @@ void Xwmfs::handleSelectionEvent(const XEvent &ev)
 /*
  * global sync signal handler for the fuse abort signal
  */
-void fuseAbortSignal(int sig)
-{
+void fuseAbortSignal(int sig) {
 	auto &xwmfs = Xwmfs::getInstance();
 
 	const bool shutdown = sig != SIGUSR1;
@@ -671,8 +580,7 @@ void fuseAbortSignal(int sig)
 	xwmfs.abortBlockingCall(shutdown);
 }
 
-void Xwmfs::setupAbortSignals(const bool on_off)
-{
+void Xwmfs::setupAbortSignals(const bool on_off) {
 	/*
 	 * we have two troubles with implementing blocking read calls in the
 	 * EventFile here:
@@ -742,7 +650,7 @@ void Xwmfs::setupAbortSignals(const bool on_off)
 	 * these situations. All pretty f***ed up.
 	 */
 	struct sigaction act, orig;
-	std::memset( &act, 0, sizeof(struct sigaction) );
+	std::memset(&act, 0, sizeof(struct sigaction));
 	act.sa_handler = &fuseAbortSignal;
 
 	std::vector<int> sigs;
@@ -751,22 +659,18 @@ void Xwmfs::setupAbortSignals(const bool on_off)
 	sigs.push_back(SIGINT);
 	sigs.push_back(SIGTERM);
 
-	for( const auto sig: sigs )
-	{
-		if( sigaction(sig, on_off ? &act : &m_signal_handlers[sig], &orig) != 0  )
-		{
+	for (const auto sig: sigs) {
+		if (sigaction(sig, on_off ? &act : &m_signal_handlers[sig], &orig) != 0 ) {
 			xwmfs_throw(xwmfs::Exception("Failed to change abort sighandler"));
 		}
 
-		if( on_off )
-		{
+		if (on_off) {
 			m_signal_handlers[sig] = orig;
 		}
 	}
 }
 
-void Xwmfs::abortBlockingCall(const bool all)
-{
+void Xwmfs::abortBlockingCall(const bool all) {
 	// send the ID of the thread that got the signal over the abort pipe
 	// so the event thread can deal with the situation without
 	// restrictions of async signal handling
@@ -777,21 +681,18 @@ void Xwmfs::abortBlockingCall(const bool all)
 
 	// writing to the pipe <= PIPE_BUF is atomic so we don't need to fear
 	// partial writes here. But the call may block if the pipe is full.
-	if( write(m_abort_pipe[1], &msg, sizeof(msg)) != sizeof(msg) )
-	{
+	if (::write(m_abort_pipe[1], &msg, sizeof(msg)) != sizeof(msg)) {
 		std::cerr << "failed to write to abort pipe\n";
 	}
 }
 
-void Xwmfs::abortBlockingCall(pthread_t thread)
-{
+void Xwmfs::abortBlockingCall(pthread_t thread) {
 	auto &logger = xwmfs::StdLogger::getInstance();
-	MutexGuard g(m_blocking_call_lock);
+	MutexGuard g{m_blocking_call_lock};
 
 	auto it = m_blocking_calls.find(thread);
 
-	if( it == m_blocking_calls.end() )
-	{
+	if (it == m_blocking_calls.end()) {
 		logger.error() << "Failed to find abort entry for thread" << std::endl;
 		return;
 	}
@@ -803,12 +704,10 @@ void Xwmfs::abortBlockingCall(pthread_t thread)
 	ef->abortBlockingCall(thread);
 }
 
-void Xwmfs::abortAllBlockingCalls()
-{
-	MutexGuard g(m_blocking_call_lock);
+void Xwmfs::abortAllBlockingCalls() {
+	MutexGuard g{m_blocking_call_lock};
 
-	for( auto it: m_blocking_calls )
-	{
+	for (auto it: m_blocking_calls) {
 		auto ef = it.second;
 
 		ef->abortBlockingCall(it.first);
@@ -824,14 +723,12 @@ void Xwmfs::abortAllBlockingCalls()
 	m_shutdown = true;
 }
 
-void Xwmfs::readAbortPipe()
-{
+void Xwmfs::readAbortPipe() {
 	AbortMsg msg;
 
 	// read <= PIPE_BUF bytes from the pipe is atomic,
 	// should never even block
-	if( read(m_abort_pipe[0], &msg, sizeof(msg)) != sizeof(msg) )
-	{
+	if (read(m_abort_pipe[0], &msg, sizeof(msg)) != sizeof(msg)) {
 		auto &logger = xwmfs::StdLogger::getInstance();
 		logger.error()
 			<< "Failed to read from abort pipe"
@@ -839,38 +736,32 @@ void Xwmfs::readAbortPipe()
 		return;
 	}
 
-	if( msg.type == AbortType::CALL )
-	{
+	if (msg.type == AbortType::CALL) {
 		abortBlockingCall(msg.thread);
-	}
-	else
-	{
+	} else {
 		abortAllBlockingCalls();
 		/* reinstate original signal handlers */
 		setupAbortSignals(false);
-		kill( getpid(), SIGINT );
+		::kill(getpid(), SIGINT);
 	}
 }
 
-bool Xwmfs::registerBlockingCall(Entry *f)
-{
-	MutexGuard g(m_blocking_call_lock);
+bool Xwmfs::registerBlockingCall(Entry *f) {
+	MutexGuard g{m_blocking_call_lock};
 
-	if( m_shutdown )
-	{
+	if (m_shutdown) {
 		return false;
 	}
 
-	m_blocking_calls.insert( std::make_pair( pthread_self(), f ) );
+	m_blocking_calls.insert(std::make_pair(pthread_self(), f));
 
 	return true;
 }
 
-void Xwmfs::unregisterBlockingCall()
-{
+void Xwmfs::unregisterBlockingCall() {
 	MutexGuard g(m_blocking_call_lock);
 
-	m_blocking_calls.erase( pthread_self() );
+	m_blocking_calls.erase(pthread_self());
 }
 
 } // end ns

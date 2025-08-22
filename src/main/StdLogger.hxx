@@ -1,10 +1,9 @@
-#ifndef XWMFS_STDLOGGER_HXX
-#define XWMFS_STDLOGGER_HXX
+#pragma once
 
+// xwmfs
 #include "common/ILogger.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /*
  * \brief
@@ -14,13 +13,11 @@ namespace xwmfs
  * 	stream, of course, goes to std::cerr.
  */
 class StdLogger :
-	public ILogger
-{
+		public ILogger {
 public:
 	~StdLogger();
 
-	static StdLogger& getInstance()
-	{
+	static StdLogger& getInstance() {
 		static StdLogger logger;
 
 		return logger;
@@ -31,5 +28,3 @@ protected:
 };
 
 } // end ns
-
-#endif // inc. guard

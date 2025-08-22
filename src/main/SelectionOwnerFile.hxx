@@ -1,10 +1,8 @@
-#ifndef XWMFS_SELECTIONOWNERFILE_HXX
-#define XWMFS_SELECTIONOWNERFILE_HXX
+#pragma once
 
 #include "fuse/FileEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class SelectionDirEntry;
 
@@ -24,8 +22,7 @@ class SelectionDirEntry;
  * 	form "<selection>: <window-id>".
  **/
 class SelectionOwnerFile :
-	public FileEntry
-{
+		public FileEntry {
 public: // functions
 
 	SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent);
@@ -42,5 +39,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

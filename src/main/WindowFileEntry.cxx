@@ -1,17 +1,14 @@
 // xwmfs
-#include "main/WindowFileEntry.hxx"
-#include "main/StdLogger.hxx"
-#include "main/Xwmfs.hxx"
-#include "x11/XWindowAttrs.hxx"
 #include "common/Helper.hxx"
 #include "fuse/DirEntry.hxx"
+#include "main/StdLogger.hxx"
+#include "main/WindowFileEntry.hxx"
+#include "main/Xwmfs.hxx"
+#include "x11/XWindowAttrs.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-const WindowFileEntry::WriteMemberFunctionMap
-	WindowFileEntry::m_write_member_function_map =
-{
+const WindowFileEntry::WriteMemberFunctionMap WindowFileEntry::m_write_member_function_map = {
 	{ "name", &WindowFileEntry::writeName },
 	{ "desktop", &WindowFileEntry::writeDesktop },
 	{ "control", &WindowFileEntry::writeCommand },
@@ -19,39 +16,28 @@ const WindowFileEntry::WriteMemberFunctionMap
 	{ "properties", &WindowFileEntry::writeProperties }
 };
 
-void WindowFileEntry::writeProperties(const char *data, const size_t bytes)
-{
-	MutexGuard g(Xwmfs::getInstance().getEventLock());
-	std::string input(data, bytes);
+void WindowFileEntry::writeProperties(const char *data, const size_t bytes) {
+	MutexGuard g{Xwmfs::getInstance().getEventLock()};
+	std::string input{data, bytes};
 
-	if( !input.empty() && input[0] == '!' )
-	{
+	if (!input.empty() && input[0] == '!') {
 		return delProperty(input.substr(1));
-	}
-	else
-	{
+	} else {
 		return setProperty(input);
 	}
 }
 
-void WindowFileEntry::delProperty(const std::string &name)
-{
+void WindowFileEntry::delProperty(const std::string &name) {
 	m_win.delProperty(stripped(name));
 }
 
-void WindowFileEntry::setProperty(const std::string &input)
-{
+void WindowFileEntry::setProperty(const std::string &input) {
 	const auto open_par = input.find('(');
 	const auto close_par = input.find(')', open_par + 1);
 	const auto assign = input.find('=', close_par + 1);
 
-	if(
-		open_par == input.npos ||
-		close_par == input.npos ||
-		assign == input.npos ||
-		assign != close_par + 1
-	)
-	{
+	if (open_par == input.npos || close_par == input.npos ||
+			assign == input.npos || assign != close_par + 1) {
 		xwmfs_throw(Exception("invalid syntax, expected PROP_NAME(TYPE)=VALUE"));
 	}
 
@@ -59,25 +45,20 @@ void WindowFileEntry::setProperty(const std::string &input)
 	const auto type_name = input.substr(open_par+1, close_par - open_par - 1);
 	const auto value = stripped(input.substr(assign+1));
 
-	if( prop_name.empty() || type_name.empty() || value.empty() )
-	{
+	if (prop_name.empty() || type_name.empty() || value.empty()) {
 		xwmfs_throw(Exception("empty argument encountered"));
 	}
 
-	if( type_name == "STRING" )
-	{
+	if (type_name == "STRING") {
 		Property<const char*> prop;
 		prop = value.c_str();
 		m_win.setProperty(prop_name, prop);
-	}
-	else if( type_name == "CARDINAL" )
-	{
+	} else if (type_name == "CARDINAL") {
 		std::stringstream ss;
 		int int_value;
 		ss.str(value);
 		ss >> int_value;
-		if( ss.fail() )
-		{
+		if (ss.fail()) {
 			// NOTE: this parsing is not completely bullet proof
 			// against extra non-numeric characters or hex based
 			// numbers yet
@@ -86,25 +67,20 @@ void WindowFileEntry::setProperty(const std::string &input)
 		Property<int> prop;
 		prop = int_value;
 		m_win.setProperty(prop_name, prop);
-	}
-	else if( type_name == "UTF8_STRING" )
-	{
+	} else if (type_name == "UTF8_STRING") {
 		utf8_string string_u8;
 		string_u8.str = value;
 		Property<utf8_string> prop;
 		prop = string_u8;
 		m_win.setProperty(prop_name, prop);
-	}
-	else
-	{
+	} else {
 		xwmfs_throw(Exception("unsupported property type encountered"));
 	}
 }
 
-void WindowFileEntry::writeGeometry(const char *data, const size_t bytes)
-{
+void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 	std::stringstream ss;
-	ss.str(std::string(data, bytes));
+	ss.str(std::string{data, bytes});
 
 	char c = '\0';
 	XWindowAttrs attrs;
@@ -125,11 +101,8 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes)
 	ss >> attrs.height;
 	good = good && ss.good();
 
-	if( !good )
-	{
-		xwmfs_throw(
-			xwmfs::Exception("Couldn't parse new geometry")
-		);
+	if (!good) {
+		xwmfs_throw(xwmfs::Exception("Couldn't parse new geometry"));
 	}
 
 	m_win.moveResize(attrs);
@@ -137,41 +110,30 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes)
 	XDisplay::getInstance().flush();
 }
 
-void WindowFileEntry::writeCommand(const char *data, const size_t bytes)
-{
+void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
 	const auto command = tolower(stripped(std::string(data, bytes)));
 
-	if( command == "destroy" )
-	{
+	if (command == "destroy") {
 		m_win.destroy();
-	}
-	else if( command == "delete" )
-	{
+	} else if (command == "delete") {
 		m_win.sendDeleteRequest();
-	}
-	else
-	{
-		xwmfs_throw(
-			xwmfs::Exception("invalid command encountered")
-		);
+	} else {
+		xwmfs_throw(xwmfs::Exception("invalid command encountered"));
 	}
 }
 
-int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset)
-{
+int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) {
 	(void)ctx;
-	if( ! m_writable )
+	if (!m_writable)
 		return -EBADF;
 	// we don't support writing at offsets
-	if( offset )
+	if (offset)
 		return -EOPNOTSUPP;
 
-	try
-	{
+	try {
 		auto it = m_write_member_function_map.find(m_name);
 
-		if( it == m_write_member_function_map.end() )
-		{
+		if (it == m_write_member_function_map.end()) {
 			xwmfs::StdLogger::getInstance().error()
 				<< __FUNCTION__
 				<< ": Write call for window file entry of unknown type: \""
@@ -182,12 +144,10 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 
 		auto mem_fn = it->second;
 
-		MutexGuard g(m_parent->getLock());
+		MutexGuard g{m_parent->getLock()};
 
 		(this->*(mem_fn))(data, bytes);
-	}
-	catch( const xwmfs::Exception &e )
-	{
+	} catch (const xwmfs::Exception &e) {
 		xwmfs::StdLogger::getInstance().error()
 			<< __FUNCTION__
 			<< ": Error operating on window (node '"

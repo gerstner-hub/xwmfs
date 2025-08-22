@@ -1,12 +1,10 @@
-#ifndef XWMFS_WINMANAGERDIRENTRY_HXX
-#define XWMFS_WINMANAGERDIRENTRY_HXX
+#pragma once
 
 // xwmfs
-#include "x11/XAtom.hxx"
 #include "main/UpdateableDir.hxx"
+#include "x11/XAtom.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class RootWin;
 class EventFile;
@@ -21,8 +19,7 @@ class XWindow;
  * 	properties and controls.
  **/
 class WinManagerDirEntry :
-	public UpdateableDir<WinManagerDirEntry>
-{
+		public UpdateableDir<WinManagerDirEntry> {
 public: // functions
 
 	explicit WinManagerDirEntry(RootWin &root_win);
@@ -52,9 +49,7 @@ protected: // functions
 
 	void addEntries();
 
-	void addSpecEntry(
-		const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec
-	);
+	void addSpecEntry(const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec);
 
 	SpecVector getSpecVector() const;
 
@@ -77,5 +72,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

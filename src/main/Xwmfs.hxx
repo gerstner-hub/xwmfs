@@ -1,9 +1,8 @@
-#ifndef XWMFS_XWMFS_HXX
-#define XWMFS_XWMFS_HXX
+#pragma once
 
 // POSIX
-#include <sys/select.h>
 #include <signal.h>
+#include <sys/select.h>
 
 // C++
 #include <map>
@@ -11,13 +10,12 @@
 
 // Xwmfs
 #include "common/Thread.hxx"
-#include "x11/RootWin.hxx"
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
+#include "x11/RootWin.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class Entry;
 class DesktopsRootDir;
@@ -43,8 +41,7 @@ class WinManagerDirEntry;
  * 	changes.
  **/
 class Xwmfs :
-	protected IThreadEntry
-{
+		protected IThreadEntry {
 public: // functions
 
 	/**
@@ -74,8 +71,7 @@ public: // functions
 	~Xwmfs();
 
 	//! returns the global XWMFS instance
-	static xwmfs::Xwmfs& getInstance()
-	{
+	static xwmfs::Xwmfs& getInstance() {
 		static Xwmfs w;
 
 		return w;
@@ -253,32 +249,29 @@ protected: // functions
 	 **/
 	bool isPseudoWindow(const XCreateWindowEvent &ev) const;
 
-	bool isIgnored(const XWindow &win) const
-	{
+	bool isIgnored(const XWindow &win) const {
 		return m_ignored_windows.find(win.id()) != m_ignored_windows.end();
 	}
 
 private: // types
 
-	typedef std::map<pthread_t, Entry*> BlockingCallMap;
-	typedef std::map<int, struct sigaction> SignalHandlerMap;
+	using BlockingCallMap = std::map<pthread_t, Entry*>;
+	using SignalHandlerMap = std::map<int, struct sigaction>;
 
 	//! different abort signal contexts
-	enum class AbortType
-	{
+	enum class AbortType {
 		//! abort just a single ongoing call in the associated thread
 		CALL,
 		//! abort all ongoing blocking calls to prepare for shutdown
 		SHUTDOWN
 	};
 
-	struct AbortMsg
-	{
+	struct AbortMsg {
 		AbortType type;
 		pthread_t thread = 0;
 	};
 
-	typedef std::set<Window> WindowSet;
+	using WindowSet = std::set<Window>;
 
 private: // data
 
@@ -368,5 +361,3 @@ private: // functions
 };
 
 } // end ns
-
-#endif // inc. guard

@@ -1,5 +1,4 @@
-#ifndef XWMFS_DESKTOPS_ROOT_DIR_HXX
-#define XWMFS_DESKTOPS_ROOT_DIR_HXX
+#pragma once
 
 // C++
 #include <map>
@@ -8,8 +7,7 @@
 #include "fuse/DirEntry.hxx"
 #include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class DesktopDirEntry;
 class RootWin;
@@ -29,8 +27,7 @@ class RootWin;
  * 	detailed window information can be obtained.
  **/
 class DesktopsRootDir :
-	public DirEntry
-{
+	public DirEntry {
 public: // functions
 
 	DesktopsRootDir(RootWin &root);
@@ -57,5 +54,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guards

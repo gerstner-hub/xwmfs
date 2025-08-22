@@ -1,16 +1,14 @@
-#ifndef XWMFS_SELECTIONDIRENTRY_HXX
-#define XWMFS_SELECTIONDIRENTRY_HXX
+#pragma once
 
 // C++
-#include <vector>
 #include <string>
+#include <vector>
 
 // xwmfs
-#include "x11/XAtom.hxx"
 #include "fuse/DirEntry.hxx"
+#include "x11/XAtom.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class EventFile;
 class SelectionOwnerFile;
@@ -61,19 +59,17 @@ class SelectionAccessFile;
  *	https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
  **/
 class SelectionDirEntry :
-	public DirEntry
-{
+		public DirEntry {
 public: // types
 
-	typedef std::vector< std::pair<XAtom, std::string> > SelectionTypeVector;
-	typedef std::vector< SelectionAccessFile* > SelectionAccessFileVector;
+	using SelectionTypeVector = std::vector<std::pair<XAtom, std::string>>;
+	using SelectionAccessFileVector = std::vector<SelectionAccessFile*>;
 
 public: // functions
 
 	explicit SelectionDirEntry();
 
-	const SelectionTypeVector& getSelectionTypes() const
-	{
+	const SelectionTypeVector& getSelectionTypes() const {
 		return m_selection_types;
 	}
 
@@ -121,10 +117,7 @@ protected: // functions
 	 **/
 	void createSelectionAccessFiles();
 
-	void replyConversionRequest(
-		const XSelectionRequestEvent &ev,
-		const bool good
-	);
+	void replyConversionRequest(const XSelectionRequestEvent &ev, const bool good);
 
 	//! returns the label for the selection buffer identified by \c atom
 	std::string selectionBufferLabel(const XAtom &atom) const;
@@ -138,5 +131,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

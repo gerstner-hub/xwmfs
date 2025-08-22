@@ -2,39 +2,34 @@
 #include <sstream>
 
 // xwmfs
-#include "x11/XWindow.hxx"
-#include "main/WindowsRootDir.hxx"
-#include "main/WindowDirEntry.hxx"
 #include "main/StdLogger.hxx"
+#include "main/WindowDirEntry.hxx"
+#include "main/WindowsRootDir.hxx"
+#include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 WindowsRootDir::WindowsRootDir() :
-	DirEntry("windows")
-{
-
+		DirEntry{"windows"} {
 }
 
 /*
- *	Upon a destroy event for a window this function is called for the
- *	according window.
+ * Upon a destroy event for a window this function is called for the according
+ * window.
  *
- *	It is possible that the given window isn't existing in the filesystem
- *	in which case the event should be ignored.
+ * It is possible that the given window isn't existing in the filesystem in
+ * which case the event should be ignored.
  *
- *	Exceptions are handled by the caller
+ * Exceptions are handled by the caller
  */
-void WindowsRootDir::removeWindow(const XWindow &win)
-{
+void WindowsRootDir::removeWindow(const XWindow &win) {
 	std::stringstream id;
 	id << win.id();
 
 	removeEntry(id.str());
 }
 
-WindowDirEntry* WindowsRootDir::getWindowDir(const XWindow &win)
-{
+WindowDirEntry* WindowsRootDir::getWindowDir(const XWindow &win) {
 	std::stringstream id;
 	id << win.id();
 
@@ -48,15 +43,12 @@ WindowDirEntry* WindowsRootDir::getWindowDir(const XWindow &win)
 }
 
 /*
- *	Upon create event for a window this function is called for the
- *	according window
+ * Upon create event for a window this function is called for the according
+ * window
  */
-void WindowsRootDir::addWindow(
-	const XWindow &win, const bool initial, const bool is_root_win
-)
-{
-	if( ! is_root_win )
-	{
+void WindowsRootDir::addWindow(const XWindow &win,
+		const bool initial, const bool is_root_win) {
+	if (!is_root_win) {
 		// we want to get any structure change events
 		//
 		// but don't register these for the root window, Xwmfs class
@@ -74,18 +66,15 @@ void WindowsRootDir::addWindow(
 	// - so in the end we'd never get to know about the window name
 	XDisplay::getInstance().sync();
 
-	auto win_dir = new xwmfs::WindowDirEntry(win, initial ? true : false);
+	auto win_dir = new xwmfs::WindowDirEntry{win, initial ? true : false};
 
 	auto &logger = xwmfs::StdLogger::getInstance();
 
-	try
-	{
+	try {
 		// the window directories are named after their IDs
 		addEntry(win_dir, false);
 		logger.debug() << "Added window " << win.id() << std::endl;
-	}
-	catch( const DirEntry::DoubleAddError & )
-	{
+	} catch (const DirEntry::DoubleAddError &) {
 		/*
 		 * this situation happens sometimes e.g. on i3 window manager.
 		 * a window is destroyed but some kind of zombie entry remains
@@ -108,56 +97,46 @@ void WindowsRootDir::addWindow(
 		orig_entry->updateAll();
 		// delete the duplicate
 		delete win_dir;
-	}
-	catch( ... )
-	{
+	} catch (...) {
 		delete win_dir;
 		throw;
 	}
 }
 
-void WindowsRootDir::updateProperty(const XWindow &win, Atom changed_atom)
-{
+void WindowsRootDir::updateProperty(const XWindow &win, Atom changed_atom) {
 	auto win_dir = getWindowDir(win);
 
-	if( !win_dir )
-	{
+	if (!win_dir) {
 		return missingWindow(win, "property update");
 	}
 
 	win_dir->update(changed_atom);
 }
 
-void WindowsRootDir::deleteProperty(const XWindow &win, Atom deleted_atom)
-{
+void WindowsRootDir::deleteProperty(const XWindow &win, Atom deleted_atom) {
 	auto win_dir = getWindowDir(win);
 
-	if( !win_dir )
-	{
+	if (!win_dir) {
 		return missingWindow(win, "property delete");
 	}
 
 	win_dir->delProp(deleted_atom);
 }
 
-void WindowsRootDir::updateGeometry(const XWindow &win, const XConfigureEvent &event)
-{
+void WindowsRootDir::updateGeometry(const XWindow &win, const XConfigureEvent &event) {
 	auto win_dir = getWindowDir(win);
 
-	if( !win_dir )
-	{
+	if (!win_dir) {
 		return missingWindow(win, "geometry update");
 	}
 
 	win_dir->newGeometry(event);
 }
 
-void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped)
-{
+void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped) {
 	auto win_dir = getWindowDir(win);
 
-	if( !win_dir )
-	{
+	if (!win_dir) {
 		return missingWindow(win, "Mapping state update");
 	}
 
@@ -169,12 +148,10 @@ void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped)
 }
 
 
-void WindowsRootDir::updateParent(const XWindow &win)
-{
+void WindowsRootDir::updateParent(const XWindow &win) {
 	auto win_dir = getWindowDir(win);
 
-	if( !win_dir )
-	{
+	if (!win_dir) {
 		return missingWindow(win, "parent update");
 	}
 
@@ -185,8 +162,7 @@ void WindowsRootDir::updateParent(const XWindow &win)
 	win_dir->newParent(XWindow(win.getParent()));
 }
 
-void WindowsRootDir::missingWindow(const XWindow &win, const std::string &action)
-{
+void WindowsRootDir::missingWindow(const XWindow &win, const std::string &action) {
 	xwmfs::StdLogger::getInstance().warn()
 		<< "Window " << win << " not found in hierarchy for: " << action
 		<< std::endl;

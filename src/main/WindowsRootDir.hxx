@@ -1,5 +1,4 @@
-#ifndef XWMFS_WINDOWS_ROOT_DIR_HXX
-#define XWMFS_WINDOWS_ROOT_DIR_HXX
+#pragma once
 
 // C++
 #include <map>
@@ -7,8 +6,7 @@
 // xwmfs
 #include "fuse/DirEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class XWindow;
 class WindowDirEntry;
@@ -22,8 +20,7 @@ class WindowDirEntry;
  * 	after the ID of the respective window in this root directory.
  **/
 class WindowsRootDir :
-	public DirEntry
-{
+		public DirEntry {
 public: // functions
 
 	WindowsRootDir();
@@ -44,11 +41,8 @@ public: // functions
 	 * 	If set then \c win refers to the root window. This triggers
 	 * 	some special logic
 	 **/
-	void addWindow(
-		const XWindow &win,
-		const bool initial = false,
-		const bool is_root_win = false
-	);
+	void addWindow(const XWindow &win, const bool initial = false,
+			const bool is_root_win = false);
 
 	/**
 	 * \brief
@@ -119,5 +113,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

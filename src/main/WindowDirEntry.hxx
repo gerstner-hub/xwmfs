@@ -1,16 +1,14 @@
-#ifndef XWMFS_WINDOWDIRENTRY_HXX
-#define XWMFS_WINDOWDIRENTRY_HXX
+#pragma once
 
 // C++
 #include <set>
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
-#include "x11/XWindow.hxx"
 #include "main/UpdateableDir.hxx"
+#include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class EventFile;
 class WindowFileEntry;
@@ -24,8 +22,7 @@ class WindowFileEntry;
  * 	specific to this window.
  **/
 class WindowDirEntry :
-	public UpdateableDir<WindowDirEntry>
-{
+		public UpdateableDir<WindowDirEntry> {
 public: // functions
 
 	/**
@@ -35,10 +32,7 @@ public: // functions
 	 * 	If set then during construction some window parameters will be
 	 * 	polled from the window, instead of waiting for update events
 	 **/
-	explicit WindowDirEntry(
-		const XWindow &win,
-		const bool query_attrs = false
-	);
+	explicit WindowDirEntry(const XWindow &win, const bool query_attrs = false);
 
 	/**
 	 * \brief
@@ -157,5 +151,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

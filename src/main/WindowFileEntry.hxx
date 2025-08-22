@@ -1,12 +1,10 @@
-#ifndef XWMFS_WINDOWDIR_HXX
-#define XWMFS_WINDOWDIR_HXX
+#pragma once
 
 // xwmfs
 #include "fuse/FileEntry.hxx"
 #include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
@@ -17,43 +15,34 @@ namespace xwmfs
  * 	operations are performed at the associated window.
  **/
 class WindowFileEntry :
-	public FileEntry
-{
+	public FileEntry {
 public:
 	//! Creates a WindowFileEntry associated with \c win
-	WindowFileEntry(
-		const std::string &n,
-		const XWindow& win,
-		const time_t &t = 0,
-		const bool writable = true
-	) :
-		FileEntry(n, writable, t),
-		m_win(win)
-	{ }
+	WindowFileEntry(const std::string &n, const XWindow& win,
+			const time_t &t = 0, const bool writable = true) :
+		FileEntry{n, writable, t},
+		m_win{win} {
+	}
 
 	/**
 	 * \brief
 	 * 	Implementation of write() that updates window properties
 	 * 	according to the file that is being written
 	 **/
-	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
+	int write(OpenContext *ctx, const char *data,
+			const size_t bytes, off_t offset) override;
 
-	void writeName(const char *data, const size_t bytes)
-	{
+	void writeName(const char *data, const size_t bytes) {
 		std::string name(data, bytes);
-		m_win.setName( name );
+		m_win.setName(name);
 	}
 
-	void writeDesktop(const char *data, const size_t bytes)
-	{
+	void writeDesktop(const char *data, const size_t bytes) {
 		int the_num;
-		const auto parsed = parseInteger(
-			data, bytes, the_num
-		);
+		const auto parsed = parseInteger(data, bytes, the_num);
 
-		if( parsed >= 0 )
-		{
-			m_win.setDesktop( the_num );
+		if (parsed >= 0) {
+			m_win.setDesktop(the_num);
 		}
 	}
 
@@ -85,8 +74,8 @@ public:
 
 protected: // types
 
-	typedef void (WindowFileEntry::*WriteMemberFunction)(const char*, const size_t);
-	typedef std::map<std::string, WriteMemberFunction> WriteMemberFunctionMap;
+	using WriteMemberFunction = void (WindowFileEntry::*)(const char*, const size_t);
+	using WriteMemberFunctionMap = std::map<std::string, WriteMemberFunction>;
 
 protected: // data
 
@@ -98,5 +87,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

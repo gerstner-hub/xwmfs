@@ -1,5 +1,4 @@
-#ifndef XWMFS_WINMANAGERFILEENTRY_HXX
-#define XWMFS_WINMANAGERFILEENTRY_HXX
+#pragma once
 
 // C++
 #include <map>
@@ -7,8 +6,7 @@
 // xwmfs
 #include "fuse/FileEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class RootWin;
 class XWindow;
@@ -22,20 +20,20 @@ class XWindow;
  * 	relay the write request correctly.
  **/
 struct WinManagerFileEntry :
-	public FileEntry
-{
+		public FileEntry {
+
 	WinManagerFileEntry(const std::string &n, const time_t &t = 0) :
-		FileEntry(n, true, t)
-	{}
+			FileEntry{n, true, t} {
+	}
 
 	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
 
 protected: // types
 
-	typedef void (RootWin::*SetIntFunction)(const int&);
-	typedef std::map<std::string, SetIntFunction> SetIntFunctionMap;
-	typedef void (RootWin::*SetWindowFunction)(const XWindow&);
-	typedef std::map<std::string, SetWindowFunction> SetWindowFunctionMap;
+	using SetIntFunction = void (RootWin::*)(const int&);
+	using SetIntFunctionMap = std::map<std::string, SetIntFunction>;
+	using SetWindowFunction = void (RootWin::*)(const XWindow&);
+	using SetWindowFunctionMap = std::map<std::string, SetWindowFunction>;
 
 	// a mapping of file system names to their associated set int functions
 	static const SetIntFunctionMap m_set_int_function_map;
@@ -43,5 +41,3 @@ protected: // types
 };
 
 } // end ns
-
-#endif // inc. guard

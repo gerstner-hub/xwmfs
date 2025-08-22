@@ -1,5 +1,4 @@
-#ifndef XWMFS_SELECTIONACCESSFILE_HXX
-#define XWMFS_SELECTIONACCESSFILE_HXX
+#pragma once
 
 // xwmfs
 #include "common/Condition.hxx"
@@ -7,8 +6,7 @@
 #include "x11/XAtom.hxx"
 #include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class SelectionDirEntry;
 
@@ -26,8 +24,7 @@ class SelectionDirEntry;
  * 	for any available type of X selection buffer.
  **/
 class SelectionAccessFile :
-	public FileEntry
-{
+		public FileEntry {
 public: // functions
 
 	/**
@@ -40,11 +37,7 @@ public: // functions
 	 * 	The atom identifier of the selection type this file entry
 	 * 	should handle
 	 **/
-	SelectionAccessFile(
-		const std::string &n,
-		SelectionDirEntry &parent,
-		const XAtom &type
-	);
+	SelectionAccessFile(const std::string &n, SelectionDirEntry &parent, const XAtom &type);
 
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
@@ -92,5 +85,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

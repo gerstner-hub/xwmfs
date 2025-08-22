@@ -1,8 +1,6 @@
-#ifndef XWMFS_OPTIONS_HXX
-#define XWMFS_OPTIONS_HXX
+#pragma once
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
@@ -13,8 +11,7 @@ namespace xwmfs
  *
  * 	It is a singleton class.
  **/
-class Options
-{
+class Options {
 public: // functions
 
 	//! returns whether the synchronized mode is set in the options
@@ -41,8 +38,7 @@ public: // functions
 	void handlePseudoWindows(const bool val) { m_handle_pseudo_windows = val; }
 
 	//! Returns the singleton instance of the options object
-	static Options& getInstance()
-	{
+	static Options& getInstance() {
 		static Options opt;
 
 		return opt;
@@ -50,7 +46,7 @@ public: // functions
 
 private: // functions
 	//! private ctor. to implement singelton
-	Options() { }
+	Options() {}
 
 	// singleton pattern
 	Options(const Options &) = delete;
@@ -62,5 +58,3 @@ private: // data
 };
 
 } // end ns
-
-#endif // inc. guard

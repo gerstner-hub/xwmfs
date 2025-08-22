@@ -5,50 +5,43 @@
 #include "x11/RootWin.hxx"
 #include "x11/XWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-const WinManagerFileEntry::SetIntFunctionMap WinManagerFileEntry::m_set_int_function_map =
-{
+const WinManagerFileEntry::SetIntFunctionMap WinManagerFileEntry::m_set_int_function_map = {
 	{ "active_desktop", &RootWin::setWM_ActiveDesktop },
 	{ "number_of_desktops", &RootWin::setWM_NumDesktops }
 };
 
-const WinManagerFileEntry::SetWindowFunctionMap WinManagerFileEntry::m_set_window_function_map =
-{
+const WinManagerFileEntry::SetWindowFunctionMap WinManagerFileEntry::m_set_window_function_map = {
 	{ "active_window", &RootWin::setWM_ActiveWindow }
 };
 
-int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset)
-{
+int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) {
 	(void)ctx;
-	if( !m_writable )
+	if (!m_writable)
 		return -EBADF;
 	// we don't support writing at offsets
-	if( offset )
+	if (offset)
 		return -EOPNOTSUPP;
 
 	auto &root_win = xwmfs::Xwmfs::getInstance().getRootWin();
 	auto &logger = xwmfs::StdLogger::getInstance();
 
-	try
-	{
+	try {
 		int the_num = 0;
 		const auto parsed = parseInteger(data, bytes, the_num);
 
-		if( parsed < 0 )
-		{
+		if (parsed < 0) {
 			logger.warn() << ": Failed to parse integer for write to: "
 				<< this->m_name << "\n";
 			return parsed;
 		}
 
-		MutexGuard g(m_parent->getLock());
+		MutexGuard g{m_parent->getLock()};
 
 		auto int_it = m_set_int_function_map.find(m_name);
 
-		if( int_it != m_set_int_function_map.end() )
-		{
+		if (int_it != m_set_int_function_map.end()) {
 			auto set_func = int_it->second;
 			((root_win).*set_func)(the_num);
 			return bytes;
@@ -56,8 +49,7 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 
 		auto window_it = m_set_window_function_map.find(m_name);
 
-		if( window_it != m_set_window_function_map.end() )
-		{
+		if (window_it != m_set_window_function_map.end()) {
 			auto set_func = window_it->second;
 			((root_win).*set_func)(XWindow(the_num));
 			return bytes;
@@ -69,13 +61,9 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 			<< this->m_name
 			<< "\"\n";
 		return -ENXIO;
-	}
-	catch( const xwmfs::XWindow::NotImplemented &e )
-	{
+	} catch (const xwmfs::XWindow::NotImplemented &e) {
 		return -ENOSYS;
-	}
-	catch( const xwmfs::Exception &e )
-	{
+	} catch (const xwmfs::Exception &e) {
 		logger.error()
 			<< __FUNCTION__ << ": Error setting window manager property ("
 			<< this->m_name << "): " << e.what() << std::endl;

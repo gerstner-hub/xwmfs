@@ -1,15 +1,17 @@
+// C++
 #include <iostream>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <locale.h>
 #include <string>
 
+// xwmfs
+#include "common/Exception.hxx"
+#include "common/Helper.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Options.hxx"
 #include "main/StdLogger.hxx"
 #include "main/Xwmfs.hxx"
-#include "common/Exception.hxx"
-#include "common/Helper.hxx"
 
 /**
  * \brief
@@ -18,21 +20,16 @@
  * \return
  * 	Whether the usage/help should be printed
  **/
-bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
-{
+bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args) {
 	bool ret = false;
 	auto &opts = xwmfs::Options::getInstance();
 
-	for(int i = 0; i < argc; i++)
-	{
+	for (int i = 0; i < argc; i++) {
 		const std::string arg = argv[i];
 
-		if( arg == "--xsync" )
-		{
+		if (arg == "--xsync") {
 			opts.xsync(true);
-		}
-		else if( xwmfs::isprefix(arg, "--logger=") )
-		{
+		} else if (xwmfs::isprefix(arg, "--logger=")) {
 			std::string logger_opts = arg.substr(
 				arg.find_first_of('=') + 1
 			);
@@ -51,8 +48,7 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 				channel < logger_opts.length() &&
 					channel < NUM_CHANNELS;
 				channel ++
-			)
-			{
+			) {
 				channels[channel] =
 					(logger_opts[channel] == '0' ?
 						false : true);
@@ -62,15 +58,10 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 				channels[0], channels[1],
 				channels[2], channels[3]
 			);
-		}
-		else if( arg == "--handle-pseudo-windows" )
-		{
+		} else if (arg == "--handle-pseudo-windows") {
 			opts.handlePseudoWindows(true);
-		}
-		else
-		{
-			if( arg == "-h" || arg == "--help")
-			{
+		} else {
+			if (arg == "-h" || arg == "--help") {
 				ret = true;
 			}
 
@@ -81,8 +72,7 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args)
 	return ret;
 }
 
-void printXWMFSHelp()
-{
+void printXWMFSHelp() {
 	fprintf(stderr, "\n\nxwmfs specific options:\n\n"
 		"\t--xsync\n"
 		"\t\toperate xlib calls synchronously for better error detection\n"
@@ -96,14 +86,11 @@ void printXWMFSHelp()
 	);
 }
 
-int main(int argc, char *argv[])
-{
-	try
-	{
+int main(int argc, char *argv[]) {
+	try {
 		auto &logger = xwmfs::StdLogger::getInstance();
 
-		if( ! ::setlocale(LC_ALL, NULL) )
-		{
+		if (!::setlocale(LC_ALL, NULL)) {
 			logger.error() << "Couldn't set locale\n";
 		}
 
@@ -115,14 +102,9 @@ int main(int argc, char *argv[])
 
 		bool print_xwmfs_help = false;
 
-		try
-		{
-			print_xwmfs_help = parseXWMFSOptions(
-				argc, argv, fuse_args
-			);
-		}
-		catch( const xwmfs::Exception &e )
-		{
+		try {
+			print_xwmfs_help = parseXWMFSOptions(argc, argv, fuse_args);
+		} catch (const xwmfs::Exception &e) {
 			std::cerr << "Error initializing XWMFS:\n"
 				<< e.what() << "\n";
 			std::cerr << "Probably you're not running X or your "
@@ -134,19 +116,14 @@ int main(int argc, char *argv[])
 		// the actual initialization is currently done via init and
 		// destroy functions called from FUSE
 		const int fuse_res = fuse_main(
-			fuse_args.argc, fuse_args.argv,
-			&xwmfs_oper, NULL
-		);
+				fuse_args.argc, fuse_args.argv, &xwmfs_oper, NULL);
 
-		if( print_xwmfs_help )
-		{
+		if (print_xwmfs_help) {
 			printXWMFSHelp();
 		}
 
 		return fuse_res;
-	}
-	catch( const xwmfs::Exception &e )
-	{
+	} catch (const xwmfs::Exception &e) {
 		std::cerr << "Caught exception in main: " << e.what() << "\n";
 		return EXIT_FAILURE;
 	}
