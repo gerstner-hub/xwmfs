@@ -108,6 +108,12 @@ class TestBase(object):
             default=None
         )
 
+        self.m_parser.add_argument(
+            "-m", "--mount",
+            help="Existing mount point to use instead of starting a new instance",
+            default=None
+        )
+
     def parseArgs(self):
 
         self.m_args = self.m_parser.parse_args()
@@ -120,8 +126,6 @@ class TestBase(object):
         atexit.register(self._cleanup)
         self.m_proc = None
         self.m_test_window = None
-        self.m_tmp_dir = tempfile.TemporaryDirectory()
-        self.m_mount_dir = self.m_tmp_dir.name
         Window.setBase(self)
 
     def _cleanup(self):
@@ -129,7 +133,8 @@ class TestBase(object):
         if self.m_proc:
             self.m_proc.terminate()
             self.m_proc.wait()
-            os.rmdir(self.m_mount_dir)
+            if self.m_need_mount:
+                os.rmdir(self.m_mount_dir)
 
         if self.m_test_window:
             self.closeTestWindow()
@@ -170,12 +175,12 @@ class TestBase(object):
 
     def mount(self):
 
-        self.m_proc = subprocess.Popen(
-            [
-                self.m_xwmfs, "-f",
-                "--logger={}".format(self.logSetting()),
-            ] + self.extraSettings() + [self.m_mount_dir]
-        )
+        if not self.m_need_mount:
+            return
+
+        cmdline = [self.m_xwmfs, "-f", "--logger={}".format(self.logSetting()), ] + self.extraSettings() + [self.m_mount_dir]
+        print("Mounting via cmdline:", ' '.join(cmdline))
+        self.m_proc = subprocess.Popen(cmdline)
 
         while len(os.listdir(self.m_mount_dir)) == 0:
 
@@ -189,7 +194,10 @@ class TestBase(object):
 
     def unmount(self):
 
-        self.m_proc.terminate()
+        if not self.m_need_mount:
+            return
+
+        subprocess.check_call(["fusermount3", "-u", self.m_mount_dir])
 
         res = self.m_proc.wait()
         self.m_proc = None
@@ -214,7 +222,18 @@ class TestBase(object):
             return 77
 
         self.parseArgs()
-        self.m_xwmfs = self.getBinary()
+        if self.m_args.mount:
+            self.m_mount_dir = self.m_args.mount
+            self.m_need_mount = False
+            if not os.path.isdir(self.m_mount_dir):
+                printe("specified mount directory is not existing")
+                sys.exit(1)
+        else:
+            self.m_xwmfs = self.getBinary()
+            self.m_tmp_dir = tempfile.TemporaryDirectory()
+            self.m_mount_dir = self.m_tmp_dir.name
+            self.m_need_mount = True
+
         self.mount()
         self.m_windows = os.path.join(self.m_mount_dir, "windows")
         self.m_mgr = ManagerDir(os.path.join(self.m_mount_dir, "wm"))
