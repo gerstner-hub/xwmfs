@@ -30,15 +30,23 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	addEntry(m_geometry);
 	{
 		XWindowAttrs attrs;
-		m_win.getAttrs(attrs);
-		updateGeometry(attrs);
+		try {
+			m_win.getAttrs(attrs);
+			updateGeometry(attrs);
+		} catch (const X11Exception &ex) {
+			// window disappeared again?
+		}
 	}
 
 	// NOTE: might become a writeable entry, using XReparentWindow(),
 	// pretty obscure though
 	m_parent = new WindowFileEntry("parent", m_win, m_modify_time, false);
 	addEntry(m_parent);
-	m_win.updateFamily();
+	try {
+		m_win.updateFamily();
+	} catch (const X11Exception &ex) {
+		// window disappeared again?
+	}
 	updateParent();
 
 	if( query_attrs )
