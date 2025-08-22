@@ -26,22 +26,31 @@ namespace xwmfs
 
 xwmfs::RootEntry *filesystem = nullptr;
 
+static OpenContext* context_from_fi(struct fuse_file_info *fi) {
+	// get our entry pointer back from the file handle field
+	return reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
 }
+
+static Entry* entry_from_fi(struct fuse_file_info *fi) {
+	xwmfs::OpenContext *context = context_from_fi(fi);
+	return context->getEntry();
+}
+
+} // end ns
 
 /**
  * \brief
  * 	Get stat information about a file system entry
  * \details
- * 	stat is done w/o an open context
+ * 	stat may happen with or without file open context in `fi`.
  **/
-int xwmfs_getattr(const char *path, struct stat *stbuf)
+int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
 	memset(stbuf, 0, sizeof(struct stat));
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
-	xwmfs::Entry *entry = xwmfs::filesystem->findEntry( path );
-
-	if( ! entry )
+	const xwmfs::Entry *entry = fi ? xwmfs::entry_from_fi(fi) : xwmfs::filesystem->findEntry(path);
+	if( !entry )
 	{
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << ": noent for path "
@@ -67,7 +76,7 @@ int xwmfs_getattr(const char *path, struct stat *stbuf)
  **/
 int xwmfs_readdir(
 	const char *path, void *buf, fuse_fill_dir_t filler,
-	 off_t offset, struct fuse_file_info *fi)
+	off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 {
 	(void) offset;
 	(void) fi;
@@ -108,9 +117,20 @@ int xwmfs_readdir(
 	// okay we found a valid directory to list the contents of
 	const auto &entries = dir_entry->getEntries();
 
+	/*
+	 * the kernel would like stat information for each entry right away.
+	 */
+	const bool provide_stat = (flags & FUSE_READDIR_PLUS) != 0;
+	const enum fuse_fill_dir_flags fill_flags = provide_stat ? FUSE_FILL_DIR_PLUS : FUSE_FILL_DIR_DEFAULTS;
+	struct stat stbuf;
+
 	for( const auto &it: entries )
 	{
-		filler(buf, it.first, nullptr, 0);
+		if (provide_stat) {
+			it.second->getStat(&stbuf);
+		}
+
+		filler(buf, it.first, provide_stat ? &stbuf : nullptr, 0, fill_flags);
 	}
 
 	return 0;
@@ -175,8 +195,7 @@ int xwmfs_release(const char *path, struct fuse_file_info *fi)
 
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
-	// get our entry pointer back from the file handle field
-	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
+	auto *context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
 
 	entry->destroyOpenContext(context);
@@ -194,7 +213,7 @@ int xwmfs_read(
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
 	// get our context pointer back from the file handle field
-	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
+	auto context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
 
 	try
@@ -240,9 +259,7 @@ int xwmfs_write(
 
 	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
 
-	// get our context pointer back from the file handle field
-	xwmfs::OpenContext *context = reinterpret_cast<xwmfs::OpenContext*>(fi->fh);
-
+	auto context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
 
 	try
@@ -259,7 +276,7 @@ int xwmfs_write(
 	}
 }
 
-int xwmfs_truncate(const char *path, off_t size)
+int xwmfs_truncate(const char *path, off_t size, struct fuse_file_info *fi)
 {
 	// do nothing
 	//
@@ -272,6 +289,7 @@ int xwmfs_truncate(const char *path, off_t size)
 	// that try to truncate a file upon writing.
 	(void)path;
 	(void)size;
+	(void)fi;
 	return 0;
 }
 
@@ -309,9 +327,13 @@ int xwmfs_create(
  *  	The returned value is passed to all other operations in the
  *  	fuse_context structure and also to xwmfs_destroy(void*)
  **/
-void* xwmfs_init(struct fuse_conn_info* conn)
+void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config)
 {
 	(void)conn;
+
+	// make interruptible the default, this seems to be the only way.
+	// Otherwise the abort logic for blocking calls is not enabled
+	config->intr = 1;
 
 	try
 	{
@@ -341,8 +363,8 @@ void* xwmfs_init(struct fuse_conn_info* conn)
 
 	assert( xwmfs::filesystem );
 
-	// we return our file system instance such that we can access it
-	// anywhere
+	// we return our file system instance such that we can access it from
+	// all contexts.
 	return xwmfs::filesystem;
 }
 

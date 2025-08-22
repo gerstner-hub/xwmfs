@@ -11,7 +11,7 @@
 namespace xwmfs
 {
 
-void SymlinkEntry::getStat(struct stat *s)
+void SymlinkEntry::getStat(struct stat *s) const
 {
 	Entry::getStat(s);
 	MutexGuard g(m_parent->getLock());

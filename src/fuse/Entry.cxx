@@ -72,7 +72,7 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 	return endpos;
 }
 
-void Entry::getStat(struct stat *s)
+void Entry::getStat(struct stat *s) const
 {
 	s->st_uid = m_uid;
 	s->st_gid = m_gid;

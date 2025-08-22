@@ -80,7 +80,7 @@ public:
 
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
-	void getStat(struct stat*) override;
+	void getStat(struct stat*) const override;
 };
 
 } // end ns

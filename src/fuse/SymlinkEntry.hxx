@@ -25,7 +25,7 @@ public:
 		m_target = target;
 	}
 
-	void getStat(struct stat*) override;
+	void getStat(struct stat*) const override;
 
 	virtual int readlink(char *buf, size_t size) override;
 

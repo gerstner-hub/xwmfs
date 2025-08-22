@@ -38,12 +38,12 @@ AM_CONDITIONAL(DEV, test "${enable_dev}" = "yes")
 
 dnl we need fuse
 dnl AC_CHECK_LIB([fuse], [fuse_main], [], [AC_MSG_ERROR([You need the fuse userspace library to build this package])])
-PKG_CHECK_MODULES([fuse], [ fuse >= 2.8.1 ])
+PKG_CHECK_MODULES([fuse3], [ fuse3 >= 3.0.0 ])
 dnl we also need X11
 PKG_CHECK_MODULES([x11], [ x11 >= 1.2.2 ])
 
-AC_SUBST([fuse_CFLAGS])
-AC_SUBST([fuse_LIBS])
+AC_SUBST([fuse3_CFLAGS])
+AC_SUBST([fuse3_LIBS])
 
 AC_SUBST([x11_CFLAGS])
 AC_SUBST([x11_LIBS])

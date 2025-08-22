@@ -120,7 +120,7 @@ public: // functions
 	 * 	Fills in the status information corresponding to this entry
 	 * 	into \c s
 	 **/
-	virtual void getStat(struct stat *s);
+	virtual void getStat(struct stat *s) const;
 
 	//! increases the reference count
 	void ref() { m_refcount++; }

@@ -8,14 +8,20 @@
 namespace xwmfs
 {
 
-void FileEntry::getStat(struct stat *s)
+void FileEntry::getStat(struct stat *s) const
 {
 	Entry::getStat(s);
 	MutexGuard g(m_parent->getLock());
 
+	/*
+	 * we are modifying the stream position here, but that isn't
+	 * problematic, since we'll always reposition it during read or write.
+	 */
+	auto &stream = static_cast<std::stringstream&>(const_cast<FileEntry&>(*this));
+
 	// determine size of stream and return it in stat structure
-	this->seekg( 0, xwmfs::FileEntry::end );
-	s->st_size = this->tellg();
+	stream.seekg( 0, xwmfs::FileEntry::end );
+	s->st_size = stream.tellg();
 }
 
 int FileEntry::write(OpenContext *ctx, const char *data, size_t size, off_t offset)
