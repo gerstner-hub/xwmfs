@@ -44,7 +44,7 @@ AM_CFLAGS += -Wno-unused-parameter
 endif # IS_GCC
 endif # DEV
 
-AM_CXXFLAGS =${AM_CFLAGS} -std=c++11
+AM_CXXFLAGS =${AM_CFLAGS} -std=c++20
 # use this instead of AM_LDFLAGS to have the libraries appear AFTER the object
 # files. Otherwise we get trouble on distros where as-needed linking is
 # enabled
