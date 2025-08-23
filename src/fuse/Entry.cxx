@@ -1,6 +1,6 @@
 // C++
-#include <string>
 #include <iostream>
+#include <string>
 
 // POSIX
 #include <sys/stat.h>
@@ -12,58 +12,47 @@
 #include "fuse/OpenContext.hxx"
 #include "main/Xwmfs.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 const uid_t Entry::m_uid = ::getuid();
 const gid_t Entry::m_gid = ::getgid();
 
 
-Entry::~Entry()
-{
-	if( !m_parent || m_parent == this )
+Entry::~Entry() {
+	if (!m_parent || m_parent == this)
 		// no distict parent
 		return;
 
-	if( m_parent->unref() )
-	{
+	if (m_parent->unref()) {
 		delete m_parent,
 		m_parent = nullptr;
 	}
 
-	if( m_abort_handler )
-	{
+	if (m_abort_handler) {
 		delete m_abort_handler;
 		m_abort_handler = nullptr;
 	}
 }
 
-void Entry::createAbortHandler(Condition &cond)
-{
-	m_abort_handler = new AbortHandler(cond);
+void Entry::createAbortHandler(Condition &cond) {
+	m_abort_handler = new AbortHandler{cond};
 }
 
-void Entry::abortBlockingCall(pthread_t thread)
-{
-	if( !m_abort_handler )
-	{
+void Entry::abortBlockingCall(pthread_t thread) {
+	if (!m_abort_handler) {
 		return;
 	}
 
 	return m_abort_handler->abort(thread);
 }
 
-int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
-{
+int Entry::parseInteger(const char *data, const size_t bytes, int &result) const {
 	size_t endpos = 0;
 	std::string string(data, bytes);
 
-	try
-	{
+	try {
 		result = std::stoi( string, &endpos );
-	}
-	catch( const std::exception &ex )
-	{
+	} catch (const std::exception &ex) {
 		std::cerr << ex.what() << std::endl;
 		result = -1;
 		return -EINVAL;
@@ -72,15 +61,13 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 	return endpos;
 }
 
-void Entry::getStat(struct stat *s) const
-{
+void Entry::getStat(struct stat *s) const {
 	s->st_uid = m_uid;
 	s->st_gid = m_gid;
 	s->st_atime = s->st_mtime = getModifyTime();
 	s->st_ctime = getStatusTime();
 
-	switch(m_type)
-	{
+	switch(m_type) {
 	default:
 		// ???
 		s->st_mode = 0;
@@ -103,10 +90,8 @@ void Entry::getStat(struct stat *s) const
 	s->st_mode &= ~(Xwmfs::getUmask());
 }
 
-int Entry::isOperationAllowed() const
-{
-	if( isDeleted() )
-	{
+int Entry::isOperationAllowed() const {
+	if (isDeleted()) {
 		// difficult to say what the correct errno for "file
 		// disappeared" is. This one seems suitable. It would also be
 		// valid to succeed in reading but then the application can't
@@ -118,11 +103,10 @@ int Entry::isOperationAllowed() const
 	return 0;
 }
 
-void Entry::setParent(DirEntry *dir)
-{
+void Entry::setParent(DirEntry *dir) {
 	m_parent = dir;
 
-	if( this == dir )
+	if (this == dir)
 		// it's ourselves, no need for reference handling
 		return;
 
@@ -130,11 +114,10 @@ void Entry::setParent(DirEntry *dir)
 	m_parent->ref();
 }
 
-OpenContext* Entry::createOpenContext()
-{
+OpenContext* Entry::createOpenContext() {
 	// TODO: we could improve performance here by using pre-allocated
 	// objects for OpenContext
-	auto ret = new OpenContext(this);
+	auto ret = new OpenContext{this};
 
 	// increase the reference count to avoid deletion while the file is
 	// opened
@@ -148,12 +131,10 @@ OpenContext* Entry::createOpenContext()
 	return ret;
 }
 
-void Entry::destroyOpenContext(OpenContext *ctx)
-{
+void Entry::destroyOpenContext(OpenContext *ctx) {
 	delete ctx;
 
-	if( this->unref() )
-	{
+	if (this->unref()) {
 		// deleting this entry should not require a write guard,
 		// because we're the last user of the file nobody else should
 		// know about it ...

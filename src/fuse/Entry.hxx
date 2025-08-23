@@ -1,5 +1,4 @@
-#ifndef XWMFS_ENTRY_HXX
-#define XWMFS_ENTRY_HXX
+#pragma once
 
 // C++
 #include <atomic>
@@ -13,8 +12,7 @@
 // fwd. declaration
 struct stat;
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 // fwd. declarations
 class DirEntry;
@@ -31,16 +29,14 @@ class Condition;
  * 	use an enumeration for differentiation of specific types to avoid too
  * 	high performance penalties due to RTTI.
  **/
-class Entry
-{
+class Entry {
 public: // types
 
 	/**
 	 * \brief
 	 * 	Possible specializations of file system entries
 	 **/
-	enum Type
-	{
+	enum Type {
 		DIRECTORY,
 		REG_FILE,
 		SYMLINK,
@@ -62,9 +58,8 @@ public: // functions
 	 * 	A DirEntry pointer to \c entry or nullptr if the entry is no
 	 * 	DirEntry or nullptr itself
 	 **/
-	static DirEntry* tryCastDirEntry(Entry* entry)
-	{
-		if( entry && entry->isDir() )
+	static DirEntry* tryCastDirEntry(Entry* entry) {
+		if (entry && entry->isDir())
 			return reinterpret_cast<DirEntry*>(entry);
 
 		return nullptr;
@@ -77,9 +72,8 @@ public: // functions
 	 * 	A FileEntry pointer to \c entry or nullptr if the entry is no
 	 * 	FileEntry or nullptr itself
 	 **/
-	static FileEntry* tryCastFileEntry(Entry *entry)
-	{
-		if( entry && entry->isRegular() )
+	static FileEntry* tryCastFileEntry(Entry *entry) {
+		if (entry && entry->isRegular())
 			return reinterpret_cast<FileEntry*>(entry);
 
 		return nullptr;
@@ -142,8 +136,7 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes read on success.
 	 **/
-	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset)
-	{
+	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 		(void)ctx;
 		(void)buf;
 		(void)size;
@@ -161,8 +154,7 @@ public: // functions
 	 * 	The integer return value is the negative errno in case of
 	 * 	error, or the number of bytes written on success
 	 **/
-	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset)
-	{
+	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) {
 		(void)ctx;
 		(void)buf;
 		(void)size;
@@ -178,8 +170,7 @@ public: // functions
 	 * 	link target does not fit into the buffer then it should be
 	 * 	truncated.
 	 **/
-	virtual int readlink(char *buf, size_t size)
-	{
+	virtual int readlink(char *buf, size_t size) {
 		(void)buf;
 		(void)size;
 		return -EINVAL;
@@ -263,16 +254,12 @@ protected: // functions
 	 * 	will be handled as writable if \c writable is set and the
 	 * 	initial status and modification times will be \c time.
 	 **/
-	Entry(
-		const std::string &n,
-		const Type &t,
-		const bool writable = false,
-		const time_t &time = 0
-	) :
-		m_name(n), m_type(t), m_writable(writable),
-		m_modify_time(time), m_status_time(time),
-		m_refcount(1)
-	{ };
+	Entry(const std::string &n, const Type &t,
+			const bool writable = false, const time_t &time = 0) :
+		m_name{n}, m_type{t}, m_writable{writable},
+		m_modify_time{time}, m_status_time{time},
+		m_refcount{1} {
+	};
 
 	/**
 	 * \brief
@@ -337,5 +324,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

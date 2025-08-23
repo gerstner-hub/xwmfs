@@ -1,15 +1,13 @@
-#ifndef XWMFS_DIR_ENTRY_HXX
-#define XWMFS_DIR_ENTRY_HXX
+#pragma once
 
 // C++
 #include <map>
 
 // xwmfs
-#include "fuse/Entry.hxx"
 #include "common/Mutex.hxx"
+#include "fuse/Entry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
@@ -24,26 +22,24 @@ namespace xwmfs
  * 	in the XWMFS (yet).
  **/
 class DirEntry :
-	public Entry
-{
+		public Entry {
 public: // types
 
 	//! \brief
 	//! a map type that maps file system names to their corresponding
 	//! objects
-	typedef std::map<const char*, Entry*, compare_cstring> NameEntryMap;
+	using NameEntryMap = std::map<const char*, Entry*, compare_cstring>;
 
 	//! The type enum associated with DirEntry. Can be used in templates.
 	static const Entry::Type type = Entry::DIRECTORY;
 
 	struct DoubleAddError :
-		public Exception
-	{
+			public Exception {
 		DoubleAddError(const std::string &name) :
-			Exception(
-				std::string("double-add of the same directory node \"")
+			Exception{
+				std::string{"double-add of the same directory node \""}
 					+ name.c_str() + "\""
-			)
+			}
 		{}
 
 		XWMFS_EXCEPTION_IMPL;
@@ -59,8 +55,8 @@ public: // functions
 	 * 	modification times of the directory.
 	 **/
 	DirEntry(const std::string &n, const time_t &t = 0) :
-		Entry(n, DIRECTORY, false, t)
-	{ }
+		Entry{n, DIRECTORY, false, t} {
+	}
 
 	/**
 	 * \brief
@@ -93,8 +89,7 @@ public: // functions
 	 * 	DirEntry *new_subdir = dir->addEntry( new DirEntry(...) )
 	 **/
 	template <typename ENTRY>
-	ENTRY* addEntry(ENTRY * const e, const bool inherit_time = true)
-	{
+	ENTRY* addEntry(ENTRY * const e, const bool inherit_time = true) {
 		addEntry(static_cast<Entry*>(e), inherit_time);
 		return e;
 	}
@@ -111,8 +106,9 @@ public: // functions
 	Entry* addEntry(Entry * const e, const bool inherit_time = true);
 
 	//! wrapper for getEntry(const char*) using a std::string
-	Entry* getEntry(const std::string &s) const
-	{ return getEntry(s.c_str()); }
+	Entry* getEntry(const std::string &s) const {
+		return getEntry(s.c_str());
+	}
 
 	/**
 	 * \brief
@@ -121,47 +117,42 @@ public: // functions
 	 * 	A pointer to the contained entry or nullptr if there is no
 	 * 	entry with that name contained in the current DirEntry.
 	 **/
-	Entry* getEntry(const char *n) const
-	{
+	Entry* getEntry(const char *n) const {
 		auto obj_it = m_objs.find(n);
 
-		return ( obj_it == m_objs.end() ) ? nullptr : obj_it->second;
+		return (obj_it == m_objs.end()) ? nullptr : obj_it->second;
 	}
 
 	//! retrieve an entry in the directory with name \c n, but only if of
 	//! type \c t
-	Entry* getEntry(const char *n, const Entry::Type &t)
-	{
+	Entry* getEntry(const char *n, const Entry::Type &t) {
 		Entry *ret = this->getEntry(n);
-		if( ret && ret->type() != t )
+		if (ret && ret->type() != t)
 			return nullptr;
 
 		return ret;
 	}
 
-	DirEntry* getDirEntry(const char *n)
-	{
+	DirEntry* getDirEntry(const char *n) {
 		return reinterpret_cast<DirEntry*>(getEntry(n, Entry::Type::DIRECTORY));
 	}
 
-	DirEntry* getDirEntry(const std::string &n)
-	{
+	DirEntry* getDirEntry(const std::string &n) {
 		return getDirEntry(n.c_str());
 	}
 
-	FileEntry* getFileEntry(const char *n)
-	{
+	FileEntry* getFileEntry(const char *n) {
 		return reinterpret_cast<FileEntry*>(getEntry(n, Entry::Type::REG_FILE));
 	}
 
-	FileEntry* getFileEntry(const std::string &n)
-	{
+	FileEntry* getFileEntry(const std::string &n) {
 		return getFileEntry(n.c_str());
 	}
 
 	//! wrapper for removeEntry(const char*) using a std::string
-	void removeEntry(const std::string &s)
-	{ return removeEntry(s.c_str()); }
+	void removeEntry(const std::string &s) {
+		return removeEntry(s.c_str());
+	}
 
 	/**
 	 * \brief
@@ -172,10 +163,11 @@ public: // functions
 	void removeEntry(const char *s);
 
 	//! Retrieves the non-modifiable map of all contained entries
-	const NameEntryMap& getEntries() const { return m_objs; }
+	const NameEntryMap& getEntries() const {
+		return m_objs;
+	}
 
-	bool markDeleted() override
-	{
+	bool markDeleted() override {
 		// make sure all child entries get marked as deleted right
 		// away as well
 		clear();
@@ -185,7 +177,9 @@ public: // functions
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
-	Mutex& getLock() { return m_lock; }
+	Mutex& getLock() {
+		return m_lock;
+	}
 
 protected: // data
 
@@ -210,5 +204,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

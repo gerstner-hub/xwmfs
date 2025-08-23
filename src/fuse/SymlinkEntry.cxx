@@ -2,26 +2,23 @@
 #include <sys/stat.h>
 
 // C++
-#include <cstring>
 #include <algorithm>
+#include <cstring>
 
 // xwmfs
 #include "fuse/SymlinkEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-void SymlinkEntry::getStat(struct stat *s) const
-{
+void SymlinkEntry::getStat(struct stat *s) const {
 	Entry::getStat(s);
-	MutexGuard g(m_parent->getLock());
+	MutexGuard g{m_parent->getLock()};
 
 	s->st_size = m_target.size();
 }
 
-int SymlinkEntry::readlink(char *buf, size_t size)
-{
-	if( size == 0 )
+int SymlinkEntry::readlink(char *buf, size_t size) {
+	if (size == 0)
 		return 0;
 
 	auto copylen = std::min(size-1, m_target.size());

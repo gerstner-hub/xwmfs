@@ -1,20 +1,17 @@
-#ifndef XWMFS_OPEN_CONTEXT_HXX
-#define XWMFS_OPEN_CONTEXT_HXX
+#pragma once
 
 // xwmfs
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class Entry;
 
-class OpenContext
-{
+class OpenContext {
 public: // functions
 
 	OpenContext(Entry *entry) :
-		m_entry(entry)
-	{}
+			m_entry{entry} {
+	}
 
 	virtual ~OpenContext() {}
 
@@ -32,5 +29,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

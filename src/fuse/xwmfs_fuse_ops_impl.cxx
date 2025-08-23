@@ -6,23 +6,23 @@
  * access to the file system occurs.
  */
 
+// C/C++
+#include <assert.h>
+#include <errno.h>
 #include <iostream>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <errno.h>
-#include <assert.h>
 
-#include "fuse/xwmfs_fuse.hxx"
+// xwmfs
+#include "common/Exception.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/FileEntry.hxx"
-#include "fuse/xwmfs_fuse_ops.h"
 #include "fuse/OpenContext.hxx"
+#include "fuse/xwmfs_fuse.hxx"
+#include "fuse/xwmfs_fuse_ops.h"
 #include "main/Xwmfs.hxx"
-#include "common/Exception.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 xwmfs::RootEntry *filesystem = nullptr;
 
@@ -44,14 +44,12 @@ static Entry* entry_from_fi(struct fuse_file_info *fi) {
  * \details
  * 	stat may happen with or without file open context in `fi`.
  **/
-int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
-{
+int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
 	memset(stbuf, 0, sizeof(struct stat));
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
 	const xwmfs::Entry *entry = fi ? xwmfs::entry_from_fi(fi) : xwmfs::filesystem->findEntry(path);
-	if( !entry )
-	{
+	if (!entry) {
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << ": noent for path "
 			<< path << "\n";
@@ -74,14 +72,13 @@ int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
  * 	The \c filler object allows for easy creation of the required dirent
  * 	structures behind the scene.
  **/
-int xwmfs_readdir(
-	const char *path, void *buf, fuse_fill_dir_t filler,
-	off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
-{
+int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+		off_t offset, struct fuse_file_info *fi,
+		enum fuse_readdir_flags flags) {
 	(void) offset;
 	(void) fi;
 
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
 	/*
 	 * note: right now we always lookup the file system entry within
@@ -94,20 +91,17 @@ int xwmfs_readdir(
 	 * we're currently implementing so the performance benefit from
 	 * implement opendir() is small.
 	 */
-	xwmfs::Entry *entry = xwmfs::filesystem->findEntry( path );
+	xwmfs::Entry *entry = xwmfs::filesystem->findEntry(path);
 
 	xwmfs::DirEntry *dir_entry = xwmfs::Entry::tryCastDirEntry(entry);
 
-	if( ! entry )
-	{
+	if (!entry) {
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << ": no such entity: "
 			<< path << "\n";
 
 		return -ENOENT;
-	}
-	else if( ! dir_entry )
-	{
+	} else if (!dir_entry) {
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << ": not a dir: "
 			<< path << "\n";
@@ -124,8 +118,7 @@ int xwmfs_readdir(
 	const enum fuse_fill_dir_flags fill_flags = provide_stat ? FUSE_FILL_DIR_PLUS : FUSE_FILL_DIR_DEFAULTS;
 	struct stat stbuf;
 
-	for( const auto &it: entries )
-	{
+	for (const auto &it: entries) {
 		if (provide_stat) {
 			it.second->getStat(&stbuf);
 		}
@@ -146,38 +139,34 @@ int xwmfs_readdir(
  *	We can set fi->fh (file handle) here and it will be available in any
  *	other operations coming up.
  **/
-int xwmfs_open(const char *path, struct fuse_file_info *fi)
-{
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+int xwmfs_open(const char *path, struct fuse_file_info *fi) {
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
-	xwmfs::Entry *entry = xwmfs::filesystem->findEntry( path );
+	xwmfs::Entry *entry = xwmfs::filesystem->findEntry(path);
 
 	// if entry is a directory then we allow the open call but during any
 	// read/writes we return EISDIR
 
-	// if entry not there at all
-	if( ! entry )
-	{
+	if (!entry) {
+		// if entry not there at all
 		xwmfs::StdLogger::getInstance().debug()
 			<< __FUNCTION__ << " didn't find " << path << "\n";
 		return -ENOENT;
-	}
-	// don't allow any write access if entity is not writeable
-	else if((fi->flags & 3) != O_RDONLY && !entry->isWritable() )
+	} else if((fi->flags & 3) != O_RDONLY && !entry->isWritable()) {
+		// don't allow any write access if entity is not writeable
 		return -EACCES;
+	}
 
 	auto ctx = entry->createOpenContext();
 
-	if( fi->flags & O_NONBLOCK )
-	{
+	if (fi->flags & O_NONBLOCK) {
 		ctx->setNonBlocking(true);
 	}
 
 	// store a pointer to an OpenContext in the file handle
 	fi->fh = (intptr_t)ctx;
 
-	if( entry->enableDirectIO() )
-	{
+	if (entry->enableDirectIO()) {
 		fi->direct_io = 1;
 	}
 
@@ -189,11 +178,10 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi)
  * 	This is the counter part to xmwfs_open(), called as soon as a user of
  * 	a given file object closes it's file descriptor
  **/
-int xwmfs_release(const char *path, struct fuse_file_info *fi)
-{
+int xwmfs_release(const char *path, struct fuse_file_info *fi) {
 	(void)path;
 
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
 	auto *context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
@@ -204,80 +192,65 @@ int xwmfs_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
-int xwmfs_read(
-	const char *path, char *buf, size_t size,
-	off_t offset, struct fuse_file_info *fi)
-{
+int xwmfs_read(const char *path, char *buf, size_t size,
+		off_t offset, struct fuse_file_info *fi) {
 	(void)path;
 
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
 	// get our context pointer back from the file handle field
 	auto context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
 
-	try
-	{
+	try {
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->read(context, buf, size, offset);
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch (const xwmfs::Exception &ex) {
 		xwmfs::StdLogger::getInstance().error()
 			<< "Failed to read from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
 }
 
-int xwmfs_readlink(const char *path, char *buf, size_t size)
-{
+int xwmfs_readlink(const char *path, char *buf, size_t size) {
 	auto &fs = *xwmfs::filesystem;
-	xwmfs::FileSysReadGuard read_guard( fs );
+	xwmfs::FileSysReadGuard read_guard{fs};
 
 	auto entry = fs.findEntry(path);
 
-	try
-	{
+	try {
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->readlink(buf, size);
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch (const xwmfs::Exception &ex) {
 		xwmfs::StdLogger::getInstance().error()
 			<< "Failed to readlink from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
 }
 
-int xwmfs_write(
-	const char *path, const char *buf, size_t size,
-	off_t offset, struct fuse_file_info *fi)
-{
+int xwmfs_write(const char *path, const char *buf, size_t size,
+		off_t offset, struct fuse_file_info *fi) {
 	(void)path;
 
-	xwmfs::FileSysReadGuard read_guard( *xwmfs::filesystem );
+	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
 	auto context = xwmfs::context_from_fi(fi);
 	auto entry = context->getEntry();
 
-	try
-	{
+	try {
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->write(context, buf, size, offset);
-	}
-	catch( const xwmfs::Exception &ex )
-	{
+	} catch(const xwmfs::Exception &ex) {
 		xwmfs::StdLogger::getInstance().error()
 			<< "Failed to write to " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
 }
 
-int xwmfs_truncate(const char *path, off_t size, struct fuse_file_info *fi)
-{
+int xwmfs_truncate(const char *path, off_t size, struct fuse_file_info *fi) {
 	// do nothing
 	//
 	// note: doing nothing on a "proc like fs" is okay I guess
@@ -303,11 +276,7 @@ int xwmfs_truncate(const char *path, off_t size, struct fuse_file_info *fi)
  * 	On kernels < 2.6.15 mknod() and open() will be called instead of
  * 	create.
  **/
-int xwmfs_create(
-	const char *path,
-	mode_t mode,
-	struct fuse_file_info *ffi)
-{
+int xwmfs_create(const char *path, mode_t mode, struct fuse_file_info *ffi) {
 	(void)path;
 	(void)mode;
 	(void)ffi;
@@ -327,41 +296,34 @@ int xwmfs_create(
  *  	The returned value is passed to all other operations in the
  *  	fuse_context structure and also to xwmfs_destroy(void*)
  **/
-void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config)
-{
+void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 	(void)conn;
 
 	// make interruptible the default, this seems to be the only way.
 	// Otherwise the abort logic for blocking calls is not enabled
 	config->intr = 1;
 
-	try
-	{
+	try {
 		xwmfs::Xwmfs &xwmfs = xwmfs::Xwmfs::getInstance();
 
 		const int xwmfs_res = xwmfs.init();
 
-		if( xwmfs_res != EXIT_SUCCESS )
-		{
+		if (xwmfs_res != EXIT_SUCCESS) {
 			::exit(xwmfs_res);
 		}
 
 		xwmfs::filesystem = &xwmfs.getFS();
-	}
-	catch( xwmfs::Exception &e )
-	{
+	} catch (xwmfs::Exception &e) {
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error setting up XWMFS. Exception caught: "
 			<< e.what() << "\n";
-	}
-	catch(...)
-	{
+	} catch(...) {
 		xwmfs::StdLogger::getInstance().error()
 			<< "Error setting up XWMFS."
 			" Unknown exception caught\n";
 	}
 
-	assert( xwmfs::filesystem );
+	assert(xwmfs::filesystem);
 
 	// we return our file system instance such that we can access it from
 	// all contexts.
@@ -374,8 +336,7 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config)
  * \details
  * 	This function is called by FUSE to cleanup the file system
  **/
-void xwmfs_destroy(void* data)
-{
+void xwmfs_destroy(void* data) {
 	(void)data;
 
 	xwmfs::Xwmfs::getInstance().exit();

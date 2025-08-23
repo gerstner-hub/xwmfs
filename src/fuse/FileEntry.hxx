@@ -1,5 +1,4 @@
-#ifndef XWMFS_FILE_ENTRY_HXX
-#define XWMFS_FILE_ENTRY_HXX
+#pragma once
 
 // C++
 #include <sstream>
@@ -7,8 +6,7 @@
 // xwmfs
 #include "fuse/Entry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /*
  * I found it would be best to cache the information from the many X-related
@@ -48,20 +46,17 @@ namespace xwmfs
  * 	accordingly to do something sensible.
  **/
 class FileEntry :
-	public Entry,
-	public std::stringstream
-{
+		public Entry,
+		public std::stringstream {
 public:
 	/**
 	 * \brief
 	 * 	Create a new FileEntry with name \c n, being read-write if \c
 	 * 	writable is set and using \c t for initial timestamps
 	 **/
-	FileEntry(
-		const std::string &n,
-		const bool writable = false,
-		const time_t &t = 0
-	) : Entry(n, REG_FILE, writable, t) { }
+	FileEntry(const std::string &n, const bool writable = false, const time_t &t = 0) :
+			Entry{n, REG_FILE, writable, t} {
+	}
 
 	/**
 	 * \brief
@@ -84,5 +79,3 @@ public:
 };
 
 } // end ns
-
-#endif // inc. guard

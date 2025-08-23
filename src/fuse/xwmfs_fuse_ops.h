@@ -1,8 +1,7 @@
-#ifndef XWMFS_FUSE_H
-#define XWMFS_FUSE_H
+#pragma once
 
-#include <fuse.h>
 #include <fcntl.h>
+#include <fuse.h>
 
 /*
  * This is a C/C++ header that declares the fuse operations implemented for
@@ -15,8 +14,7 @@
  */
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 extern int xwmfs_getattr(
@@ -90,7 +88,5 @@ extern int xwmfs_create(
 extern struct fuse_operations xwmfs_oper;
 
 #ifdef __cplusplus
-}
+} // end extern
 #endif
-
-#endif // inc. guard

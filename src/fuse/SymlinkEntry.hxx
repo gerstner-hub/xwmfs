@@ -1,27 +1,22 @@
-#ifndef XWMFS_SYMLINK_ENTRY_HXX
-#define XWMFS_SYMLINK_ENTRY_HXX
+#pragma once
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
 #include "fuse/SymlinkEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class SymlinkEntry :
-	public Entry
-{
+		public Entry {
 public:
-	SymlinkEntry(
-		const std::string &n,
-		const std::string &target = std::string(),
-		const time_t &t = 0) :
-			Entry(n, SYMLINK, t),
-			m_target(target)
-	{ }
+	SymlinkEntry(const std::string &n,
+				const std::string &target = std::string(),
+				const time_t &t = 0) :
+			Entry{n, SYMLINK, false, t},
+			m_target{target} {
+	}
 
-	void setTarget(const std::string &target)
-	{
+	void setTarget(const std::string &target) {
 		m_target = target;
 	}
 
@@ -36,5 +31,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

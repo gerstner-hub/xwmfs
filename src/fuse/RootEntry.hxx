@@ -1,14 +1,10 @@
-#ifndef XWMFS_ROOT_ENTRY_HXX
-#define XWMFS_ROOT_ENTRY_HXX
-
-// C++
+#pragma once
 
 // xwmfs
-#include "fuse/DirEntry.hxx"
 #include "common/RWLock.hxx"
+#include "fuse/DirEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
@@ -27,8 +23,7 @@ namespace xwmfs
  * 	is conventional.
  **/
 struct RootEntry :
-	public DirEntry
-{
+		public DirEntry {
 public: // functions
 
 	/**
@@ -36,15 +31,15 @@ public: // functions
 	 * 	Creates a new file system root with the given time value
 	 **/
 	RootEntry(const time_t &t = 0) :
-		DirEntry("/", t)
-	{
+			DirEntry{"/", t} {
 		//! root is his own parent
 		this->setParent(this);
 	}
 
 	//! a wrapper for findEntry(const char*) using std::string
-	Entry* findEntry(const std::string &path)
-	{ return findEntry(path.c_str()); }
+	Entry* findEntry(const std::string &path) {
+		return findEntry(path.c_str());
+	}
 
 	/**
 	 * \brief
@@ -90,5 +85,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

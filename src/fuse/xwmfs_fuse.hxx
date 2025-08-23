@@ -1,5 +1,4 @@
-#ifndef XWMFS_FUSE_HXX
-#define XWMFS_FUSE_HXX
+#pragma once
 
 // xwmfs
 #include "fuse/RootEntry.hxx"
@@ -9,22 +8,22 @@
  * xwmfs
  */
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 /**
  * \brief
  * 	A scope-guard object for read-locking a complete file system
  **/
-class FileSysReadGuard
-{
+class FileSysReadGuard {
 public:
-	FileSysReadGuard( const RootEntry &root ) : m_root(root)
-	{
+	FileSysReadGuard(const RootEntry &root) :
+			m_root{root} {
 		root.readlock();
 	}
 
-	~FileSysReadGuard() { m_root.unlock(); }
+	~FileSysReadGuard() {
+		m_root.unlock();
+	}
 private:
 	const RootEntry &m_root;
 };
@@ -34,15 +33,16 @@ private:
  * 	A scope-guard object for temporarily releasing a real-lock of the
  * 	complete file system
  **/
-class FileSysRevReadGuard
-{
+class FileSysRevReadGuard {
 public:
-	FileSysRevReadGuard( const RootEntry &root ) : m_root(root)
-	{
+	FileSysRevReadGuard(const RootEntry &root) :
+			m_root{root} {
 		root.unlock();
 	}
 
-	~FileSysRevReadGuard() { m_root.readlock(); }
+	~FileSysRevReadGuard() {
+		m_root.readlock();
+	}
 private:
 	const RootEntry &m_root;
 };
@@ -51,11 +51,10 @@ private:
  * \brief
  * 	A scope-guard object for write-locking a complete file system
  **/
-class FileSysWriteGuard
-{
+class FileSysWriteGuard {
 public:
-	FileSysWriteGuard( RootEntry &root ) : m_root(root)
-	{
+	FileSysWriteGuard(RootEntry &root) :
+			m_root{root} {
 		root.writelock();
 	}
 
@@ -65,5 +64,3 @@ private:
 };
 
 } // end ns
-
-#endif // inc. guard

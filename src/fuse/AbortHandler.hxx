@@ -1,5 +1,4 @@
-#ifndef XWMFS_ABORT_HANDLER_HXX
-#define XWMFS_ABORT_HANDLER_HXX
+#pragma once
 
 // C++
 #include <set>
@@ -7,8 +6,7 @@
 // xwmfs
 #include "common/Condition.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class Entry;
 
@@ -22,8 +20,7 @@ class Entry;
  * 	Functions in Entry and the logic in the Xwmfs main class work
  * 	together with this mixin.
  **/
-class AbortHandler
-{
+class AbortHandler {
 public: // functions
 
 	AbortHandler(Condition &cond);
@@ -74,5 +71,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard

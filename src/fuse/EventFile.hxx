@@ -1,5 +1,4 @@
-#ifndef XWMFS_EVENT_FILE_HXX
-#define XWMFS_EVENT_FILE_HXX
+#pragma once
 
 // C++
 #include <deque>
@@ -8,8 +7,7 @@
 #include "common/Condition.hxx"
 #include "fuse/Entry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 // fwd. decl.
 struct EventOpenContext;
@@ -29,8 +27,7 @@ struct EventOpenContext;
  * 	some events in between without noticing.
  **/
 class EventFile :
-	public Entry
-{
+		public Entry {
 public:
 
 	/**
@@ -43,12 +40,8 @@ public:
 	 * 	This is necessary to avoid infinite growth of the event queue
 	 * 	in case an active reader doesn't catch up with the data
 	 **/
-	EventFile(
-		DirEntry &parent,
-		const std::string &name,
-		const time_t time = 0,
-		const size_t max_backlog = 64
-	);
+	EventFile(DirEntry &parent, const std::string &name, const time_t time = 0,
+			const size_t max_backlog = 64);
 
 	/**
 	 * \brief
@@ -75,15 +68,14 @@ public:
 
 public: // types
 
-	struct Event
-	{
+	struct Event {
 		std::string text;
 		size_t id = 0;
 
 		Event(const std::string &s, size_t i) : text(s), id(i) {}
 	};
 
-	typedef std::deque<Event> EventQueue;
+	using EventQueue = std::deque<Event>;
 
 protected: // functions
 
@@ -115,5 +107,3 @@ protected: // data
 };
 
 } // end ns
-
-#endif // inc. guard
