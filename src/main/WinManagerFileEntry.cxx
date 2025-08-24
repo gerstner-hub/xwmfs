@@ -36,7 +36,7 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 			return parsed;
 		}
 
-		MutexGuard g{m_parent->getLock()};
+		cosmos::MutexGuard g{m_parent->getLock()};
 
 		auto int_it = m_set_int_function_map.find(m_name);
 

@@ -10,6 +10,7 @@
 #include <set>
 
 // cosmos
+#include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
 
 // Xwmfs
@@ -100,7 +101,7 @@ public: // functions
 	 * 	custom atom names are handling in the context of a FUSE
 	 * 	thread.
 	 **/
-	Mutex& getEventLock() { return m_event_lock; }
+	cosmos::Mutex& getEventLock() { return m_event_lock; }
 
 	//! Returns the root window held in the Xwmfs
 	xwmfs::RootWin& getRootWin() { return m_root_win; }
@@ -324,7 +325,7 @@ private: // data
 	//! a mapping of active blocking threads and their associated files
 	BlockingCallMap m_blocking_calls;
 	//! protection for m_blocking_calls
-	Mutex m_blocking_call_lock;
+	cosmos::Mutex m_blocking_call_lock;
 	//! whether we're in a shutdown condition
 	bool m_shutdown = false;
 	//! used for storing the original fuse signal handlers
@@ -336,7 +337,7 @@ private: // data
 	//! currently existing windows that are ignored by us
 	WindowSet m_ignored_windows;
 
-	Mutex m_event_lock;
+	cosmos::Mutex m_event_lock;
 
 	//! an XWindow created by the xwmfs for managing selection buffers
 	XWindow m_selection_window;

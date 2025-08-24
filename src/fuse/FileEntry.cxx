@@ -9,7 +9,7 @@ namespace xwmfs {
 
 void FileEntry::getStat(struct stat *s) const {
 	Entry::getStat(s);
-	MutexGuard g{m_parent->getLock()};
+	cosmos::MutexGuard g{m_parent->getLock()};
 
 	/*
 	 * we are modifying the stream position here, but that isn't
@@ -32,7 +32,7 @@ int FileEntry::write(OpenContext *ctx, const char *data, size_t size, off_t offs
 
 int FileEntry::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	(void)ctx;
-	MutexGuard g{m_parent->getLock()};
+	cosmos::MutexGuard g{m_parent->getLock()};
 
 	// position to the required offset in the file (to beginning of file, if no offset)
 	seekg(offset, xwmfs::FileEntry::beg);

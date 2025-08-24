@@ -1,7 +1,9 @@
 #pragma once
 
+// cosmos
+#include <cosmos/thread/Condition.hxx>
+
 // xwmfs
-#include "common/Condition.hxx"
 #include "fuse/FileEntry.hxx"
 #include "x11/XAtom.hxx"
 #include "x11/XWindow.hxx"
@@ -79,7 +81,7 @@ protected: // data
 	const XAtom m_target_prop;
 	//! caches the current owner window of the selection we're representing
 	XWindow m_owner;
-	Condition m_result_cond;
+	cosmos::Condition m_result_cond;
 	bool m_result_arrived = false;
 	XAtom m_result_prop;
 };

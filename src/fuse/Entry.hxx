@@ -9,6 +9,10 @@
 // fwd. declaration
 struct stat;
 
+namespace cosmos {
+	class Condition;
+}
+
 namespace xwmfs {
 
 // fwd. declarations
@@ -16,7 +20,6 @@ class DirEntry;
 class FileEntry;
 class AbortHandler;
 class OpenContext;
-class Condition;
 
 /**
  * \brief
@@ -237,7 +240,7 @@ public: // functions
 
 protected: // functions
 
-	void createAbortHandler(Condition &cond);
+	void createAbortHandler(cosmos::Condition &cond);
 
 	/**
 	 * \brief

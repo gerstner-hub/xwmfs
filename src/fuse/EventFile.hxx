@@ -3,8 +3,10 @@
 // C++
 #include <deque>
 
+// cosmos
+#include <cosmos/thread/Condition.hxx>
+
 // xwmfs
-#include "common/Condition.hxx"
 #include "fuse/Entry.hxx"
 
 namespace xwmfs {
@@ -101,7 +103,7 @@ protected: // functions
 protected: // data
 
 	const size_t m_max_backlog;
-	Condition m_cond;
+	cosmos::Condition m_cond;
 	EventQueue m_event_queue;
 	size_t m_next_id = 0;
 };

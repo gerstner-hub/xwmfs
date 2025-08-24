@@ -5,9 +5,10 @@
 
 // cosmos
 #include <cosmos/string.hxx>
+#include <cosmos/thread/Mutex.hxx>
 
 // xwmfs
-#include "common/Mutex.hxx"
+#include "common/Exception.hxx"
 #include "fuse/Entry.hxx"
 
 namespace xwmfs {
@@ -180,7 +181,7 @@ public: // functions
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
-	Mutex& getLock() {
+	cosmos::Mutex& getLock() {
 		return m_lock;
 	}
 
@@ -203,7 +204,7 @@ protected: // data
 	 * 	resources and still allowing parallel operations in many
 	 * 	situations.
 	 **/
-	Mutex m_lock;
+	cosmos::Mutex m_lock;
 };
 
 } // end ns

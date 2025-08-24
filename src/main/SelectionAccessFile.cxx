@@ -70,7 +70,7 @@ int SelectionAccessFile::write(
 
 void SelectionAccessFile::reportConversionResult(Atom result_prop) {
 	{
-		MutexGuard g{m_parent.getLock()};
+		cosmos::MutexGuard g{m_parent.getLock()};
 		m_result_arrived = true;
 		m_result_prop = result_prop;
 	}
@@ -80,7 +80,7 @@ void SelectionAccessFile::reportConversionResult(Atom result_prop) {
 
 void SelectionAccessFile::provideConversion(
 		XWindow &requestor, const XAtom &target_prop) const {
-	MutexGuard g{m_parent.getLock()};
+	cosmos::MutexGuard g{m_parent.getLock()};
 	const auto copy = this->str();
 	Property<utf8_string> data(utf8_string(copy.c_str()));
 	requestor.setProperty(target_prop, data);
@@ -91,7 +91,7 @@ int SelectionAccessFile::updateSelection() {
 	auto &sel_win = xwmfs.getSelectionWindow();
 	auto &std_props = StandardProps::instance();
 
-	MutexGuard g{m_parent.getLock()};
+	cosmos::MutexGuard g{m_parent.getLock()};
 
 	m_result_prop.reset();
 	m_result_arrived = false;
@@ -152,7 +152,7 @@ int SelectionAccessFile::updateSelection() {
 void SelectionAccessFile::updateOwner() {
 	// needs the event lock to avoid issues in libX11 with multi-threading
 	auto &xwmfs = Xwmfs::Xwmfs::getInstance();
-	MutexGuard g{xwmfs.getEventLock()};
+	cosmos::MutexGuard g{xwmfs.getEventLock()};
 
 	m_owner = XWindow{m_parent.getSelectionOwner(m_sel_type)};
 }

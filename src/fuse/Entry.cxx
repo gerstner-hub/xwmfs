@@ -6,6 +6,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+// cosmos
+#include <cosmos/thread/Condition.hxx>
+
 // xwmfs
 #include "fuse/AbortHandler.hxx"
 #include "fuse/Entry.hxx"
@@ -34,7 +37,7 @@ Entry::~Entry() {
 	}
 }
 
-void Entry::createAbortHandler(Condition &cond) {
+void Entry::createAbortHandler(cosmos::Condition &cond) {
 	m_abort_handler = new AbortHandler{cond};
 }
 

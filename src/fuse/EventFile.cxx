@@ -47,7 +47,7 @@ bool EventFile::markDeleted() {
 	bool ret;
 
 	{
-		MutexGuard g{m_parent->getLock()};
+		cosmos::MutexGuard g{m_parent->getLock()};
 		ret = Entry::markDeleted();
 	}
 
@@ -59,7 +59,7 @@ bool EventFile::markDeleted() {
 
 void EventFile::addEvent(const std::string &text) {
 	{
-		MutexGuard g{m_parent->getLock()};
+		cosmos::MutexGuard g{m_parent->getLock()};
 
 		// reflect the most recent event time as modification time
 		this->setModifyTime(Xwmfs::getInstance().getCurrentTime());
@@ -122,7 +122,7 @@ const EventFile::Event* EventFile::nextEvent(const size_t prev_id) {
 int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size) {
 	const Event *event = nullptr;
 
-	MutexGuard g{m_parent->getLock()};
+	cosmos::MutexGuard g{m_parent->getLock()};
 
 	while ((event = nextEvent(ctx.cur_id)) == nullptr) {
 		if (this->isDeleted()) {

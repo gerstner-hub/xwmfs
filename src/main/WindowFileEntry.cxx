@@ -19,7 +19,7 @@ const WindowFileEntry::WriteMemberFunctionMap WindowFileEntry::m_write_member_fu
 };
 
 void WindowFileEntry::writeProperties(const char *data, const size_t bytes) {
-	MutexGuard g{Xwmfs::getInstance().getEventLock()};
+	cosmos::MutexGuard g{Xwmfs::getInstance().getEventLock()};
 	std::string input{data, bytes};
 
 	if (!input.empty() && input[0] == '!') {
@@ -146,7 +146,7 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 
 		auto mem_fn = it->second;
 
-		MutexGuard g{m_parent->getLock()};
+		cosmos::MutexGuard g{m_parent->getLock()};
 
 		(this->*(mem_fn))(data, bytes);
 	} catch (const xwmfs::Exception &e) {

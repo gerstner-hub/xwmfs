@@ -4,13 +4,13 @@
 
 namespace xwmfs {
 
-AbortHandler::AbortHandler(Condition &cond) :
+AbortHandler::AbortHandler(cosmos::Condition &cond) :
 		m_cond{cond} {
 }
 
 void AbortHandler::abort(pthread_t thread) {
 	{
-		MutexGuard g{m_cond.getMutex()};
+		cosmos::MutexGuard g{m_cond.mutex()};
 		m_abort_set.insert(thread);
 	}
 

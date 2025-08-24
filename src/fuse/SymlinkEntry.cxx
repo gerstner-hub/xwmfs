@@ -12,7 +12,7 @@ namespace xwmfs {
 
 void SymlinkEntry::getStat(struct stat *s) const {
 	Entry::getStat(s);
-	MutexGuard g{m_parent->getLock()};
+	cosmos::MutexGuard g{m_parent->getLock()};
 
 	s->st_size = m_target.size();
 }

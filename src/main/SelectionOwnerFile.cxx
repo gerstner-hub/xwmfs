@@ -29,7 +29,7 @@ int SelectionOwnerFile::read(
 		//
 		// Don't know what to do against this at the moment.
 		auto &xwmfs = Xwmfs::Xwmfs::getInstance();
-		MutexGuard g{xwmfs.getEventLock()};
+		cosmos::MutexGuard g{xwmfs.getEventLock()};
 		updateOwners();
 	}
 

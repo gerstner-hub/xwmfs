@@ -21,6 +21,7 @@
 #include <fuse.h>
 
 // xwmfs
+#include "common/SystemException.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "main/DesktopsRootDir.hxx"
@@ -318,7 +319,7 @@ void Xwmfs::eventThread() {
 }
 
 void Xwmfs::handlePendingEvents() {
-	MutexGuard g{m_event_lock};
+	cosmos::MutexGuard g{m_event_lock};
 
 	/*
 	 * this is important to avoid blocking while there are still events to
@@ -337,7 +338,7 @@ void Xwmfs::handlePendingEvents() {
 			// cross-locking issues, because other threads may
 			// hold the FS lock and want our event lock, while he
 			// have the event lock but desire the FS lock.
-			MutexReverseGuard rg{m_event_lock};
+			cosmos::MutexReverseGuard rg{m_event_lock};
 			handleEvent(m_ev);
 		} catch (const xwmfs::Exception &ex) {
 			logger->error() << "Failed to handle X11 event of type "
@@ -666,7 +667,7 @@ void Xwmfs::abortBlockingCall(const bool all) {
 }
 
 void Xwmfs::abortBlockingCall(pthread_t thread) {
-	MutexGuard g{m_blocking_call_lock};
+	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	auto it = m_blocking_calls.find(thread);
 
@@ -683,7 +684,7 @@ void Xwmfs::abortBlockingCall(pthread_t thread) {
 }
 
 void Xwmfs::abortAllBlockingCalls() {
-	MutexGuard g{m_blocking_call_lock};
+	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	for (auto it: m_blocking_calls) {
 		auto ef = it.second;
@@ -724,7 +725,7 @@ void Xwmfs::readAbortPipe() {
 }
 
 bool Xwmfs::registerBlockingCall(Entry *f) {
-	MutexGuard g{m_blocking_call_lock};
+	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	if (m_shutdown) {
 		return false;
@@ -736,7 +737,7 @@ bool Xwmfs::registerBlockingCall(Entry *f) {
 }
 
 void Xwmfs::unregisterBlockingCall() {
-	MutexGuard g(m_blocking_call_lock);
+	cosmos::MutexGuard g(m_blocking_call_lock);
 
 	m_blocking_calls.erase(pthread_self());
 }

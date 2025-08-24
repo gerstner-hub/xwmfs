@@ -3,8 +3,8 @@
 // C++
 #include <set>
 
-// xwmfs
-#include "common/Condition.hxx"
+// cosmos
+#include <cosmos/thread/Condition.hxx>
 
 namespace xwmfs {
 
@@ -23,7 +23,7 @@ class Entry;
 class AbortHandler {
 public: // functions
 
-	AbortHandler(Condition &cond);
+	AbortHandler(cosmos::Condition &cond);
 
 	/**
 	 * \brief
@@ -65,7 +65,7 @@ protected: // types
 
 protected: // data
 
-	Condition &m_cond;
+	cosmos::Condition &m_cond;
 	//! holds threads for which blocking calls shall be aborted
 	AbortSet m_abort_set;
 };
