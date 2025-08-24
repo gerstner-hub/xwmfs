@@ -6,9 +6,6 @@
 // POSIX
 #include <unistd.h>
 
-// xwmfs
-#include "common/Helper.hxx"
-
 // fwd. declaration
 struct stat;
 

@@ -21,7 +21,6 @@
 #include <fuse.h>
 
 // xwmfs
-#include "common/Helper.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "main/DesktopsRootDir.hxx"

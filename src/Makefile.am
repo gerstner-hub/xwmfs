@@ -58,7 +58,7 @@ libcosmos_la_SOURCES = libcosmos/include/string.hxx libcosmos/include/cosmos.hxx
 
 bin_PROGRAMS = xwmfs
 xwmfs_SOURCES = \
-		common/Helper.cxx common/Exception.cxx common/Mutex.cxx \
+		common/Exception.cxx common/Mutex.cxx \
 		common/Thread.cxx common/strerror.cxx \
 		fuse/xwmfs_fuse_ops.c fuse/xwmfs_fuse_ops_impl.cxx fuse/Entry.cxx \
 		fuse/FileEntry.cxx fuse/DirEntry.cxx fuse/RootEntry.cxx \
@@ -71,7 +71,7 @@ xwmfs_SOURCES = \
 		x11/XAtom.cxx x11/PropertyTraits.cxx x11/XWindow.cxx x11/XWindowAttrs.cxx \
 		x11/XDisplay.cxx x11/RootWin.cxx
 xwmfs_SOURCES += \
-		common/Condition.hxx common/Exception.hxx common/Helper.hxx \
+		common/Condition.hxx common/Exception.hxx \
 		common/IThreadEntry.hxx common/Mutex.hxx common/RWLock.hxx common/SystemException.hxx \
 		common/Thread.hxx \
 		fuse/xwmfs_fuse_ops.h fuse/AbortHandler.hxx fuse/DirEntry.hxx fuse/Entry.hxx \

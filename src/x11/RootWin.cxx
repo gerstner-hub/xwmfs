@@ -1,5 +1,8 @@
+// cosmos
+#include <cosmos/string.hxx>
+
+// xwmfs
 #include "x11/utf8_string.hxx"
-#include "common/Helper.hxx"
 #include "main/logger.hxx"
 #include "x11/RootWin.hxx"
 
@@ -120,7 +123,7 @@ void RootWin::queryWMWindow()
 
 RootWin::WindowManager RootWin::detectWM(const std::string &name)
 {
-	const auto lower = tolower(name);
+	const auto lower = cosmos::to_lower(name);
 
 	// see whether this is a window manager known to us
 	if( lower == "fluxbox" )

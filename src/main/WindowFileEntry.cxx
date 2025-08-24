@@ -1,5 +1,7 @@
+// cosmos
+#include <cosmos/string.hxx>
+
 // xwmfs
-#include "common/Helper.hxx"
 #include "fuse/DirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -28,7 +30,7 @@ void WindowFileEntry::writeProperties(const char *data, const size_t bytes) {
 }
 
 void WindowFileEntry::delProperty(const std::string &name) {
-	m_win.delProperty(stripped(name));
+	m_win.delProperty(cosmos::stripped(name));
 }
 
 void WindowFileEntry::setProperty(const std::string &input) {
@@ -43,7 +45,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 
 	const auto prop_name = input.substr(0, open_par);
 	const auto type_name = input.substr(open_par+1, close_par - open_par - 1);
-	const auto value = stripped(input.substr(assign+1));
+	const auto value = cosmos::stripped(input.substr(assign+1));
 
 	if (prop_name.empty() || type_name.empty() || value.empty()) {
 		xwmfs_throw(Exception("empty argument encountered"));
@@ -111,7 +113,7 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 }
 
 void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
-	const auto command = tolower(stripped(std::string(data, bytes)));
+	const auto command = cosmos::to_lower(cosmos::stripped(std::string{data, bytes}));
 
 	if (command == "destroy") {
 		m_win.destroy();

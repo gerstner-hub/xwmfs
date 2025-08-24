@@ -11,7 +11,6 @@
 
 // xwmfs
 #include "common/Exception.hxx"
-#include "common/Helper.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Options.hxx"
 #include "main/Xwmfs.hxx"
@@ -33,7 +32,7 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args) {
 
 		if (arg == "--xsync") {
 			opts.xsync(true);
-		} else if (xwmfs::isprefix(arg, "--logger=")) {
+		} else if (arg.starts_with("--logger=")) {
 			std::string logger_opts = arg.substr(
 				arg.find_first_of('=') + 1
 			);

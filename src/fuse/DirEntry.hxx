@@ -3,6 +3,9 @@
 // C++
 #include <map>
 
+// cosmos
+#include <cosmos/string.hxx>
+
 // xwmfs
 #include "common/Mutex.hxx"
 #include "fuse/Entry.hxx"
@@ -28,7 +31,7 @@ public: // types
 	//! \brief
 	//! a map type that maps file system names to their corresponding
 	//! objects
-	using NameEntryMap = std::map<const char*, Entry*, compare_cstring>;
+	using NameEntryMap = std::map<const char*, Entry*, cosmos::CompareCString>;
 
 	//! The type enum associated with DirEntry. Can be used in templates.
 	static const Entry::Type type = Entry::DIRECTORY;

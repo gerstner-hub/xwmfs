@@ -1,5 +1,7 @@
+// cosmos
+#include "cosmos/string.hxx"
+
 // xwmfs
-#include "common/Helper.hxx"
 #include "fuse/FileEntry.hxx"
 #include "main/SelectionAccessFile.hxx"
 #include "main/SelectionDirEntry.hxx"
@@ -54,7 +56,7 @@ void SelectionDirEntry::createSelectionAccessFiles() {
 
 	for (const auto &info: m_selection_types) {
 		file = new SelectionAccessFile{
-			tolower(info.second),
+			cosmos::to_lower(info.second),
 			*this,
 			info.first
 		};
