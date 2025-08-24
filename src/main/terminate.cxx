@@ -7,7 +7,7 @@
 #include <signal.h>
 
 // xwmfs
-#include "common/Exception.hxx"
+#include "main/Exception.hxx"
 
 namespace xwmfs {
 
@@ -47,7 +47,7 @@ public:
 		try {
 			// let's inspect the active exception then
 			throw;
-		} catch (const xwmfs::Exception &ex) {
+		} catch (const Exception &ex) {
 			std::cerr << "xwmfs::Exception: " << ex.what() << "\n";
 		} catch (const std::exception &ex) {
 			std::cerr << "std::exception: " << ex.what() << "\n";

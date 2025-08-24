@@ -6,6 +6,7 @@
 #include "fuse/SymlinkEntry.hxx"
 #include "main/DesktopDirEntry.hxx"
 #include "main/DesktopsRootDir.hxx"
+#include "main/Exception.hxx"
 #include "x11/RootWin.hxx"
 
 namespace xwmfs {
@@ -23,7 +24,7 @@ static WindowMap buildWindowMap(const RootWin &root_win) {
 		try {
 			auto desktop_nr = window.getCachedDesktop();
 			ret[desktop_nr].push_back(&window);
-		} catch (const xwmfs::Exception &ex) {
+		} catch (const Exception &ex) {
 			// has no desktop assignment for some reason
 			continue;
 		}

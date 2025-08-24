@@ -8,8 +8,8 @@
 #include <cosmos/thread/Mutex.hxx>
 
 // xwmfs
-#include "common/Exception.hxx"
 #include "fuse/Entry.hxx"
+#include "main/Exception.hxx"
 
 namespace xwmfs {
 
@@ -39,14 +39,13 @@ public: // types
 
 	struct DoubleAddError :
 			public Exception {
-		DoubleAddError(const std::string &name) :
+		explicit DoubleAddError(const std::string &name,
+				const cosmos::SourceLocation &src_loc = cosmos::SourceLocation::current()) :
 			Exception{
-				std::string{"double-add of the same directory node \""}
-					+ name.c_str() + "\""
+				std::string{"double-add of the same directory node \""} + name.c_str() + "\"",
+				src_loc
 			}
 		{}
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 public: // functions

@@ -1,6 +1,7 @@
 // xwmfs
 #include "fuse/AbortHandler.hxx"
 #include "fuse/xwmfs_fuse.hxx"
+#include "main/Exception.hxx"
 #include "main/SelectionAccessFile.hxx"
 #include "main/SelectionDirEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -139,10 +140,10 @@ int SelectionAccessFile::updateSelection() {
 
 		this->str("");
 		(*this) << selection_data.get().str;
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const Exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to acquire selection buffer conversion data: "
-			<< ex;
+			<< ex.what();
 		return -EIO;
 	}
 

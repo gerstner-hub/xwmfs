@@ -21,6 +21,8 @@
 // property helper classes
 #include "x11/Property.hxx"
 
+#include "main/Exception.hxx"
+
 namespace xwmfs
 {
 
@@ -44,8 +46,6 @@ public: // types
 	public: // functions
 
 		PropertyQueryError(Display *dis, const int errcode);
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! Specialized X11Exception for property change errors
@@ -55,48 +55,40 @@ public: // types
 	public: // functions
 
 		PropertyChangeError(Display *dis, const int errcode);
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! Specialized Exception for the case that property types don't match
 	class PropertyTypeMismatch :
-		public xwmfs::Exception
+		public Exception
 	{
 	public: // functions
 
 		PropertyTypeMismatch(Atom expected, Atom encountered);
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! \brief
 	//! Specialized Exception for the case that a requested property
 	//! doesn't exist
 	class PropertyNotExisting :
-		public xwmfs::Exception
+		public Exception
 	{
 	public: // functions
 
 		PropertyNotExisting() :
-			Exception("Requested property is not existing")
+			Exception{"Requested property is not existing"}
 		{ }
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! exception used in situations when an operation is not implemented
 	//! by the window manager
 	class NotImplemented :
-		public xwmfs::Exception
+		public Exception
 	{
 	public: // functions
 
 		NotImplemented() :
-			Exception("The operation is not implemented")
+			Exception{"The operation is not implemented"}
 		{ }
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	/**

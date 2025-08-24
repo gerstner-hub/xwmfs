@@ -3,9 +3,10 @@
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
+#include "main/Exception.hxx"
+#include "main/logger.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "main/logger.hxx"
 #include "x11/XWindowAttrs.hxx"
 
 namespace xwmfs {
@@ -40,7 +41,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 
 	if (open_par == input.npos || close_par == input.npos ||
 			assign == input.npos || assign != close_par + 1) {
-		xwmfs_throw(Exception("invalid syntax, expected PROP_NAME(TYPE)=VALUE"));
+		throw Exception{"invalid syntax, expected PROP_NAME(TYPE)=VALUE"};
 	}
 
 	const auto prop_name = input.substr(0, open_par);
@@ -48,7 +49,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 	const auto value = cosmos::stripped(input.substr(assign+1));
 
 	if (prop_name.empty() || type_name.empty() || value.empty()) {
-		xwmfs_throw(Exception("empty argument encountered"));
+		throw Exception{"empty argument encountered"};
 	}
 
 	if (type_name == "STRING") {
@@ -64,7 +65,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 			// NOTE: this parsing is not completely bullet proof
 			// against extra non-numeric characters or hex based
 			// numbers yet
-			xwmfs_throw(Exception("non-integer value for CARDINAL property"));
+			throw Exception{"non-integer value for CARDINAL property"};
 		}
 		Property<int> prop;
 		prop = int_value;
@@ -76,7 +77,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 		prop = string_u8;
 		m_win.setProperty(prop_name, prop);
 	} else {
-		xwmfs_throw(Exception("unsupported property type encountered"));
+		throw Exception{"unsupported property type encountered"};
 	}
 }
 
@@ -104,7 +105,7 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 	good = good && ss.good();
 
 	if (!good) {
-		xwmfs_throw(xwmfs::Exception("Couldn't parse new geometry"));
+		throw Exception{"Couldn't parse new geometry"};
 	}
 
 	m_win.moveResize(attrs);
@@ -120,7 +121,7 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
 	} else if (command == "delete") {
 		m_win.sendDeleteRequest();
 	} else {
-		xwmfs_throw(xwmfs::Exception("invalid command encountered"));
+		throw Exception{"invalid command encountered"};
 	}
 }
 

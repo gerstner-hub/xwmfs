@@ -17,7 +17,7 @@ XDisplay::XDisplay()
 
 	if( ! m_dis )
 	{
-		xwmfs_throw(DisplayOpenError());
+		throw DisplayOpenError{};
 	}
 }
 
@@ -33,16 +33,16 @@ XDisplay::AtomMappingError::AtomMappingError(
 ) :
 	X11Exception(dis, errcode)
 {
-	m_error += ". While trying to map " + \
+	m_msg += ". While trying to map " + \
 		s + " to a valid atom.";
 }
 
 XDisplay::DisplayOpenError::DisplayOpenError() :
-	Exception("Unable to open X11 display: \"")
+	Exception{"Unable to open X11 display: \""}
 {
-	m_error += XDisplayName(nullptr);
-	m_error += "\". ";
-	m_error += "Is X running? Is the DISPLAY environment "\
+	m_msg += XDisplayName(nullptr);
+	m_msg += "\". ";
+	m_msg += "Is X running? Is the DISPLAY environment "\
 		"variable correct?";
 }
 

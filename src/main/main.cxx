@@ -10,11 +10,11 @@
 #include <cosmos/io/StdLogger.hxx>
 
 // xwmfs
-#include "common/Exception.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
+#include "main/Exception.hxx"
+#include "main/logger.hxx"
 #include "main/Options.hxx"
 #include "main/Xwmfs.hxx"
-#include "main/logger.hxx"
 
 /**
  * \brief

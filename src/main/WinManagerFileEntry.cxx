@@ -1,4 +1,5 @@
 // xwmfs
+#include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WinManagerFileEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -62,7 +63,7 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 		return -ENXIO;
 	} catch (const xwmfs::XWindow::NotImplemented &e) {
 		return -ENOSYS;
-	} catch (const xwmfs::Exception &e) {
+	} catch (const Exception &e) {
 		logger->error()
 			<< __FUNCTION__ << ": Error setting window manager property ("
 			<< this->m_name << "): " << e.what() << std::endl;

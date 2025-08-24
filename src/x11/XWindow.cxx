@@ -19,7 +19,7 @@ XWindow::PropertyTypeMismatch::PropertyTypeMismatch(
 	std::ostringstream s;
 	s << "Expected " << expected << " but encountered " \
 		<< encountered;
-	m_error += s.str();
+	m_msg += s.str();
 }
 
 XWindow::PropertyChangeError::PropertyChangeError(
@@ -27,7 +27,7 @@ XWindow::PropertyChangeError::PropertyChangeError(
 ) :
 	X11Exception(dis, errcode)
 {
-	m_error += ". While trying to change property.";
+	m_msg += ". While trying to change property.";
 }
 
 XWindow::PropertyQueryError::PropertyQueryError(
@@ -35,7 +35,7 @@ XWindow::PropertyQueryError::PropertyQueryError(
 ) :
 	X11Exception(dis, errcode)
 {
-	m_error += ". While trying to get property.";
+	m_msg += ". While trying to get property.";
 }
 
 XWindow::XWindow(Window win) :
@@ -204,7 +204,7 @@ void XWindow::getProtocols(AtomVector &protocols) const
 
 	if( status == 0 )
 	{
-		xwmfs_throw(X11Exception(XDisplay::getInstance(), status));
+		throw X11Exception{XDisplay::getInstance(), status};
 	}
 
 	for( int num = 0; num < ret_count; num++ )
@@ -245,7 +245,7 @@ void XWindow::destroy()
 
 	if( res != 1 )
 	{
-		xwmfs_throw( X11Exception(display, res) );
+		throw X11Exception{display, res};
 	}
 }
 
@@ -262,9 +262,7 @@ Window XWindow::createChild()
 
 	if( new_win == 0 )
 	{
-		xwmfs_throw(
-			xwmfs::Exception("Failed to create pseudo child window")
-		);
+		throw xwmfs::Exception{"Failed to create pseudo child window"};
 	}
 
 	display.flush();
@@ -289,9 +287,7 @@ void XWindow::convertSelection(
 		CurrentTime
 	) != 1 )
 	{
-		xwmfs_throw(
-			xwmfs::Exception("Failed to request selecton conversion")
-		);
+		throw xwmfs::Exception{"Failed to request selecton conversion"};
 	}
 
 	display.flush();
@@ -328,7 +324,7 @@ void XWindow::sendRequest(
 
 	if( len > sizeof(event.xclient.data) )
 	{
-		xwmfs_throw( Exception("XEvent data exceeds maximum") );
+		throw Exception{"XEvent data exceeds maximum"};
 	}
 
 	event.xclient.type = ClientMessage;
@@ -356,7 +352,7 @@ void XWindow::sendEvent(const XEvent &event)
 
 	if( s == BadValue || s == BadWindow )
 	{
-		xwmfs_throw(X11Exception(display, s));
+		throw X11Exception{display, s};
 	}
 
 	// make sure the event gets sent out
@@ -374,7 +370,7 @@ void XWindow::selectEvent(const long new_event) const
 	// stupid return codes again
 	if( res == 0 )
 	{
-		xwmfs_throw(Exception("XSelectInput failed"));
+		throw Exception{"XSelectInput failed"};
 	}
 }
 
@@ -433,7 +429,7 @@ void XWindow::getPropertyInfo(const XAtom &property, PropertyInfo &info)
 
 	if( res != Success )
 	{
-		xwmfs_throw(X11Exception(XDisplay::getInstance(), res));
+		throw X11Exception{XDisplay::getInstance(), res};
 	}
 
 	if( actual_format != 0 )
@@ -499,22 +495,22 @@ void XWindow::getProperty(
 	// use data as a c-string without copying it.
 	if ( res != Success )
 	{
-		xwmfs_throw(PropertyQueryError(XDisplay::getInstance(), res));
+		throw PropertyQueryError{XDisplay::getInstance(), res};
 	}
 
 	try
 	{
 		if( actual_type == None )
 		{
-			xwmfs_throw(PropertyNotExisting());
+			throw PropertyNotExisting{};
 		}
 		else if( x_type != actual_type )
 		{
-			xwmfs_throw(PropertyTypeMismatch(x_type, actual_type));
+			throw PropertyTypeMismatch{x_type, actual_type};
 		}
 		else if( remaining_bytes != 0 )
 		{
-			xwmfs_throw(Exception("Bytes remaining during property read"));
+			throw Exception{"Bytes remaining during property read"};
 		}
 
 		assert( actual_format == THIS_PROP::Traits::format );
@@ -580,7 +576,7 @@ void XWindow::delProperty(const Atom name_atom)
 
 	if( status == 0 )
 	{
-		xwmfs_throw(X11Exception(display, status));
+		throw X11Exception{display, status};
 	}
 
 	// see setProperty()
@@ -595,7 +591,7 @@ void XWindow::getAttrs(XWindowAttrs &attrs)
 	// stupid error codes again. A non-zero status on success?
 	if( status == 0 )
 	{
-		xwmfs_throw(X11Exception(display, status));
+		throw X11Exception{display, status};
 	}
 }
 
@@ -608,7 +604,7 @@ void XWindow::moveResize(const XWindowAttrs &attrs)
 
 	if( status == 0 )
 	{
-		xwmfs_throw(X11Exception(display, status));
+		throw X11Exception{display, status};
 	}
 }
 
@@ -628,7 +624,7 @@ void XWindow::updateFamily()
 
 	if( res != 1 )
 	{
-		xwmfs_throw(X11Exception(display, res));
+		throw X11Exception{display, res};
 	}
 
 	m_parent = parent;

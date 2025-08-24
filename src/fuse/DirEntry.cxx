@@ -3,7 +3,6 @@
 #include <sstream>
 
 // xwmfs
-#include "common/Exception.hxx"
 #include "fuse/DirEntry.hxx"
 
 namespace xwmfs {
@@ -20,7 +19,7 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time) {
 	auto insert_res = m_objs.insert(std::make_pair(e->name().c_str(), e));
 
 	if (!insert_res.second) {
-		xwmfs_throw(DoubleAddError(e->name()));
+		throw DoubleAddError{e->name()};
 	}
 
 	// we inherit our own time info to the new entry, if none has been
@@ -41,7 +40,7 @@ void DirEntry::removeEntry(const char* s) {
 	if(it == m_objs.end()) {
 		std::stringstream ss;
 		ss << "removeEntry: No such entry \"" << s << "\"";
-		xwmfs_throw(Exception(ss.str()));
+		throw Exception{ss.str()};
 	}
 
 	auto entry = it->second;

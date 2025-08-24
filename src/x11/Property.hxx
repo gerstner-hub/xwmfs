@@ -3,6 +3,7 @@
 
 // xwmfs
 #include "x11/PropertyTraits.hxx"
+#include "main/Exception.hxx"
 
 namespace xwmfs
 {
@@ -62,7 +63,7 @@ public: // functions
 	{
 		if( !m_data )
 		{
-			xwmfs_throw(Exception("No valid property stored"));
+			throw Exception{"No valid property stored"};
 		}
 
 		return m_native;
@@ -110,7 +111,7 @@ protected: // functions
 
 		if( Traits::fixed_size && size > Traits::fixed_size)
 		{
-			xwmfs_throw(Exception("size is larger than fixed_size"));
+			throw Exception{"size is larger than fixed_size"};
 		}
 
 		m_data_is_from_x = true;

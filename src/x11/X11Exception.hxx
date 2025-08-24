@@ -6,7 +6,8 @@
 // main xlib header, provides Display declaration
 #include "X11/Xlib.h"
 
-#include "common/Exception.hxx"
+// xwmfs
+#include "main/Exception.hxx"
 
 namespace xwmfs
 {
@@ -19,19 +20,23 @@ namespace xwmfs
  * 	description is produced within the class.
  **/
 class X11Exception :
-	public Exception
-{
+	public Exception {
 public: // functions
-	X11Exception(Display *dis, const int errcode) :
-		Exception("X11 operation failed: \"")
-	{
-		char errtext[128];
-		(void)XGetErrorText(dis, errcode, errtext, 128);
-		m_error += errtext;
-		m_error += '"';
+	X11Exception(Display *dis, const int errcode,
+			const cosmos::SourceLocation &src_loc = cosmos::SourceLocation::current()) :
+		Exception{"X11 operation failed: \"", src_loc},
+		m_dis{dis}, m_errcode{errcode} {
 	}
 
-	XWMFS_EXCEPTION_IMPL;
+	void generateMsg() const override {
+		char errtext[128];
+		(void)XGetErrorText(m_dis, m_errcode, errtext, sizeof(errtext));
+		m_msg += errtext;
+		m_msg += '"';
+	}
+protected:
+	Display *m_dis;
+	int m_errcode;
 };
 
 } // end ns

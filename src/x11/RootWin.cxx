@@ -105,10 +105,7 @@ void RootWin::queryWMWindow()
 		}
 		else
 		{
-			xwmfs_throw(QueryError(
-				"Couldn't reassure EWMH compatible WM running:"\
-				"IDs of child window and root window don't match"
-			));
+			throw QueryError{"Couldn't reassure EWMH compatible WM running: IDs of child window and root window don't match"};
 		}
 	}
 	catch( const xwmfs::Exception &ex )
@@ -452,7 +449,7 @@ void RootWin::setWM_ActiveDesktop(const int &num)
 {
 	if( ! hasWM_ActiveDesktop() )
 	{
-		xwmfs_throw(NotImplemented());
+		throw NotImplemented{};
 	}
 
 	this->sendRequest(m_std_props.atom_ewmh_wm_cur_desktop, num);
@@ -462,7 +459,7 @@ void RootWin::setWM_ActiveWindow(const XWindow &win)
 {
 	if( ! hasWM_ActiveWindow() )
 	{
-		xwmfs_throw(NotImplemented());
+		throw NotImplemented{};
 	}
 
 	long data[3];
@@ -493,7 +490,7 @@ void RootWin::setWM_NumDesktops(const int &num)
 {
 	if( ! hasWM_NumDesktops() )
 	{
-		xwmfs_throw(NotImplemented());
+		throw NotImplemented{};
 	}
 
 	this->sendRequest(m_std_props.atom_ewmh_wm_nr_desktops, num);

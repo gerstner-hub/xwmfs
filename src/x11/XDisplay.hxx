@@ -11,6 +11,7 @@
 
 // xwmfs
 #include "x11/X11Exception.hxx"
+#include "main/Exception.hxx"
 
 namespace xwmfs
 {
@@ -39,19 +40,15 @@ public: // types
 	public: // functions
 
 		AtomMappingError(Display *dis, const int errcode, const std::string &s);
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 	//! Specialized Exception for errors regarding opening the Display
 	class DisplayOpenError :
-		public xwmfs::Exception
+		public Exception
 	{
 	public: // functions
 
 		DisplayOpenError();
-
-		XWMFS_EXCEPTION_IMPL;
 	};
 
 public: // functions
@@ -79,7 +76,7 @@ public: // functions
 
 		if( ret == BadAlloc || ret == BadValue || ret == None )
 		{
-			xwmfs_throw(AtomMappingError(m_dis, ret, name));
+			throw AtomMappingError{m_dis, static_cast<int>(ret), name};
 		}
 
 		return ret;
@@ -109,7 +106,7 @@ public: // functions
 	{
 		if( XFlush( m_dis ) == 0 )
 		{
-			xwmfs_throw( Exception("XFlush failed") );
+			throw Exception{"XFlush failed"};
 		}
 	}
 
@@ -128,7 +125,7 @@ public: // functions
 	{
 		if( XSync( m_dis, False ) == 0 )
 		{
-			xwmfs_throw( Exception("XSync failed") );
+			throw Exception{"XSync failed"};
 		}
 	}
 

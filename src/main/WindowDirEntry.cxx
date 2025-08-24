@@ -4,6 +4,7 @@
 
 // xwmfs
 #include "fuse/EventFile.hxx"
+#include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
@@ -108,7 +109,7 @@ void WindowDirEntry::addSpecEntry(const UpdateableDir<WindowDirEntry>::EntrySpec
 
 	try {
 		(this->*(spec.member_func))(*entry);
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const Exception &ex) {
 		// this can happen legally. It is a race condition. We've been
 		// so fast to register the window but it hasn't got a name or
 		// whatever property yet.

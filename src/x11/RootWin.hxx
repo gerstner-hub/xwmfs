@@ -5,6 +5,7 @@
 #include <vector>
 
 // xwmfs
+#include "main/Exception.hxx"
 #include "x11/XDisplay.hxx"
 #include "x11/XWindow.hxx"
 #include "x11/utf8_string.hxx"
@@ -29,13 +30,11 @@ public: // types
 
 	//! specialized exception for root window query errors
 	class QueryError :
-		public xwmfs::Exception
+		public Exception
 	{
 	public: // functions
 
-		QueryError(const std::string &s) : Exception(s) { }
-
-		XWMFS_EXCEPTION_IMPL;
+		QueryError(const std::string &s) : Exception{s} { }
 	};
 
 	/**

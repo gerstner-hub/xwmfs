@@ -20,19 +20,23 @@
 // FUSE
 #include <fuse.h>
 
+// cosmos
+#include <cosmos/error/ApiError.hxx>
+#include <cosmos/formatting.hxx>
+
 // xwmfs
-#include "common/SystemException.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "main/DesktopsRootDir.hxx"
+#include "main/Exception.hxx"
+#include "main/logger.hxx"
 #include "main/Options.hxx"
 #include "main/SelectionDirEntry.hxx"
-#include "main/WinManagerDirEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/WindowsRootDir.hxx"
+#include "main/WinManagerDirEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "main/logger.hxx"
 #include "x11/XAtom.hxx"
 
 namespace xwmfs {
@@ -161,9 +165,7 @@ void Xwmfs::early_init() {
 	// be careful that this must be the first Xlib call in the
 	// process otherwise it won't work!
 	if (!::XInitThreads()) {
-		xwmfs_throw(
-			xwmfs::Exception("Error initialiizing X11 threads")
-		);
+		throw Exception{"Error initialiizing X11 threads"};
 	}
 
 	PropertyTraits<utf8_string>::init();
@@ -221,12 +223,7 @@ int Xwmfs::init() {
 
 			setupAbortSignals(true);
 		} catch (const xwmfs::RootWin::QueryError &ex) {
-			xwmfs::Exception main_error(
-				"Error querying window manager properties."
-			);
-
-			main_error.addError(ex);
-			xwmfs_throw(main_error);
+			throw Exception{cosmos::sprintf("Error querying window manager properties: %s", ex.what())};
 		}
 	} catch (const xwmfs::Exception &ex) {
 		res = EXIT_FAILURE;
@@ -255,13 +252,13 @@ Xwmfs::Xwmfs() :
 	// this is a pipe that allows us to wake up the event handling thread
 	// in case of shutdown
 	if (::pipe2(m_wakeup_pipe, O_CLOEXEC) != 0) {
-		xwmfs_throw(SystemException("Unable to create wakeup pipe"));
+		throw cosmos::ApiError{"Unable to create wakeup pipe"};
 	}
 
 	// this is a pipe that allows to pass thread IDs to abort blocking
 	// calls for to the event handling thread
 	if (::pipe2(m_abort_pipe, O_CLOEXEC) != 0) {
-		xwmfs_throw(SystemException("Unable to create abort pipe"));
+		throw cosmos::ApiError{"Unable to create abort pipe"};
 	}
 }
 
@@ -499,7 +496,7 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
 	try {
 		logger->debug() << w.getName() << std::endl;
 	} catch (const xwmfs::Exception &ex) {
-		logger->debug() << "error getting win name: " << ex << std::endl;
+		logger->debug() << "error getting win name: " << ex.what() << std::endl;
 	}
 
 	try {
@@ -509,7 +506,7 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
 		m_wm_dir->windowLifecycleEvent(w, true);
 		m_desktop_dir->handleWindowCreated(w);
 	} catch (const xwmfs::Exception &ex) {
-		logger->debug() << "\terror adding window: " << ex << std::endl;
+		logger->debug() << "\terror adding window: " << ex.what() << std::endl;
 	}
 
 	return true;
@@ -641,7 +638,7 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 
 	for (const auto sig: sigs) {
 		if (sigaction(sig, on_off ? &act : &m_signal_handlers[sig], &orig) != 0 ) {
-			xwmfs_throw(xwmfs::Exception("Failed to change abort sighandler"));
+			throw Exception{"Failed to change abort sighandler"};
 		}
 
 		if (on_off) {

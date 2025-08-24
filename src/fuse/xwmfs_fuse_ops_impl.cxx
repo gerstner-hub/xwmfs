@@ -9,12 +9,12 @@
 // C/C++
 #include <assert.h>
 #include <errno.h>
+#include <exception>
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
 
 // xwmfs
-#include "common/Exception.hxx"
 #include "fuse/Entry.hxx"
 #include "fuse/FileEntry.hxx"
 #include "fuse/OpenContext.hxx"
@@ -206,7 +206,7 @@ int xwmfs_read(const char *path, char *buf, size_t size,
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->read(context, buf, size, offset);
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to read from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
@@ -223,7 +223,7 @@ int xwmfs_readlink(const char *path, char *buf, size_t size) {
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->readlink(buf, size);
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to readlink from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
@@ -243,7 +243,7 @@ int xwmfs_write(const char *path, const char *buf, size_t size,
 		auto res = entry->isOperationAllowed();
 
 		return res ? res : entry->write(context, buf, size, offset);
-	} catch(const xwmfs::Exception &ex) {
+	} catch(const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to write to " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
@@ -313,7 +313,7 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 		}
 
 		xwmfs::filesystem = &xwmfs.getFS();
-	} catch (xwmfs::Exception &e) {
+	} catch (const std::exception &e) {
 		xwmfs::logger->error()
 			<< "Error setting up XWMFS. Exception caught: "
 			<< e.what() << "\n";
