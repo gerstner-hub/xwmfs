@@ -108,9 +108,7 @@ void Xwmfs::createSelectionWindow() {
 }
 
 void Xwmfs::exit() {
-	if (m_ev_thread.getState() == xwmfs::Thread::RUN) {
-		m_ev_thread.requestExit();
-
+	if (m_running.exchange(false)) {
 		const int dummy_data = 1;
 		// we need to wakeup the thread to signal it that stuff is
 		// over now
@@ -216,7 +214,9 @@ int Xwmfs::init() {
 
 			createSelectionWindow();
 
-			m_ev_thread.start();
+			m_ev_thread = std::move(cosmos::PosixThread{
+				{std::bind(&Xwmfs::eventThread, this)},
+				"event thread"});
 
 			setupAbortSignals(true);
 		} catch (const xwmfs::RootWin::QueryError &ex) {
@@ -242,8 +242,9 @@ int Xwmfs::init() {
 }
 
 Xwmfs::Xwmfs() :
-		m_ev_thread{*this, "x11_event_thread"},
+		m_ev_thread{},
 		m_opts{xwmfs::Options::getInstance()} {
+	m_running.store(true);
 	m_display = XDisplay::getInstance();
 	// to get X events in a blocking way but still be able to react to
 	// e.  g. a shutdown request we need to get the lower level file
@@ -278,13 +279,13 @@ Xwmfs::~Xwmfs() {
 	::close(m_abort_pipe[1]);
 }
 
-void Xwmfs::threadEntry(const xwmfs::Thread &t) {
+void Xwmfs::eventThread() {
 	const std::vector<int> fds(
 		{ m_dis_fd, m_wakeup_pipe[0], m_abort_pipe[0] }
 	);
 	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
 
-	while (t.getState() == xwmfs::Thread::RUN) {
+	while (m_running.load()) {
 		FD_ZERO(&m_select_set);
 		for (int fd: fds) {
 			FD_SET(fd, &m_select_set);

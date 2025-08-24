@@ -5,11 +5,14 @@
 #include <sys/select.h>
 
 // C++
+#include <atomic>
 #include <map>
 #include <set>
 
+// cosmos
+#include <cosmos/thread/PosixThread.hxx>
+
 // Xwmfs
-#include "common/Thread.hxx"
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
 #include "main/logger.hxx"
@@ -40,8 +43,7 @@ class WinManagerDirEntry;
  * 	file system structure whenever relevant window manager information
  * 	changes.
  **/
-class Xwmfs :
-		protected IThreadEntry {
+class Xwmfs {
 public: // functions
 
 	/**
@@ -207,7 +209,7 @@ protected: // functions
 	static int XIOErrorHandler(Display *disp);
 
 	//! working loop for the event handling thread
-	void threadEntry(const Thread &t) override;
+	void eventThread();
 
 	/**
 	 * \brief
@@ -286,7 +288,9 @@ private: // data
 	xwmfs::RootEntry m_fs_root;
 
 	//! Thread evaluating X11 events and updating m_wmi, m_fs_root
-	xwmfs::Thread m_ev_thread;
+	cosmos::PosixThread m_ev_thread;
+	//! flag for m_ev_thread
+	std::atomic_bool m_running;
 
 	//! options for the current instance
 	xwmfs::Options &m_opts;
