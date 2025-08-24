@@ -9,6 +9,9 @@
 #include <cosmos/cosmos.hxx>
 #include <cosmos/io/StdLogger.hxx>
 
+// xpp
+#include <xpp/Xpp.hxx>
+
 // xwmfs
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Exception.hxx"
@@ -91,7 +94,8 @@ void printXWMFSHelp() {
 
 int main(int argc, char *argv[]) {
 	try {
-		cosmos::Init init;
+		cosmos::Init cosmos_init;
+		xpp::Init xpp_init;
 		auto logger = cosmos::StdLogger{};
 		xwmfs::set_logger(logger);
 

@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-noinst_LTLIBRARIES = libcosmos.la
+noinst_LTLIBRARIES = libcosmos.la libxpp.la
 libcosmos_la_SOURCES = libcosmos/include/string.hxx libcosmos/include/cosmos.hxx libcosmos/include/types.hxx \
 	libcosmos/include/net/SocketError.hxx libcosmos/include/net/InterfaceEnumerator.hxx libcosmos/include/net/InterfaceIterator.hxx \
 	libcosmos/include/net/Socket.hxx libcosmos/include/net/UnixConnection.hxx libcosmos/include/net/InterfaceAddress.hxx \
@@ -56,6 +56,25 @@ libcosmos_la_SOURCES = libcosmos/include/string.hxx libcosmos/include/cosmos.hxx
 	libcosmos/src/error/CosmosError.cxx libcosmos/src/error/FileError.cxx libcosmos/src/error/ResolveError.cxx \
 	libcosmos/src/error/strerror.cxx libcosmos/src/formatting.cxx
 
+libxpp_la_SOURCES = libxpp/include/helpers.hxx libxpp/include/Xpp.hxx libxpp/include/Event.hxx \
+	libxpp/include/types.hxx libxpp/include/Pixmap.hxx libxpp/include/SetWindowAttributes.hxx \
+	libxpp/include/Property.hxx libxpp/include/XColor.hxx libxpp/include/RootWin.hxx \
+	libxpp/include/XCursor.hxx libxpp/include/CachedAtom.hxx libxpp/include/PropertyTraits.hxx \
+	libxpp/include/X11Exception.hxx libxpp/include/event/ClientMessageEvent.hxx libxpp/include/event/PointerMovedEvent.hxx \
+	libxpp/include/event/InputEvent.hxx libxpp/include/event/ButtonEvent.hxx libxpp/include/event/KeyEvent.hxx \
+	libxpp/include/event/VisibilityEvent.hxx libxpp/include/event/ConfigureEvent.hxx libxpp/include/event/FocusChangeEvent.hxx \
+	libxpp/include/event/PropertyEvent.hxx libxpp/include/event/SelectionRequestEvent.hxx libxpp/include/event/SelectionEvent.hxx \
+	libxpp/include/WindowManagerHints.hxx libxpp/include/utils.hxx libxpp/include/SizeHints.hxx \
+	libxpp/include/utf8_string.hxx libxpp/include/dso_export.h libxpp/include/AtomMapper.hxx \
+	libxpp/include/XWindow.hxx libxpp/include/GraphicsContext.hxx libxpp/include/XDisplay.hxx \
+	libxpp/include/formatting.hxx libxpp/include/ClassHints.hxx libxpp/include/XWindowAttrs.hxx \
+	libxpp/include/keyboard.hxx libxpp/include/fwd.hxx libxpp/include/atoms.hxx \
+	libxpp/src/GraphicsContext.cxx libxpp/src/XWindow.cxx libxpp/src/Pixmap.cxx \
+	libxpp/src/XWindowAttrs.cxx libxpp/src/Event.cxx libxpp/src/Xpp.cxx \
+	libxpp/src/PropertyTraits.cxx libxpp/src/helpers.cxx libxpp/src/XCursor.cxx \
+	libxpp/src/keyboard.cxx libxpp/src/CachedAtom.cxx libxpp/src/RootWin.cxx \
+	libxpp/src/XDisplay.cxx libxpp/src/AtomMapper.cxx libxpp/src/formatting.cxx
+
 bin_PROGRAMS = xwmfs
 xwmfs_SOURCES = \
 		fuse/xwmfs_fuse_ops.c fuse/xwmfs_fuse_ops_impl.cxx fuse/Entry.cxx \
@@ -81,10 +100,10 @@ xwmfs_SOURCES += \
 		x11/RootWin.hxx x11/X11Exception.hxx x11/XAtom.hxx x11/XDisplay.hxx x11/XWindow.hxx \
 		x11/XWindowAttrs.hxx x11/Property.hxx x11/PropertyTraits.hxx x11/utf8_string.hxx
 # we need x11 and fuse
-xwmfs_DEPENDENCIES = x11 fuse libcosmos.la
-AM_CFLAGS = -I${top_srcdir}/src/libcosmos/include
+xwmfs_DEPENDENCIES = x11 fuse libcosmos.la libxpp.la
+
 if DEV
-AM_CFLAGS += -Wall -Werror -Wextra -Wnull-dereference -Wdouble-promotion -Wshadow -Wformat=2
+AM_CFLAGS = -Wall -Werror -Wextra -Wnull-dereference -Wdouble-promotion -Wshadow -Wformat=2
 
 # add some more advanced warnings for gcc
 if IS_GCC
@@ -92,14 +111,17 @@ AM_CFLAGS += -Wduplicated-cond -Wduplicated-branches -Wlogical-op
 else
 AM_CFLAGS += -Wno-unused-parameter
 endif # IS_GCC
+else
+AM_CFLAGS =
 endif # DEV
 
 AM_CXXFLAGS = ${AM_CFLAGS} -std=c++20
-libcosmos_la_CXXFLAGS = ${AM_CXXFLAGS} -I${top_srcdir}/src/libcosmos/src
+libcosmos_la_CXXFLAGS = ${AM_CXXFLAGS} -I${top_srcdir}/src/libcosmos/src -I${top_srcdir}/src/libcosmos/include
+libxpp_la_CXXFLAGS = ${libcosmos_la_CXXFLAGS} -I${top_srcdir}/src/libxpp/include -I${top_srcdir}/src/libxpp/src
 # makes it possible to include headers from fuse or x11, to select a recent fuse API version
 xwmfs_CFLAGS = ${AM_CFLAGS} -DFUSE_USE_VERSION=35 @fuse3_CFLAGS@ @x11_CFLAGS@ -I${top_srcdir}/src
-xwmfs_CXXFLAGS = ${xwmfs_CFLAGS} -std=c++20
+xwmfs_CXXFLAGS = ${xwmfs_CFLAGS} -I${top_srcdir}/src/libxpp/include -I${top_srcdir}/src/libcosmos/include -std=c++20
 # use this instead of AM_LDFLAGS to have the libraries appear AFTER the object
 # files. Otherwise we get trouble on distros where as-needed linking is
 # enabled
-xwmfs_LDADD = @fuse3_LIBS@ @x11_LIBS@ libcosmos.la
+xwmfs_LDADD = @fuse3_LIBS@ @x11_LIBS@ libcosmos.la libxpp.la

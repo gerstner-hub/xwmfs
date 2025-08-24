@@ -1,3 +1,6 @@
 [submodule "src/libcosmos"]
 	path = src/libcosmos
 	url = https://github.com/gerstner-hub/libcosmos.git
+[submodule "src/libxpp"]
+	path = src/libxpp
+	url = https://github.com/gerstner-hub/libxpp.git
