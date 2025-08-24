@@ -1,12 +1,14 @@
 #ifndef XWMFS_XATOM_HXX
 #define XWMFS_XATOM_HXX
 
+// C++
 #include <map>
 #include <string>
 #include <stdint.h>
 #include <iosfwd>
 
-#include "common/RWLock.hxx"
+// cosmos
+#include <cosmos/thread/RWLock.hxx>
 
 #include "x11/XDisplay.hxx"
 #include "x11/X11Exception.hxx"
@@ -149,7 +151,7 @@ protected: // data
 	//! contains the actual mappings
 	mutable AtomMapping m_mappings;
 	//! synchronizes parallel read and update of \c m_mappings
-	RWLock m_mappings_lock;
+	cosmos::RWLock m_mappings_lock;
 };
 
 /**

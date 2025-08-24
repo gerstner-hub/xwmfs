@@ -65,7 +65,7 @@ StandardProps::StandardProps()
 XAtom XAtomMapper::getAtom(const std::string &s)
 {
 	{
-		ReadLockGuard g(m_mappings_lock);
+		cosmos::ReadLockGuard g(m_mappings_lock);
 
 		AtomMapping::iterator it = m_mappings.find(s);
 
@@ -81,7 +81,7 @@ XAtom XAtomMapper::getAtom(const std::string &s)
 const std::string& XAtomMapper::getName(const XAtom &atom) const
 {
 	{
-		ReadLockGuard g(m_mappings_lock);
+		cosmos::ReadLockGuard g(m_mappings_lock);
 
 		for( const auto &pair: m_mappings )
 		{
@@ -100,7 +100,7 @@ const std::string& XAtomMapper::cacheMiss(const XAtom &atom) const
 	const auto name = XDisplay::getInstance().getName(atom);
 
 	{
-		WriteLockGuard g(m_mappings_lock);
+		cosmos::WriteLockGuard g(m_mappings_lock);
 		auto ret = m_mappings.insert( std::make_pair( name, atom ) );
 
 		return (ret.first)->first;
@@ -115,7 +115,7 @@ XAtom XAtomMapper::cacheMiss(const std::string &s)
 		<< s << "' is " << std::dec << ret.get() << std::endl;
 
 	{
-		WriteLockGuard g(m_mappings_lock);
+		cosmos::WriteLockGuard g(m_mappings_lock);
 		m_mappings.insert( std::make_pair( s, (Atom)ret ) );
 	}
 

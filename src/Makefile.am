@@ -72,7 +72,7 @@ xwmfs_SOURCES = \
 		x11/XDisplay.cxx x11/RootWin.cxx
 xwmfs_SOURCES += \
 		common/Condition.hxx common/Exception.hxx \
-		common/Mutex.hxx common/RWLock.hxx common/SystemException.hxx \
+		common/Mutex.hxx common/SystemException.hxx \
 		fuse/xwmfs_fuse_ops.h fuse/AbortHandler.hxx fuse/DirEntry.hxx fuse/Entry.hxx \
 		fuse/EventFile.hxx fuse/FileEntry.hxx fuse/OpenContext.hxx fuse/RootEntry.hxx \
 		fuse/SymlinkEntry.hxx fuse/xwmfs_fuse.hxx \

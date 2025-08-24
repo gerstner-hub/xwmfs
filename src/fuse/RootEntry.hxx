@@ -1,7 +1,9 @@
 #pragma once
 
+// cosmos
+#include <cosmos/thread/RWLock.hxx>
+
 // xwmfs
-#include "common/RWLock.hxx"
 #include "fuse/DirEntry.hxx"
 
 namespace xwmfs {
@@ -81,7 +83,7 @@ public: // functions
 protected: // data
 
 	//! the read-write lock protecting the file system
-	xwmfs::RWLock m_lock;
+	cosmos::RWLock m_lock;
 };
 
 } // end ns
