@@ -2,9 +2,9 @@
 #include <sstream>
 
 // xwmfs
-#include "main/StdLogger.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowsRootDir.hxx"
+#include "main/logger.hxx"
 #include "x11/XWindow.hxx"
 
 namespace xwmfs {
@@ -68,12 +68,10 @@ void WindowsRootDir::addWindow(const XWindow &win,
 
 	auto win_dir = new xwmfs::WindowDirEntry{win, initial ? true : false};
 
-	auto &logger = xwmfs::StdLogger::getInstance();
-
 	try {
 		// the window directories are named after their IDs
 		addEntry(win_dir, false);
-		logger.debug() << "Added window " << win.id() << std::endl;
+		logger->debug() << "Added window " << win.id() << std::endl;
 	} catch (const DirEntry::DoubleAddError &) {
 		/*
 		 * this situation happens sometimes e.g. on i3 window manager.
@@ -89,7 +87,7 @@ void WindowsRootDir::addWindow(const XWindow &win,
 		 * point of view. we try to recover from it and be robust
 		 * about it, by updating the existing entry
 		 */
-		logger.warn() << "double-add of window "
+		logger->warn() << "double-add of window "
 			<< win_dir->name() << ": updating existing entry\n";
 		auto orig_entry = reinterpret_cast<WindowDirEntry*>(
 			getDirEntry(win_dir->name())
@@ -140,8 +138,7 @@ void WindowsRootDir::updateMappedState(const XWindow &win, const bool is_mapped)
 		return missingWindow(win, "Mapping state update");
 	}
 
-	xwmfs::StdLogger::getInstance().info()
-		<< "Mapped state for window " << win
+	logger->info() << "Mapped state for window " << win
 		<< " changed to " << is_mapped << std::endl;
 
 	win_dir->newMappedState(is_mapped);
@@ -155,7 +152,7 @@ void WindowsRootDir::updateParent(const XWindow &win) {
 		return missingWindow(win, "parent update");
 	}
 
-	xwmfs::StdLogger::getInstance().info()
+	logger->info()
 		<< "New parent for " << win
 		<< ": " << XWindow(win.getParent()) << std::endl;
 
@@ -163,9 +160,7 @@ void WindowsRootDir::updateParent(const XWindow &win) {
 }
 
 void WindowsRootDir::missingWindow(const XWindow &win, const std::string &action) {
-	xwmfs::StdLogger::getInstance().warn()
-		<< "Window " << win << " not found in hierarchy for: " << action
-		<< std::endl;
+	logger->warn() << "Window " << win << " not found in hierarchy for: " << action << "\n";
 }
 
 } // end ns

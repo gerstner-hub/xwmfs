@@ -76,8 +76,7 @@ std::string SelectionDirEntry::selectionBufferLabel(const XAtom &atom) const {
 }
 
 void SelectionDirEntry::conversionResult(const XSelectionEvent &ev) {
-	auto &logger = xwmfs::StdLogger::getInstance();
-	logger.info() << "Got conversion result for selection buffer '"
+	logger->info() << "Got conversion result for selection buffer '"
 		<< selectionBufferLabel(XAtom{ev.selection}) << "'\n";
 
 	for (auto &file: m_selection_access_files) {
@@ -114,8 +113,7 @@ void SelectionDirEntry::conversionRequest(const XSelectionRequestEvent &ev) {
 
 void SelectionDirEntry::replyConversionRequest(
 		const XSelectionRequestEvent &req, const bool good) {
-	auto &logger = xwmfs::StdLogger::getInstance();
-	logger.error() << "Failed to convert selection buffer '"
+	logger->error() << "Failed to convert selection buffer '"
 		<< selectionBufferLabel(XAtom{req.selection})
 		<< "' to requested target format "
 		<< req.target << "\n";
@@ -135,8 +133,7 @@ void SelectionDirEntry::replyConversionRequest(
 void SelectionDirEntry::lostOwnership(const XSelectionClearEvent &ev) {
 	// don't know if we should do anything here like clearing the
 	// selection data?
-	auto &logger = xwmfs::StdLogger::getInstance();
-	logger.info() << "Lost ownership of selection buffer '"
+	logger->info() << "Lost ownership of selection buffer '"
 		<< selectionBufferLabel(XAtom{ev.selection}) << "'\n";
 }
 

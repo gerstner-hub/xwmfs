@@ -27,12 +27,12 @@
 #include "main/DesktopsRootDir.hxx"
 #include "main/Options.hxx"
 #include "main/SelectionDirEntry.hxx"
-#include "main/StdLogger.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/WindowsRootDir.hxx"
 #include "main/Xwmfs.hxx"
+#include "main/logger.hxx"
 #include "x11/XAtom.hxx"
 
 namespace xwmfs {
@@ -105,8 +105,7 @@ void Xwmfs::createSelectionWindow() {
 
 	m_selection_window.setName("xwmfs selection buffer window");
 
-	xwmfs::StdLogger::getInstance().info()
-		<< "Created selection window " << m_selection_window << "\n";
+	xwmfs::logger->info() << "Created selection window " << m_selection_window << "\n";
 }
 
 void Xwmfs::exit() {
@@ -136,8 +135,7 @@ int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
 
 	XGetErrorText(disp, error->error_code, &err_msg[0], sizeof(err_msg));
 
-	StdLogger::getInstance().warn()
-		<< "An async X error occured: \"" << err_msg << "\"" << std::endl;
+	logger->warn() << "An async X error occured: \"" << err_msg << "\"" << std::endl;
 
 	return 0;
 }
@@ -145,8 +143,7 @@ int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
 int Xwmfs::XIOErrorHandler(Display *disp) {
 	(void)disp;
 
-	StdLogger::getInstance().error()
-		<< "A fatal async X error occured. Exiting." << std::endl;
+	logger->error() << "A fatal async X error occured. Exiting." << std::endl;
 
 	// call the internal exit explicitly, the normal exit would cause
 	// follow up errors through destruction of static objects in
@@ -187,8 +184,7 @@ int Xwmfs::init() {
 			if (m_opts.xsync()) {
 				::XSynchronize(XDisplay::getInstance(), true);
 
-				xwmfs::StdLogger::getInstance().info()
-					<< "Operating in Xlib synchronous mode\n";
+				logger->info() << "Operating in Xlib synchronous mode\n";
 			}
 
 			// this gets us information about newly created
@@ -234,17 +230,13 @@ int Xwmfs::init() {
 		}
 	} catch (const xwmfs::Exception &ex) {
 		res = EXIT_FAILURE;
-		xwmfs::StdLogger::getInstance().error()
-			<< "Error in FS operation: " << ex.what() << "\n";
+		logger->error() << "Error in FS operation: " << ex.what() << "\n";
 	} catch (const std::exception &ex) {
 		res = EXIT_FAILURE;
-		xwmfs::StdLogger::getInstance().error()
-			<< "Error in FS operation: " << ex.what() << "\n";
+		logger->error() << "Error in FS operation: " << ex.what() << "\n";
 	} catch(...) {
 		res = EXIT_FAILURE;
-		xwmfs::StdLogger::getInstance().error()
-			<< "Error in FS operation: Unknown exception caught."
-			" Terminating.\n";
+		logger->error() << "Error in FS operation: Unknown exception caught. Terminating.\n";
 	}
 
 	return res;
@@ -288,8 +280,6 @@ Xwmfs::~Xwmfs() {
 }
 
 void Xwmfs::threadEntry(const xwmfs::Thread &t) {
-	auto &logger = xwmfs::StdLogger::getInstance();
-
 	const std::vector<int> fds(
 		{ m_dis_fd, m_wakeup_pipe[0], m_abort_pipe[0] }
 	);
@@ -314,9 +304,7 @@ void Xwmfs::threadEntry(const xwmfs::Thread &t) {
 
 		// if the pipe is readable then we have to shutdown
 		if (FD_ISSET(m_wakeup_pipe[0], &m_select_set)) {
-			logger.info()
-				<< "Caught cancel request. Shutting down..."
-				<< std::endl;
+			logger->info() << "Caught cancel request. Shutting down...\n";
 			return;
 		} else if (FD_ISSET(m_abort_pipe[0], &m_select_set)) {
 			readAbortPipe();
@@ -352,19 +340,16 @@ void Xwmfs::handlePendingEvents() {
 			MutexReverseGuard rg{m_event_lock};
 			handleEvent(m_ev);
 		} catch (const xwmfs::Exception &ex) {
-			auto &logger = xwmfs::StdLogger::getInstance();
-			logger.error()
-				<< "Failed to handle X11 event of type "
+			logger->error() << "Failed to handle X11 event of type "
 				<< std::dec << m_ev.type << ": " << ex.what();
 		}
 	}
 }
 
 void Xwmfs::handleEvent(const XEvent &ev) {
-	auto &logger = StdLogger::getInstance();
 	auto &std_props = StandardProps::instance();
 #if 0
-	logger.debug() << "Received event #" << ev.xany.serial << " of type "
+	logger->debug() << "Received event #" << ev.xany.serial << " of type "
 		<< std::dec << ev.type << std::endl;
 #endif
 
@@ -389,7 +374,7 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 		break;
 	}
 	case PropertyNotify: {
-		logger.debug()
+		logger->debug()
 			<< "Property (" << XAtom{ev.xproperty.atom} << ")"
 			<< " on window " << ev.xproperty.window << " changed ("
 			<< std::dec << ev.xproperty.state << ")" << std::endl;
@@ -470,7 +455,7 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 		break;
 	}
 	default:
-		logger.debug()
+		logger->debug()
 			<< __FUNCTION__
 			<< ": Some unknown event "
 			<< ev.type << " for window "
@@ -480,18 +465,16 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 }
 
 bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const {
-	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
-
 	// Xlib manual says one should generally ignore these
 	// events as they come from popups
 	if (ev.override_redirect) {
-		debug_log << "Ignoring override_redirect window " << ev.window << std::endl;
+		logger->debug() << "Ignoring override_redirect window " << ev.window << std::endl;
 		return true;
 	} else if (ev.parent != m_root_win.id()) {
 		// this is grand-kid or something. we could add these
 		// in a hierarchical manner as sub-windows but for now
 		// we ignore them
-		debug_log << "Ignoring grand-child-window" << ev.window << std::endl;
+		logger->debug() << "Ignoring grand-child-window" << ev.window << std::endl;
 		return true;
 	}
 
@@ -505,19 +488,17 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
 		}
 	}
 
-	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
-
 	XWindow w{ev.window};
 	w.setParent(ev.parent);
 
-	debug_log << "Window " << w << " was created!" << std::endl;
-	debug_log << "\tParent: " << XWindow(w.getParent()) << std::endl;
-	debug_log << "\twin name = ";
+	logger->debug() << "Window " << w << " was created!" << std::endl;
+	logger->debug() << "\tParent: " << XWindow(w.getParent()) << std::endl;
+	logger->debug() << "\twin name = ";
 
 	try {
-		debug_log << w.getName() << std::endl;
+		logger->debug() << w.getName() << std::endl;
 	} catch (const xwmfs::Exception &ex) {
-		debug_log << "error getting win name: " << ex << std::endl;
+		logger->debug() << "error getting win name: " << ex << std::endl;
 	}
 
 	try {
@@ -527,17 +508,16 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
 		m_wm_dir->windowLifecycleEvent(w, true);
 		m_desktop_dir->handleWindowCreated(w);
 	} catch (const xwmfs::Exception &ex) {
-		debug_log << "\terror adding window: " << ex << std::endl;
+		logger->debug() << "\terror adding window: " << ex << std::endl;
 	}
 
 	return true;
 }
 
 void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev) {
-	auto &debug_log = xwmfs::StdLogger::getInstance().debug();
 	XWindow w{ev.window};
 
-	debug_log << "Window " << w << " was destroyed!" << std::endl;
+	logger->debug() << "Window " << w << " was destroyed!" << std::endl;
 
 	FileSysWriteGuard write_guard{m_fs_root};
 	m_win_dir->removeWindow(w);
@@ -546,16 +526,15 @@ void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev) {
 }
 
 void Xwmfs::handleSelectionEvent(const XEvent &ev) {
-	auto &logger = xwmfs::StdLogger::getInstance();
 	XWindow w{ev.xany.window};
 
 	if (w != m_selection_window) {
-		logger.warn() << "Got selection buffer related event, but it's not for our selection window?"
+		logger->warn() << "Got selection buffer related event, but it's not for our selection window?"
 			<< "\n";
 		return;
 	}
 
-	logger.debug() << "Selection buffer event of type " << ev.type << "\n";
+	logger->debug() << "Selection buffer event of type " << ev.type << "\n";
 
 	if (ev.type == SelectionNotify) {
 		// the conversion data has arrived
@@ -687,17 +666,16 @@ void Xwmfs::abortBlockingCall(const bool all) {
 }
 
 void Xwmfs::abortBlockingCall(pthread_t thread) {
-	auto &logger = xwmfs::StdLogger::getInstance();
 	MutexGuard g{m_blocking_call_lock};
 
 	auto it = m_blocking_calls.find(thread);
 
 	if (it == m_blocking_calls.end()) {
-		logger.error() << "Failed to find abort entry for thread" << std::endl;
+		logger->error() << "Failed to find abort entry for thread" << std::endl;
 		return;
 	}
 
-	logger.info() << "Abort request for some blocking call" << std::endl;
+	logger->info() << "Abort request for some blocking call" << std::endl;
 
 	auto ef = it->second;
 
@@ -729,8 +707,7 @@ void Xwmfs::readAbortPipe() {
 	// read <= PIPE_BUF bytes from the pipe is atomic,
 	// should never even block
 	if (read(m_abort_pipe[0], &msg, sizeof(msg)) != sizeof(msg)) {
-		auto &logger = xwmfs::StdLogger::getInstance();
-		logger.error()
+		logger->error()
 			<< "Failed to read from abort pipe"
 			<< std::endl;
 		return;

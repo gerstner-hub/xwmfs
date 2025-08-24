@@ -12,7 +12,7 @@
 #include "common/Thread.hxx"
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
-#include "main/StdLogger.hxx"
+#include "main/logger.hxx"
 #include "x11/RootWin.hxx"
 
 namespace xwmfs {

@@ -4,10 +4,10 @@
 // xwmfs
 #include "fuse/EventFile.hxx"
 #include "main/DesktopsRootDir.hxx"
-#include "main/StdLogger.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/WinManagerFileEntry.hxx"
 #include "main/Xwmfs.hxx"
+#include "main/logger.hxx"
 #include "x11/RootWin.hxx"
 
 namespace xwmfs {
@@ -68,11 +68,10 @@ void WinManagerDirEntry::addSpecEntry(const UpdateableDir<WinManagerDirEntry>::E
 }
 
 void WinManagerDirEntry::update(const Atom changed_atom) {
-	auto &logger = xwmfs::StdLogger::getInstance();
 	auto it = m_atom_update_map.find(XAtom{changed_atom});
 
 	if (it == m_atom_update_map.end()) {
-		logger.warn()
+		logger->warn()
 			<< "Root window unknown property ("
 			<< XAtom{changed_atom} << ") changed" << std::endl;
 		return;
@@ -82,11 +81,11 @@ void WinManagerDirEntry::update(const Atom changed_atom) {
 	FileEntry *entry = getFileEntry(update_spec.name);
 
 	if (entry) {
-		logger.debug()
+		logger->debug()
 			<< "WinManagerDirEntry::" << __FUNCTION__
 			<< ": update for " << update_spec.name << std::endl;
 	} else {
-		logger.warn()
+		logger->warn()
 			<< "File entry " << update_spec.name
 			<< " not existing?" << std::endl;
 		return;
@@ -100,7 +99,7 @@ void WinManagerDirEntry::update(const Atom changed_atom) {
 		(this->*(update_spec.member_func))(*entry);
 		(*entry) << '\n';
 	} catch (...) {
-		logger.error()
+		logger->error()
 			<< "Error udpating " << update_spec.name << " property"
 			<< std::endl;
 		return;

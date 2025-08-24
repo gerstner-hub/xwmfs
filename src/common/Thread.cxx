@@ -1,7 +1,7 @@
 #include <assert.h>
 
 #include "common/Thread.hxx"
-#include "main/StdLogger.hxx"
+#include "main/logger.hxx"
 
 namespace xwmfs
 {
@@ -72,7 +72,7 @@ void* Thread::posixEntry(void *par)
 		}
 		catch( const xwmfs::Exception &e )
 		{
-			xwmfs::StdLogger::getInstance().error()
+			xwmfs::logger->error()
 				<< "Caught exception in " << __FUNCTION__
 				<< ", thread name = \"" << thread.m_name
 				<< "\".\nException: "
@@ -80,7 +80,7 @@ void* Thread::posixEntry(void *par)
 		}
 		catch( ... )
 		{
-			xwmfs::StdLogger::getInstance().error()
+			xwmfs::logger->error()
 				<< "Caught unknown exception in " << __FUNCTION__
 				<< ", thread name = \"" << thread.m_name << "\".\n";
 		}

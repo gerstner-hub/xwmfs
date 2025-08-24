@@ -1,6 +1,7 @@
-#include "x11/RootWin.hxx"
-#include "main/StdLogger.hxx"
+#include "x11/utf8_string.hxx"
 #include "common/Helper.hxx"
+#include "main/logger.hxx"
+#include "x11/RootWin.hxx"
 
 namespace xwmfs
 {
@@ -15,7 +16,7 @@ RootWin::RootWin() :
 	m_wm_class(),
 	m_windows()
 {
-	xwmfs::StdLogger::getInstance().debug()
+	logger->debug()
 		<< "root window has id: "
 		<< std::hex << std::showbase << this->id() << std::dec
 		<< std::endl;
@@ -37,8 +38,6 @@ void RootWin::getInfo()
 
 void RootWin::queryWMWindow()
 {
-	auto &logger = xwmfs::StdLogger::getInstance();
-
 	/*
 	 *	This part is about checking for the presence of a compatible
 	 *	window manager. Both variants work the same but have different
@@ -77,7 +76,7 @@ void RootWin::queryWMWindow()
 
 		m_ewmh_child = XWindow( child_window_prop.get() );
 
-		logger.debug() << "Child window of EWMH is: "
+		logger->debug() << "Child window of EWMH is: "
 			<< std::hex << std::showbase << m_ewmh_child.id()
 			<< std::dec << "\n";
 
@@ -99,7 +98,7 @@ void RootWin::queryWMWindow()
 
 		if( m_ewmh_child == child2 )
 		{
-			logger.debug() << "EWMH compatible WM is running!\n";
+			logger->debug() << "EWMH compatible WM is running!\n";
 		}
 		else
 		{
@@ -111,7 +110,7 @@ void RootWin::queryWMWindow()
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		logger.error()
+		logger->error()
 			<< "Couldn't query EWMH child window: " << ex.what()
 			<< "\nSorry, can't continue without EWMH compatible"\
 			" WM running\n";
@@ -155,15 +154,14 @@ void RootWin::queryPID()
 
 		m_wm_pid = wm_pid.get();
 
-		xwmfs::StdLogger::getInstance().debug() <<
+		logger->debug() <<
 			"wm_pid acquired: " << m_wm_pid << "\n";
 
 		return;
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query ewmh wm pid: " << ex.what();
+		logger->warn() << "Couldn't query ewmh wm pid: " << ex.what();
 	}
 
 	// maybe there's an alternative property for our specific WM
@@ -197,8 +195,7 @@ void RootWin::queryPID()
 		}
 		catch( const xwmfs::Exception &ex )
 		{
-			xwmfs::StdLogger::getInstance().warn()
-				<< "Couldn't query proprietary wm pid \""
+			logger->warn() << "Couldn't query proprietary wm pid \""
 				<< alt_pid_atom << "\": " << ex.what();
 		}
 	}
@@ -216,15 +213,13 @@ void RootWin::queryBasicWMProperties()
 	{
 		m_wm_name = m_ewmh_child.getName();
 
-		xwmfs::StdLogger::getInstance().debug() <<
-			"wm_name acquired: " << m_wm_name << "\n";
+		logger->debug() << "wm_name acquired: " << m_wm_name << "\n";
 
 		m_wm_type = detectWM(m_wm_name);
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query wm name: " << ex.what();
+		logger->warn() << "Couldn't query wm name: " << ex.what();
 	}
 
 	queryPID();
@@ -238,14 +233,11 @@ void RootWin::queryBasicWMProperties()
 	{
 		m_ewmh_child.getProperty(XA_WM_CLASS, m_wm_class);
 
-		xwmfs::StdLogger::getInstance().debug()
-			<< "wm_class acquired: "
-			<< m_wm_class.get().str << "\n";
+		logger->debug() << "wm_class acquired: " << m_wm_class.get().str << "\n";
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query wm class: " << ex.what();
+		logger->warn() << "Couldn't query wm class: " << ex.what();
 	}
 
 	updateShowingDesktop();
@@ -313,8 +305,6 @@ void RootWin::updateDesktopNames()
 template <typename TYPE>
 void RootWin::updateProperty(const XAtom &atom, TYPE &property)
 {
-	auto &logger = xwmfs::StdLogger::getInstance();
-
 	try
 	{
 		Property<TYPE> tmp;
@@ -323,12 +313,12 @@ void RootWin::updateProperty(const XAtom &atom, TYPE &property)
 
 		property = tmp.get();
 
-		logger.debug() << "Property update acquired for "
+		logger->debug() << "Property update acquired for "
 			<< atom << ": " << property << "\n";
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		logger.warn() << "Couldn't update property " << atom
+		logger->warn() << "Couldn't update property " << atom
 			<< ": " << ex.what()  << std::endl;
 	}
 }
@@ -359,21 +349,18 @@ void RootWin::queryWindows()
 
 		const std::vector<Window> &wins = windows.get();
 
-		xwmfs::StdLogger::getInstance().debug()
-			<< "window list acquired:\n";
+		logger->debug() << "window list acquired:\n";
 
 		for( const auto &win: wins )
 		{
 			m_windows.push_back( xwmfs::XWindow( win ) );
-			xwmfs::StdLogger::getInstance().debug()
-				<< "- " << win << "\n";
+			logger->debug() << "- " << win << "\n";
 		}
 
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query window list: " << ex.what();
+		logger->warn() << "Couldn't query window list: " << ex.what();
 		throw;
 	}
 
@@ -452,8 +439,7 @@ void RootWin::queryTree()
 	}
 	catch( const xwmfs::Exception &ex )
 	{
-		xwmfs::StdLogger::getInstance().warn()
-			<< "Couldn't query window tree: " << ex.what();
+		logger->warn() << "Couldn't query window tree: " << ex.what();
 		throw;
 	}
 

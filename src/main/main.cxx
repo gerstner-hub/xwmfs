@@ -5,13 +5,17 @@
 #include <stdlib.h>
 #include <string>
 
+// cosmos
+#include <cosmos/cosmos.hxx>
+#include <cosmos/io/StdLogger.hxx>
+
 // xwmfs
 #include "common/Exception.hxx"
 #include "common/Helper.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
 #include "main/Options.hxx"
-#include "main/StdLogger.hxx"
 #include "main/Xwmfs.hxx"
+#include "main/logger.hxx"
 
 /**
  * \brief
@@ -54,7 +58,7 @@ bool parseXWMFSOptions(int argc, char **argv, struct fuse_args &fuse_args) {
 						false : true);
 			}
 
-			xwmfs::StdLogger::getInstance().setChannels(
+			xwmfs::logger->setChannels(
 				channels[0], channels[1],
 				channels[2], channels[3]
 			);
@@ -88,7 +92,9 @@ void printXWMFSHelp() {
 
 int main(int argc, char *argv[]) {
 	try {
-		auto &logger = xwmfs::StdLogger::getInstance();
+		cosmos::Init init;
+		auto logger = cosmos::StdLogger{};
+		xwmfs::set_logger(logger);
 
 		if (!::setlocale(LC_ALL, NULL)) {
 			logger.error() << "Couldn't set locale\n";

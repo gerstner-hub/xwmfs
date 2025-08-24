@@ -1,6 +1,6 @@
 // xwmfs
+#include "main/logger.hxx"
 #include "x11/XAtom.hxx"
-#include "main/StdLogger.hxx"
 
 // C++
 #include <cstdlib>
@@ -109,10 +109,9 @@ const std::string& XAtomMapper::cacheMiss(const XAtom &atom) const
 
 XAtom XAtomMapper::cacheMiss(const std::string &s)
 {
-	auto &logger = xwmfs::StdLogger::getInstance();
 	XAtom ret = XAtom( XDisplay::getInstance().getAtom(s) );
 
-	logger.debug() << "Resolved atom id for '"
+	logger->debug() << "Resolved atom id for '"
 		<< s << "' is " << std::dec << ret.get() << std::endl;
 
 	{

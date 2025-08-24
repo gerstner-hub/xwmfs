@@ -43,22 +43,4 @@ inline bool isprefix(const std::string &s, const std::string &prefix)
 
 } // end ns
 
-template <typename T>
-inline std::ostream& operator<<(std::ostream &o, const std::vector<T> &v)
-{
-
-	bool first = true;
-	for( const auto &e: v )
-	{
-		if(first)
-			first = false;
-		else
-			o << " ";
-
-		o << e;
-	}
-
-	return o;
-}
-
 #endif // inc. guard

@@ -1,9 +1,9 @@
 // xwmfs
 #include "common/Helper.hxx"
 #include "fuse/DirEntry.hxx"
-#include "main/StdLogger.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
+#include "main/logger.hxx"
 #include "x11/XWindowAttrs.hxx"
 
 namespace xwmfs {
@@ -134,7 +134,7 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 		auto it = m_write_member_function_map.find(m_name);
 
 		if (it == m_write_member_function_map.end()) {
-			xwmfs::StdLogger::getInstance().error()
+			logger->error()
 				<< __FUNCTION__
 				<< ": Write call for window file entry of unknown type: \""
 				<< this->m_name
@@ -148,7 +148,7 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 
 		(this->*(mem_fn))(data, bytes);
 	} catch (const xwmfs::Exception &e) {
-		xwmfs::StdLogger::getInstance().error()
+		logger->error()
 			<< __FUNCTION__
 			<< ": Error operating on window (node '"
 			<< this->m_name << "'): "

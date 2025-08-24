@@ -318,9 +318,7 @@ void XWindow::sendRequest(
 	const XWindow *window
 )
 {
-	auto &logger = xwmfs::StdLogger::getInstance();
-
-	logger.debug()
+	logger->debug()
 		<< "Sending request to window " << *this << ":"
 		<< "msg = " << message << " with " << len << " bytes of data, window = "
 		<< (window ? window->id() : 0) << std::endl;

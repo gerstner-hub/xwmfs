@@ -4,7 +4,7 @@
 
 // xwmfs
 #include "fuse/EventFile.hxx"
-#include "main/StdLogger.hxx"
+#include "main/logger.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -114,7 +114,7 @@ void WindowDirEntry::addSpecEntry(const UpdateableDir<WindowDirEntry>::EntrySpec
 		// whatever property yet.
 		//
 		// The name will be noticed later on via a property update.
-		xwmfs::StdLogger::getInstance().debug()
+		xwmfs::logger->debug()
 			<< "Couldn't get " << spec.name
 			<< " for window " << m_win.id()
 			<< " right away" << std::endl;
@@ -180,7 +180,7 @@ void WindowDirEntry::update(const EntrySpec &spec) {
 		(this->*(spec.member_func))(*entry);
 		(*entry) << '\n';
 	} catch(...) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Error udpating property '" << spec.name << "'"
 			<< std::endl;
 	}
@@ -345,7 +345,6 @@ void getPropertyValue(
 } // end anon ns
 
 void WindowDirEntry::updateProperties(FileEntry &entry) {
-	auto &logger = xwmfs::StdLogger::getInstance();
 	const auto &mapper = XAtomMapper::getInstance();
 	XWindow::AtomVector atoms;
 	m_win.getPropertyList(atoms);
@@ -359,18 +358,19 @@ void WindowDirEntry::updateProperties(FileEntry &entry) {
 		const auto &name = mapper.getName(atom);
 		const auto &_type = mapper.getName(XAtom{info.type});
 
-		logger.debug()
+		logger->debug()
 			<< "Querying property " << atom << " on window "
 			<< m_win << std::endl;
-		logger.debug()
-			<< "type = " << info.type << ", items = " << info.items << ", format = " << info.format << std::endl;
+		logger->debug()
+			<< "type = " << info.type << ", items = " << info.items
+			<< ", format = " << info.format << std::endl;
 
 		entry << (first ? "" : "\n") << name << "(" << _type << ") = ";
 
 		try {
 			getPropertyValue(m_win, atom, info, entry);
 		} catch (const Exception &ex) {
-			logger.error()
+			logger->error()
 				<< "Error getting property value for "
 				<< m_win << "/" << atom << ": " << ex.what()
 				<< std::endl;
@@ -392,7 +392,7 @@ void WindowDirEntry::queryAttrs() {
 
 		newMappedState(attrs.isMapped());
 	} catch (const xwmfs::Exception &ex) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Error getting window attrs for " << m_win << ": " << ex.what()
 			<< std::endl;
 		setDefaultAttrs();

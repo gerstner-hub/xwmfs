@@ -56,8 +56,7 @@ int SelectionAccessFile::write(
 			m_sel_type,
 			xwmfs.getSelectionWindow().id(),
 			CurrentTime) != 1) {
-		auto &logger = xwmfs::StdLogger::getInstance();
-		logger.error() << "Failed to become selection owner for "
+		logger->error() << "Failed to become selection owner for "
 			<< m_sel_type << "\n";
 		return -EIO;
 	}
@@ -121,13 +120,13 @@ int SelectionAccessFile::updateSelection() {
 
 	if (!m_result_prop.valid()) {
 		// conversion was not possible
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Selection conversion for "
 			<< m_sel_type << " failed.";
 		return -EIO;
 	} else if (m_result_prop != m_target_prop) {
 		// was written to a different property?!
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Selection conversion was sent to "
 			<< m_result_prop << " instead of " <<
 			m_target_prop;
@@ -141,7 +140,7 @@ int SelectionAccessFile::updateSelection() {
 		this->str("");
 		(*this) << selection_data.get().str;
 	} catch (const xwmfs::Exception &ex) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Failed to acquire selection buffer conversion data: "
 			<< ex;
 		return -EIO;

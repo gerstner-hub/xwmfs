@@ -1,6 +1,6 @@
 // xwmfs
+#include "main/logger.hxx"
 #include "main/WinManagerFileEntry.hxx"
-#include "main/StdLogger.hxx"
 #include "main/Xwmfs.hxx"
 #include "x11/RootWin.hxx"
 #include "x11/XWindow.hxx"
@@ -25,14 +25,13 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 		return -EOPNOTSUPP;
 
 	auto &root_win = xwmfs::Xwmfs::getInstance().getRootWin();
-	auto &logger = xwmfs::StdLogger::getInstance();
 
 	try {
 		int the_num = 0;
 		const auto parsed = parseInteger(data, bytes, the_num);
 
 		if (parsed < 0) {
-			logger.warn() << ": Failed to parse integer for write to: "
+			logger->warn() << ": Failed to parse integer for write to: "
 				<< this->m_name << "\n";
 			return parsed;
 		}
@@ -55,7 +54,7 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 			return bytes;
 		}
 
-		logger.warn()
+		logger->warn()
 			<< __FUNCTION__
 			<< ": Write call for win manager file of unknown type: \""
 			<< this->m_name
@@ -64,7 +63,7 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 	} catch (const xwmfs::XWindow::NotImplemented &e) {
 		return -ENOSYS;
 	} catch (const xwmfs::Exception &e) {
-		logger.error()
+		logger->error()
 			<< __FUNCTION__ << ": Error setting window manager property ("
 			<< this->m_name << "): " << e.what() << std::endl;
 		return -EINVAL;

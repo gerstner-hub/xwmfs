@@ -50,13 +50,13 @@ int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
 
 	const xwmfs::Entry *entry = fi ? xwmfs::entry_from_fi(fi) : xwmfs::filesystem->findEntry(path);
 	if (!entry) {
-		xwmfs::StdLogger::getInstance().debug()
+		xwmfs::logger->debug()
 			<< __FUNCTION__ << ": noent for path "
 			<< path << "\n";
 		return -ENOENT;
 	}
 
-	xwmfs::StdLogger::getInstance().debug()
+	xwmfs::logger->debug()
 		<< __FUNCTION__ << ": stat for path "
 		<< path << "\n";
 
@@ -96,13 +96,13 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	xwmfs::DirEntry *dir_entry = xwmfs::Entry::tryCastDirEntry(entry);
 
 	if (!entry) {
-		xwmfs::StdLogger::getInstance().debug()
+		xwmfs::logger->debug()
 			<< __FUNCTION__ << ": no such entity: "
 			<< path << "\n";
 
 		return -ENOENT;
 	} else if (!dir_entry) {
-		xwmfs::StdLogger::getInstance().debug()
+		xwmfs::logger->debug()
 			<< __FUNCTION__ << ": not a dir: "
 			<< path << "\n";
 		return -ENOTDIR;
@@ -149,7 +149,7 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi) {
 
 	if (!entry) {
 		// if entry not there at all
-		xwmfs::StdLogger::getInstance().debug()
+		xwmfs::logger->debug()
 			<< __FUNCTION__ << " didn't find " << path << "\n";
 		return -ENOENT;
 	} else if((fi->flags & 3) != O_RDONLY && !entry->isWritable()) {
@@ -207,7 +207,7 @@ int xwmfs_read(const char *path, char *buf, size_t size,
 
 		return res ? res : entry->read(context, buf, size, offset);
 	} catch (const xwmfs::Exception &ex) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Failed to read from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
@@ -224,7 +224,7 @@ int xwmfs_readlink(const char *path, char *buf, size_t size) {
 
 		return res ? res : entry->readlink(buf, size);
 	} catch (const xwmfs::Exception &ex) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Failed to readlink from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
@@ -244,7 +244,7 @@ int xwmfs_write(const char *path, const char *buf, size_t size,
 
 		return res ? res : entry->write(context, buf, size, offset);
 	} catch(const xwmfs::Exception &ex) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Failed to write to " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
 	}
@@ -314,11 +314,11 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 
 		xwmfs::filesystem = &xwmfs.getFS();
 	} catch (xwmfs::Exception &e) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Error setting up XWMFS. Exception caught: "
 			<< e.what() << "\n";
 	} catch(...) {
-		xwmfs::StdLogger::getInstance().error()
+		xwmfs::logger->error()
 			<< "Error setting up XWMFS."
 			" Unknown exception caught\n";
 	}
