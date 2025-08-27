@@ -1,6 +1,9 @@
 // C++
 #include <sstream>
 
+// libxpp
+#include <xpp/atoms.hxx>
+
 // xwmfs
 #include "fuse/EventFile.hxx"
 #include "main/DesktopsRootDir.hxx"
@@ -8,11 +11,11 @@
 #include "main/WinManagerFileEntry.hxx"
 #include "main/Xwmfs.hxx"
 #include "main/logger.hxx"
-#include "x11/RootWin.hxx"
+#include "x11/WinManagerWindow.hxx"
 
 namespace xwmfs {
 
-WinManagerDirEntry::WinManagerDirEntry(RootWin &root_win) :
+WinManagerDirEntry::WinManagerDirEntry(WinManagerWindow &root_win) :
 		UpdateableDir{"wm", getSpecVector()}, m_root_win{root_win} {
 	addEntries();
 
@@ -22,23 +25,21 @@ WinManagerDirEntry::WinManagerDirEntry(RootWin &root_win) :
 }
 
 WinManagerDirEntry::SpecVector WinManagerDirEntry::getSpecVector() const {
-	auto std_props = StandardProps::instance();
-
 	return SpecVector{ {
 		EntrySpec{"number_of_desktops", &WinManagerDirEntry::updateNumberOfDesktops, true,
-			std_props.atom_ewmh_wm_nr_desktops},
+			xpp::atoms::ewmh_wm_nr_desktops},
 		EntrySpec{"desktop_names", &WinManagerDirEntry::updateDesktopNames, false,
-			std_props.atom_ewmh_wm_desktop_names},
+			xpp::atoms::ewmh_wm_desktop_names},
 		EntrySpec{"active_desktop", &WinManagerDirEntry::updateActiveDesktop, true,
-			std_props.atom_ewmh_wm_cur_desktop},
+			xpp::atoms::ewmh_wm_cur_desktop},
 		EntrySpec{"active_window", &WinManagerDirEntry::updateActiveWindow, true,
-			std_props.atom_ewmh_wm_active_window},
+			xpp::atoms::ewmh_wm_active_window},
 		EntrySpec{"show_desktop_mode", &WinManagerDirEntry::updateShowDesktopMode, false,
-			std_props.atom_ewmh_wm_desktop_shown},
+			xpp::atoms::ewmh_wm_desktop_shown},
 		EntrySpec{"name", &WinManagerDirEntry::updateName, false,
-			std_props.atom_ewmh_window_name},
+			xpp::atoms::ewmh_window_name},
 		EntrySpec{"class", &WinManagerDirEntry::updateClass, false,
-			XAtom{XA_WM_CLASS}}
+			xpp::atoms::icccm_wm_class}
 	} };
 }
 
@@ -67,13 +68,13 @@ void WinManagerDirEntry::addSpecEntry(const UpdateableDir<WinManagerDirEntry>::E
 	this->addEntry(entry);
 }
 
-void WinManagerDirEntry::update(const Atom changed_atom) {
-	auto it = m_atom_update_map.find(XAtom{changed_atom});
+void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
+	auto it = m_atom_update_map.find(changed_atom);
 
 	if (it == m_atom_update_map.end()) {
 		logger->warn()
 			<< "Root window unknown property ("
-			<< XAtom{changed_atom} << ") changed" << std::endl;
+			<< cosmos::to_integral(changed_atom) << ") changed" << std::endl;
 		return;
 	}
 
@@ -110,25 +111,25 @@ void WinManagerDirEntry::update(const Atom changed_atom) {
 	forwardEvent(update_spec);
 }
 
-void WinManagerDirEntry::delProp(const Atom deleted_atom) {
+void WinManagerDirEntry::delProp(const xpp::AtomID deleted_atom) {
 	(void)deleted_atom;
 	// TODO: do something here? is this a common use case?
 }
 
-void WinManagerDirEntry::windowLifecycleEvent(
-		const XWindow &win, const bool created_else_destroyed) {
+void WinManagerDirEntry::windowLifecycleEvent(const xpp::XWindow &win,
+		const bool created_else_destroyed) {
 	std::stringstream ss;
-	ss << (created_else_destroyed ? "created" : "destroyed") << " " << win;
+	ss << (created_else_destroyed ? "created" : "destroyed") << " " << xpp::to_string(win.id());
 	m_events->addEvent(ss.str());
 }
 
 void WinManagerDirEntry::updateNumberOfDesktops(FileEntry &entry) {
-	m_root_win.updateNumberOfDesktops();
-	entry << m_root_win.getWM_NumDesktops();
+	m_root_win.fetchNumDesktops();
+	entry << m_root_win.getNumDesktops();
 }
 
 void WinManagerDirEntry::updateDesktopNames(FileEntry &entry) {
-	m_root_win.updateDesktopNames();
+	m_root_win.fetchDesktopNames();
 
 	bool first = true;
 	size_t pos;
@@ -155,27 +156,29 @@ void WinManagerDirEntry::updateDesktopNames(FileEntry &entry) {
 }
 
 void WinManagerDirEntry::updateActiveDesktop(FileEntry &entry) {
-	m_root_win.updateActiveDesktop();
-	entry << (m_root_win.hasWM_ActiveDesktop() ?
-		m_root_win.getWM_ActiveDesktop() : -1);
+	m_root_win.fetchActiveDesktop();
+	entry << (m_root_win.hasActiveDesktop() ?
+		m_root_win.getActiveDesktop() : -1);
 }
 
 void WinManagerDirEntry::updateActiveWindow(FileEntry &entry) {
-	m_root_win.updateActiveWindow();
-	entry << (m_root_win.hasWM_ActiveWindow() ?
-		m_root_win.getWM_ActiveWindow() : Window(0));
+	m_root_win.fetchActiveWindow();
+	const auto win_id = m_root_win.hasActiveWindow() ?
+		m_root_win.getActiveWindow() :
+		xpp::WinID::INVALID;
+	entry << xpp::to_string(win_id);
 }
 
 void WinManagerDirEntry::updateShowDesktopMode(FileEntry &entry) {
-	entry << (m_root_win.hasWM_ShowDesktopMode() ? m_root_win.getWM_ShowDesktopMode() : -1);
+	entry << (m_root_win.hasShowDesktopMode() ? m_root_win.getShowDesktopMode() : -1);
 }
 
 void WinManagerDirEntry::updateName(FileEntry &entry) {
-	entry << (m_root_win.hasWM_Name() ? m_root_win.getWM_Name() : "N/A");
+	entry << (m_root_win.hasWMName() ? m_root_win.getWMName() : "N/A");
 }
 
 void WinManagerDirEntry::updateClass(FileEntry &entry) {
-	entry << (m_root_win.hasWM_Class() ?  m_root_win.getWM_Class() : "N/A");
+	entry << (m_root_win.hasWMClass() ? m_root_win.getWMClass() : "N/A");
 }
 
 } // end ns

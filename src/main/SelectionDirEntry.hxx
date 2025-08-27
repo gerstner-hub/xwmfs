@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 
+// libxpp
+#include <xpp/fwd.hxx>
+#include <xpp/types.hxx>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
-#include "x11/XAtom.hxx"
 
 namespace xwmfs {
 
@@ -62,7 +65,7 @@ class SelectionDirEntry :
 		public DirEntry {
 public: // types
 
-	using SelectionTypeVector = std::vector<std::pair<XAtom, std::string>>;
+	using SelectionTypeVector = std::vector<std::pair<xpp::AtomID, std::string>>;
 	using SelectionAccessFileVector = std::vector<SelectionAccessFile*>;
 
 public: // functions
@@ -81,25 +84,25 @@ public: // functions
 	 * 	On error, invalid \c type or when there is no selection owner
 	 * 	then None is returned.
 	 **/
-	Window getSelectionOwner(const Atom type) const;
+	xpp::WinID getSelectionOwner(const xpp::AtomID type) const;
 
 	/**
 	 * \brief
 	 * 	A selection buffer request has been answered
 	 **/
-	void conversionResult(const XSelectionEvent &ev);
+	void conversionResult(const xpp::SelectionEvent &ev);
 
 	/**
 	 * \brief
 	 * 	Somebody requests a selection we own
 	 **/
-	void conversionRequest(const XSelectionRequestEvent &ev);
+	void conversionRequest(const xpp::SelectionRequestEvent &ev);
 
 	/**
 	 * \brief
 	 * 	Ownership of a selection was los
 	 **/
-	void lostOwnership(const XSelectionClearEvent &ev);
+	void lostOwnership(const xpp::SelectionClearEvent &ev);
 
 protected: // functions
 
@@ -117,10 +120,10 @@ protected: // functions
 	 **/
 	void createSelectionAccessFiles();
 
-	void replyConversionRequest(const XSelectionRequestEvent &ev, const bool good);
+	void replyConversionRequest(const xpp::SelectionRequestEvent &ev, const bool good);
 
 	//! returns the label for the selection buffer identified by \c atom
-	std::string selectionBufferLabel(const XAtom &atom) const;
+	std::string selectionBufferLabel(const xpp::AtomID atom) const;
 
 protected: // data
 

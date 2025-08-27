@@ -1,20 +1,23 @@
+// libxpp
+#include <xpp/RootWin.hxx>
+#include <xpp/XWindow.hxx>
+
 // xwmfs
+#include "x11/WinManagerWindow.hxx"
 #include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WinManagerFileEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "x11/RootWin.hxx"
-#include "x11/XWindow.hxx"
 
 namespace xwmfs {
 
 const WinManagerFileEntry::SetIntFunctionMap WinManagerFileEntry::m_set_int_function_map = {
-	{ "active_desktop", &RootWin::setWM_ActiveDesktop },
-	{ "number_of_desktops", &RootWin::setWM_NumDesktops }
+	{ "active_desktop", &WinManagerWindow::setActiveDesktop },
+	{ "number_of_desktops", &WinManagerWindow::setNumDesktops }
 };
 
 const WinManagerFileEntry::SetWindowFunctionMap WinManagerFileEntry::m_set_window_function_map = {
-	{ "active_window", &RootWin::setWM_ActiveWindow }
+	{ "active_window", &WinManagerWindow::setActiveWindow }
 };
 
 int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) {
@@ -50,8 +53,12 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 		auto window_it = m_set_window_function_map.find(m_name);
 
 		if (window_it != m_set_window_function_map.end()) {
+			if (the_num < 0) {
+				// there are no negative window numbers
+				return -EINVAL;
+			}
 			auto set_func = window_it->second;
-			((root_win).*set_func)(XWindow(the_num));
+			((root_win).*set_func)(xpp::XWindow(xpp::WinID{static_cast<Window>(the_num)}));
 			return bytes;
 		}
 
@@ -61,9 +68,9 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data, const size_t 
 			<< this->m_name
 			<< "\"\n";
 		return -ENXIO;
-	} catch (const xwmfs::XWindow::NotImplemented &e) {
+	} catch (const xpp::XWindow::NotImplemented &e) {
 		return -ENOSYS;
-	} catch (const Exception &e) {
+	} catch (const std::exception &e) {
 		logger->error()
 			<< __FUNCTION__ << ": Error setting window manager property ("
 			<< this->m_name << "): " << e.what() << std::endl;

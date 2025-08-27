@@ -1,5 +1,4 @@
 // C++
-#include <iostream>
 #include <vector>
 
 // xwmfs
@@ -7,24 +6,26 @@
 #include "main/DesktopDirEntry.hxx"
 #include "main/DesktopsRootDir.hxx"
 #include "main/Exception.hxx"
-#include "x11/RootWin.hxx"
+#include "x11/WinManagerWindow.hxx"
 
 namespace xwmfs {
 
-DesktopsRootDir::DesktopsRootDir(RootWin &root) :
+DesktopsRootDir::DesktopsRootDir(WinManagerWindow &root) :
 		DirEntry{"desktops"}, m_root_win{root} {
 }
 
-using WindowMap = std::map<size_t, std::vector<const XWindow*>>;
+using WindowMap = std::map<size_t, std::vector<xpp::XWindow>>;
 
-static WindowMap buildWindowMap(const RootWin &root_win) {
+static WindowMap buildWindowMap(const xpp::RootWin &root_win) {
 	WindowMap ret;
 
-	for (const auto &window: root_win.getWindowList()) {
+	for (const auto &winid: root_win.windowList()) {
 		try {
-			auto desktop_nr = window.getCachedDesktop();
-			ret[desktop_nr].push_back(&window);
-		} catch (const Exception &ex) {
+			auto window = xpp::XWindow{winid};
+			// TODO: libxpp conversion: this no longer uses caching
+			auto desktop_nr = window.getDesktop();
+			ret[desktop_nr].push_back(window);
+		} catch (const std::exception &ex) {
 			// has no desktop assignment for some reason
 			continue;
 		}
@@ -62,25 +63,25 @@ void DesktopsRootDir::handleDesktopsChanged() {
 	}
 }
 
-void DesktopsRootDir::addWindowToDesktop(DesktopDirEntry *dir, const XWindow *window) {
-	const auto &winid = window->idStr();
-	const auto target = std::string("../../../windows/") + winid;
+void DesktopsRootDir::addWindowToDesktop(DesktopDirEntry *dir, const xpp::XWindow &window) {
+	const auto winid_str = xpp::to_string(window.id());
+	const auto target = std::string("../../../windows/") + winid_str;
 
-	auto symlink = new SymlinkEntry{winid, target};
+	auto symlink = new SymlinkEntry{winid_str, target};
 	dir->getWindowsDir()->addEntry(symlink);
 
-	m_window_desktop_dir_map.insert({window->id(), dir});
+	m_window_desktop_dir_map.insert({window.id(), dir});
 }
 
-void DesktopsRootDir::removeWindow(const XWindow *window) {
-	auto it = m_window_desktop_dir_map.find(window->id());
+void DesktopsRootDir::removeWindow(const xpp::XWindow &window) {
+	auto it = m_window_desktop_dir_map.find(window.id());
 
 	if (it == m_window_desktop_dir_map.end())
 		// unknown for some reason
 		return;
 
 	auto windows_dir = it->second->getWindowsDir();
-	windows_dir->removeEntry(window->idStr());
+	windows_dir->removeEntry(xpp::to_string(window.id()));
 	m_window_desktop_dir_map.erase(it);
 }
 
@@ -90,12 +91,12 @@ DesktopDirEntry* DesktopsRootDir::getDesktopDir(const size_t desktop_nr) {
 	return reinterpret_cast<DesktopDirEntry*>(ret);
 }
 
-void DesktopsRootDir::handleWindowCreated(const XWindow &w) {
+void DesktopsRootDir::handleWindowCreated(const xpp::XWindow &w) {
 	int desktop_nr = -1;
 
 	try {
 		desktop_nr = w.getDesktop();
-	} catch (const xwmfs::XWindow::PropertyNotExisting &) {
+	} catch (const xpp::XWindow::PropertyNotExisting &) {
 		// no desktop assigned yet
 		return;
 	}
@@ -108,14 +109,14 @@ void DesktopsRootDir::handleWindowCreated(const XWindow &w) {
 		// covered by handleDesktopsChanged().
 		return;
 
-	addWindowToDesktop(desktop_entry, &w);
+	addWindowToDesktop(desktop_entry, w);
 }
 
-void DesktopsRootDir::handleWindowDestroyed(const XWindow &w) {
-	removeWindow(&w);
+void DesktopsRootDir::handleWindowDestroyed(const xpp::XWindow &w) {
+	removeWindow(w);
 }
 
-void DesktopsRootDir::handleWindowDesktopChanged(const XWindow &w) {
+void DesktopsRootDir::handleWindowDesktopChanged(const xpp::XWindow &w) {
 	auto it = m_window_desktop_dir_map.find(w.id());
 
 	if (it == m_window_desktop_dir_map.end()) {
@@ -135,8 +136,8 @@ void DesktopsRootDir::handleWindowDesktopChanged(const XWindow &w) {
 		// unchanged for some reason
 		return;
 
-	removeWindow(&w);
-	addWindowToDesktop(desktop_dir, &w);
+	removeWindow(w);
+	addWindowToDesktop(desktop_dir, w);
 }
 
 } // end ns

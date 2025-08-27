@@ -1,13 +1,16 @@
 // cosmos
 #include <cosmos/string.hxx>
 
+// libxpp
+#include <xpp/Property.hxx>
+#include <xpp/XWindowAttrs.hxx>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
 #include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "x11/XWindowAttrs.hxx"
 
 namespace xwmfs {
 
@@ -53,7 +56,7 @@ void WindowFileEntry::setProperty(const std::string &input) {
 	}
 
 	if (type_name == "STRING") {
-		Property<const char*> prop;
+		xpp::Property<const char*> prop;
 		prop = value.c_str();
 		m_win.setProperty(prop_name, prop);
 	} else if (type_name == "CARDINAL") {
@@ -67,13 +70,13 @@ void WindowFileEntry::setProperty(const std::string &input) {
 			// numbers yet
 			throw Exception{"non-integer value for CARDINAL property"};
 		}
-		Property<int> prop;
+		xpp::Property<int> prop;
 		prop = int_value;
 		m_win.setProperty(prop_name, prop);
 	} else if (type_name == "UTF8_STRING") {
-		utf8_string string_u8;
+		xpp::utf8_string string_u8;
 		string_u8.str = value;
-		Property<utf8_string> prop;
+		xpp::Property<xpp::utf8_string> prop;
 		prop = string_u8;
 		m_win.setProperty(prop_name, prop);
 	} else {
@@ -86,7 +89,7 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 	ss.str(std::string{data, bytes});
 
 	char c = '\0';
-	XWindowAttrs attrs;
+	xpp::XWindowAttrs attrs;
 	bool good = true;
 
 	ss >> attrs.x;
@@ -110,7 +113,7 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 
 	m_win.moveResize(attrs);
 	// send the move request out immediately
-	XDisplay::getInstance().flush();
+	Xwmfs::getInstance().getDisplay().flush();
 }
 
 void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
@@ -150,7 +153,7 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 		cosmos::MutexGuard g{m_parent->getLock()};
 
 		(this->*(mem_fn))(data, bytes);
-	} catch (const xwmfs::Exception &e) {
+	} catch (const std::exception &e) {
 		logger->error()
 			<< __FUNCTION__
 			<< ": Error operating on window (node '"
@@ -160,6 +163,15 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 	}
 
 	return bytes;
+}
+
+void WindowFileEntry::writeDesktop(const char *data, const size_t bytes) {
+	int the_num;
+	const auto parsed = parseInteger(data, bytes, the_num);
+
+	if (parsed >= 0) {
+		Xwmfs::getInstance().getRootWin().moveToDesktop(m_win, the_num);
+	}
 }
 
 } // end ns

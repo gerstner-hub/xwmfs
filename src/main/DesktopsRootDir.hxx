@@ -3,14 +3,17 @@
 // C++
 #include <map>
 
+// xpp
+#include <xpp/fwd.hxx>
+#include <xpp/XWindow.hxx>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
-#include "x11/XWindow.hxx"
 
 namespace xwmfs {
 
 class DesktopDirEntry;
-class RootWin;
+class WinManagerWindow;
 
 /**
  * \brief
@@ -30,27 +33,27 @@ class DesktopsRootDir :
 	public DirEntry {
 public: // functions
 
-	DesktopsRootDir(RootWin &root);
+	DesktopsRootDir(WinManagerWindow &root);
 
 	void handleDesktopsChanged();
 
-	void handleWindowDesktopChanged(const XWindow &w);
+	void handleWindowDesktopChanged(const xpp::XWindow &w);
 
-	void handleWindowDestroyed(const XWindow &w);
+	void handleWindowDestroyed(const xpp::XWindow &w);
 
-	void handleWindowCreated(const XWindow &w);
+	void handleWindowCreated(const xpp::XWindow &w);
 
 protected: // functions
 
-	void addWindowToDesktop(DesktopDirEntry *dir, const XWindow *window);
-	void removeWindow(const XWindow *window);
+	void addWindowToDesktop(DesktopDirEntry *dir, const xpp::XWindow &window);
+	void removeWindow(const xpp::XWindow &window);
 
 	DesktopDirEntry* getDesktopDir(const size_t desktop_nr);
 
 protected: // data
 
-	RootWin &m_root_win;
-	std::map<Window, DesktopDirEntry*> m_window_desktop_dir_map;
+	WinManagerWindow &m_root_win;
+	std::map<xpp::WinID, DesktopDirEntry*> m_window_desktop_dir_map;
 };
 
 } // end ns

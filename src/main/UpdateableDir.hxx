@@ -4,9 +4,11 @@
 #include <map>
 #include <vector>
 
+// libxpp
+#include <xpp/types.hxx>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
-#include "x11/XAtom.hxx"
 
 namespace xwmfs {
 
@@ -20,7 +22,7 @@ class UpdateableDir :
 protected: // types
 
 	using UpdateFunction = void (CLASS::*)(FileEntry &entry);
-	using AtomVector = std::vector<XAtom>;
+	using AtomVector = std::vector<xpp::AtomID>;
 
 	//! holds information about a single file entry
 	struct EntrySpec {
@@ -34,14 +36,14 @@ protected: // types
 		//! a member function of the derived class type to call for
 		//! updates of the entry value
 		UpdateFunction member_func = nullptr;
-		//! the associated XAtoms, if any
+		//! the associated AtomIDs, if any
 		AtomVector atoms;
 
 		EntrySpec(const char *n, UpdateFunction f, const bool rw = false, const bool au = false) :
 			name{n}, read_write{rw}, always_update{au}, member_func{f}, atoms{{}} {
 		}
 
-		EntrySpec(const char *n, UpdateFunction f, const bool rw, XAtom a) :
+		EntrySpec(const char *n, UpdateFunction f, const bool rw, xpp::AtomID a) :
 			name{n}, read_write{rw}, member_func{f}, atoms{{a}} {
 		}
 
@@ -50,8 +52,8 @@ protected: // types
 		}
 	};
 
-	//! a mapping of XAtom values to the corresponding file entry specs
-	using AtomSpecMap = std::map<XAtom, EntrySpec>;
+	//! a mapping of xpp::AtomID values to the corresponding file entry specs
+	using AtomSpecMap = std::map<xpp::AtomID, EntrySpec>;
 	using SpecVector = std::vector<EntrySpec>;
 
 protected: // functions

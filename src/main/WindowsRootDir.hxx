@@ -6,9 +6,12 @@
 // xwmfs
 #include "fuse/DirEntry.hxx"
 
+namespace xpp {
+	class XWindow;
+}
+
 namespace xwmfs {
 
-class XWindow;
 class WindowDirEntry;
 
 /**
@@ -29,7 +32,7 @@ public: // functions
 	 * \brief
 	 * 	Removes the sub-directory matching the given window
 	 **/
-	void removeWindow(const XWindow &win);
+	void removeWindow(const xpp::XWindow &win);
 
 	/**
 	 * \brief
@@ -41,7 +44,7 @@ public: // functions
 	 * 	If set then \c win refers to the root window. This triggers
 	 * 	some special logic
 	 **/
-	void addWindow(const XWindow &win, const bool initial = false,
+	void addWindow(const xpp::XWindow &win, const bool initial = false,
 			const bool is_root_win = false);
 
 	/**
@@ -51,7 +54,7 @@ public: // functions
 	 * \returns
 	 * 	The matching pointer or nullptr if not found
 	 **/
-	WindowDirEntry* getWindowDir(const XWindow &win);
+	WindowDirEntry* getWindowDir(const xpp::XWindow &win);
 
 	/**
 	 * \brief
@@ -62,7 +65,7 @@ public: // functions
 	 * \param[in] changed_atom
 	 * 	The atom at the window that changed
 	 **/
-	void updateProperty(const XWindow &win, Atom changed_atom);
+	void updateProperty(const xpp::XWindow &win, const xpp::AtomID changed_atom);
 
 	/**
 	 * \brief
@@ -73,7 +76,7 @@ public: // functions
 	 * \param[in] deleted_atom
 	 * 	The atom at the window that was deleted
 	 **/
-	void deleteProperty(const XWindow &win, Atom deleted_atom);
+	void deleteProperty(const xpp::XWindow &win, const xpp::AtomID deleted_atom);
 
 	/**
 	 * \brief
@@ -81,7 +84,7 @@ public: // functions
 	 * \param[in] win
 	 * 	The window that changed
 	 **/
-	void updateGeometry(const XWindow &win, const XConfigureEvent &event);
+	void updateGeometry(const xpp::XWindow &win, const xpp::ConfigureEvent &event);
 
 	/**
 	 * \brief
@@ -91,7 +94,7 @@ public: // functions
 	 * \param[in] is_mapped
 	 * 	Whether the window is now mapped or unmapped
 	 **/
-	void updateMappedState(const XWindow &win, const bool is_mapped);
+	void updateMappedState(const xpp::XWindow &win, const bool is_mapped);
 
 	/**
 	 * \brief
@@ -102,11 +105,11 @@ public: // functions
 	 * 	The window, if currently existing in the hierarchy, will be
 	 * 	moved to the new parent.
 	 **/
-	void updateParent(const XWindow &win);
+	void updateParent(const xpp::XWindow &win);
 
 protected: // functions
 
-	void missingWindow(const XWindow &win, const std::string &action);
+	void missingWindow(const xpp::XWindow &win, const std::string &action);
 
 protected: // data
 

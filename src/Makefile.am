@@ -85,8 +85,7 @@ xwmfs_SOURCES = \
 		main/WindowsRootDir.cxx main/UpdateableDir.cxx main/SelectionDirEntry.cxx \
 		main/SelectionOwnerFile.cxx main/SelectionAccessFile.cxx \
 		main/DesktopsRootDir.cxx main/DesktopDirEntry.cxx \
-		x11/XAtom.cxx x11/PropertyTraits.cxx x11/XWindow.cxx x11/XWindowAttrs.cxx \
-		x11/XDisplay.cxx x11/RootWin.cxx
+		x11/WinManagerWindow.cxx
 xwmfs_SOURCES += \
 		fuse/xwmfs_fuse_ops.h fuse/AbortHandler.hxx fuse/DirEntry.hxx fuse/Entry.hxx \
 		fuse/EventFile.hxx fuse/FileEntry.hxx fuse/OpenContext.hxx fuse/RootEntry.hxx \
@@ -97,8 +96,7 @@ xwmfs_SOURCES += \
 		main/WinManagerFileEntry.hxx main/WindowDirEntry.hxx main/WindowFileEntry.hxx \
 		main/WindowsRootDir.hxx main/Xwmfs.hxx \
 		main/DesktopsRootDir.hxx main/DesktopDirEntry.hxx \
-		x11/RootWin.hxx x11/X11Exception.hxx x11/XAtom.hxx x11/XDisplay.hxx x11/XWindow.hxx \
-		x11/XWindowAttrs.hxx x11/Property.hxx x11/PropertyTraits.hxx x11/utf8_string.hxx
+		x11/WinManagerWindow.hxx
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse libcosmos.la libxpp.la
 

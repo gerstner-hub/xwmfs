@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
 		try {
 			print_xwmfs_help = parseXWMFSOptions(argc, argv, fuse_args);
-		} catch (const xwmfs::Exception &e) {
+		} catch (const std::exception &e) {
 			std::cerr << "Error initializing XWMFS:\n"
 				<< e.what() << "\n";
 			std::cerr << "Probably you're not running X or your "
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		return fuse_res;
-	} catch (const xwmfs::Exception &e) {
+	} catch (const std::exception &e) {
 		std::cerr << "Caught exception in main: " << e.what() << "\n";
 		return EXIT_FAILURE;
 	}

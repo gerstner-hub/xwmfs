@@ -1,14 +1,20 @@
 #pragma once
 
+// libxpp
+#include <xpp/RootWin.hxx>
+#include <xpp/types.hxx>
+
 // xwmfs
 #include "main/UpdateableDir.hxx"
-#include "x11/XAtom.hxx"
+
+namespace xpp {
+	class XWindow;
+}
 
 namespace xwmfs {
 
-class RootWin;
+class WinManagerWindow;
 class EventFile;
-class XWindow;
 
 /**
  * \brief
@@ -22,26 +28,26 @@ class WinManagerDirEntry :
 		public UpdateableDir<WinManagerDirEntry> {
 public: // functions
 
-	explicit WinManagerDirEntry(RootWin &root_win);
+	explicit WinManagerDirEntry(WinManagerWindow &root_win);
 
 	/**
 	 * \brief
 	 * 	Update window manager data denoted by \c changed_atom
 	 **/
-	void update(const Atom changed_atom);
+	void update(const xpp::AtomID changed_atom);
 
 	/**
 	 * \brief
 	 * 	Reflect delection of the denoted \c deleted_atom
 	 **/
-	void delProp(const Atom deleted_atom);
+	void delProp(const xpp::AtomID deleted_atom);
 
 	/**
 	 * \brief
 	 * 	To be called when a window was created or destroyed
 	 **/
 	void windowLifecycleEvent(
-		const XWindow &win,
+		const xpp::XWindow &win,
 		const bool created_else_destroyed
 	);
 
@@ -65,7 +71,7 @@ protected: // functions
 
 protected: // data
 
-	RootWin &m_root_win;
+	WinManagerWindow &m_root_win;
 	//! an event file from where programs can efficiently read individual
 	//! window manager events
 	EventFile *m_events = nullptr;

@@ -6,10 +6,13 @@
 // xwmfs
 #include "fuse/FileEntry.hxx"
 
+namespace xpp {
+	class XWindow;
+}
+
 namespace xwmfs {
 
-class RootWin;
-class XWindow;
+class WinManagerWindow;
 
 /**
  * \brief
@@ -30,9 +33,9 @@ struct WinManagerFileEntry :
 
 protected: // types
 
-	using SetIntFunction = void (RootWin::*)(const int&);
+	using SetIntFunction = void (WinManagerWindow::*)(const int);
 	using SetIntFunctionMap = std::map<std::string, SetIntFunction>;
-	using SetWindowFunction = void (RootWin::*)(const XWindow&);
+	using SetWindowFunction = void (WinManagerWindow::*)(const xpp::XWindow&);
 	using SetWindowFunctionMap = std::map<std::string, SetWindowFunction>;
 
 	// a mapping of file system names to their associated set int functions

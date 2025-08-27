@@ -24,6 +24,21 @@
 #include <cosmos/error/ApiError.hxx>
 #include <cosmos/formatting.hxx>
 
+// libxpp
+#include <xpp/atoms.hxx>
+#include <xpp/event/AnyEvent.hxx>
+#include <xpp/event/ConfigureEvent.hxx>
+#include <xpp/event/CreateEvent.hxx>
+#include <xpp/event/DestroyEvent.hxx>
+#include <xpp/event/MapEvent.hxx>
+#include <xpp/event/PropertyEvent.hxx>
+#include <xpp/event/ReparentEvent.hxx>
+#include <xpp/event/SelectionClearEvent.hxx>
+#include <xpp/event/SelectionEvent.hxx>
+#include <xpp/event/SelectionRequestEvent.hxx>
+#include <xpp/formatting.hxx>
+#include <xpp/PropertyTraits.hxx>
+
 // xwmfs
 #include "fuse/Entry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
@@ -37,7 +52,6 @@
 #include "main/WindowsRootDir.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "x11/XAtom.hxx"
 
 namespace xwmfs {
 
@@ -68,7 +82,7 @@ void Xwmfs::createFS() {
 	m_selection_dir = new xwmfs::SelectionDirEntry{};
 	m_fs_root.addEntry(m_selection_dir);
 
-	const std::vector<XWindow> *windows = nullptr;
+	const std::vector<xpp::WinID> *windows = nullptr;
 
 	if (m_opts.handlePseudoWindows()) {
 		/*
@@ -85,10 +99,10 @@ void Xwmfs::createFS() {
 		 * windows. not sure what to do against that.
 		 */
 		m_root_win.queryTree();
-		windows = &(m_root_win.getWindowTree());
+		windows = &(m_root_win.windowTree());
 	} else {
 		m_root_win.queryWindows();
-		windows = &(m_root_win.getWindowList());
+		windows = &(m_root_win.windowList());
 	}
 
 	// add each window found in the list
@@ -97,7 +111,7 @@ void Xwmfs::createFS() {
 		FileSysWriteGuard write_guard{m_fs_root};
 
 		for (const auto &win: *windows) {
-			m_win_dir->addWindow(win, true, win == m_root_win);
+			m_win_dir->addWindow(xpp::XWindow{win}, true, win == m_root_win);
 		}
 	}
 
@@ -105,7 +119,7 @@ void Xwmfs::createFS() {
 }
 
 void Xwmfs::createSelectionWindow() {
-	m_selection_window = XWindow{m_root_win.createChild()};
+	m_selection_window = xpp::XWindow{m_root_win.createChild()};
 
 	m_selection_window.setName("xwmfs selection buffer window");
 
@@ -160,16 +174,6 @@ void Xwmfs::early_init() {
 	// if present
 	m_umask = ::umask(0777);
 	(void)::umask(m_umask);
-
-	// this asks the Xlib to be thread-safe
-	// be careful that this must be the first Xlib call in the
-	// process otherwise it won't work!
-	if (!::XInitThreads()) {
-		throw Exception{"Error initialiizing X11 threads"};
-	}
-
-	PropertyTraits<utf8_string>::init();
-	PropertyTraits<std::vector<utf8_string>>::init();
 }
 
 int Xwmfs::init() {
@@ -182,8 +186,7 @@ int Xwmfs::init() {
 
 		try {
 			if (m_opts.xsync()) {
-				::XSynchronize(XDisplay::getInstance(), true);
-
+				m_display.setSynchronized(true);
 				logger->info() << "Operating in Xlib synchronous mode\n";
 			}
 
@@ -195,7 +198,7 @@ int Xwmfs::init() {
 			m_root_win.selectPropertyNotifyEvent();
 			// make sure the XServer knows about our event
 			// registrations to avoid any race conditions
-			XDisplay::getInstance().sync();
+			m_display.sync();
 
 			/*
 			 * there is a race condition that we can't really
@@ -222,12 +225,9 @@ int Xwmfs::init() {
 				"event thread"});
 
 			setupAbortSignals(true);
-		} catch (const xwmfs::RootWin::QueryError &ex) {
+		} catch (const xpp::RootWin::QueryError &ex) {
 			throw Exception{cosmos::sprintf("Error querying window manager properties: %s", ex.what())};
 		}
-	} catch (const xwmfs::Exception &ex) {
-		res = EXIT_FAILURE;
-		logger->error() << "Error in FS operation: " << ex.what() << "\n";
 	} catch (const std::exception &ex) {
 		res = EXIT_FAILURE;
 		logger->error() << "Error in FS operation: " << ex.what() << "\n";
@@ -240,14 +240,15 @@ int Xwmfs::init() {
 }
 
 Xwmfs::Xwmfs() :
+		m_display{xpp::display},
+		m_root_win{m_display},
 		m_ev_thread{},
 		m_opts{xwmfs::Options::getInstance()} {
 	m_running.store(true);
-	m_display = XDisplay::getInstance();
 	// to get X events in a blocking way but still be able to react to
 	// e.  g. a shutdown request we need to get the lower level file
 	// descriptor that X is operating on.
-	m_dis_fd = ::XConnectionNumber(m_display);
+	m_dis_fd = m_display.connectionNumber();
 
 	// this is a pipe that allows us to wake up the event handling thread
 	// in case of shutdown
@@ -278,9 +279,11 @@ Xwmfs::~Xwmfs() {
 }
 
 void Xwmfs::eventThread() {
-	const std::vector<int> fds(
-		{ m_dis_fd, m_wakeup_pipe[0], m_abort_pipe[0] }
-	);
+	const std::vector<int> fds{{
+		cosmos::to_integral(m_dis_fd.raw()),
+		m_wakeup_pipe[0],
+		m_abort_pipe[0]
+	}};
 	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
 
 	while (m_running.load()) {
@@ -327,7 +330,7 @@ void Xwmfs::handlePendingEvents() {
 	 * pending events that we wouldn't process
 	 */
 	while (XPending(m_display) != 0) {
-		XNextEvent(m_display, &m_ev);
+		m_display.nextEvent(m_ev);
 
 		try {
 			// don't keep this lock for the duration of the
@@ -337,32 +340,34 @@ void Xwmfs::handlePendingEvents() {
 			// have the event lock but desire the FS lock.
 			cosmos::MutexReverseGuard rg{m_event_lock};
 			handleEvent(m_ev);
-		} catch (const xwmfs::Exception &ex) {
+		} catch (const std::exception &ex) {
 			logger->error() << "Failed to handle X11 event of type "
-				<< std::dec << m_ev.type << ": " << ex.what();
+				<< std::dec << cosmos::to_integral(m_ev.type()) << ": " << ex.what() << "\n";
 		}
 	}
 }
 
-void Xwmfs::handleEvent(const XEvent &ev) {
-	auto &std_props = StandardProps::instance();
+void Xwmfs::handleEvent(const xpp::Event &ev) {
 #if 0
 	logger->debug() << "Received event #" << ev.xany.serial << " of type "
 		<< std::dec << ev.type << std::endl;
 #endif
+	using Type = xpp::EventType;
 
-	switch (ev.type) {
+	switch (ev.type()) {
 	// a new window came into existence
-	case CreateNotify: {
-		if (!handleCreateEvent(ev.xcreatewindow)) {
-			m_ignored_windows.insert(ev.xcreatewindow.window);
+	case Type::CREATE_NOTIFY: {
+		const auto create_ev = xpp::CreateEvent{ev};
+		if (!handleCreateEvent(create_ev)) {
+			m_ignored_windows.insert(create_ev.window());
 		}
 		break;
 	}
 	// a window was destroyed
-	case DestroyNotify: {
-		handleDestroyEvent(ev.xdestroywindow);
-		auto it = m_ignored_windows.find(ev.xdestroywindow.window);
+	case Type::DESTROY_NOTIFY: {
+		const auto destroy_ev = xpp::DestroyEvent{ev};
+		handleDestroyEvent(destroy_ev);
+		auto it = m_ignored_windows.find(destroy_ev.window());
 		if (it != m_ignored_windows.end()) {
 			// don't need to process a window we've ignored
 			// before
@@ -371,34 +376,39 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 		}
 		break;
 	}
-	case PropertyNotify: {
+	case Type::PROPERTY_NOTIFY: {
+		auto prop_ev = xpp::PropertyEvent{ev};
+
 		logger->debug()
-			<< "Property (" << XAtom{ev.xproperty.atom} << ")"
-			<< " on window " << ev.xproperty.window << " changed ("
-			<< std::dec << ev.xproperty.state << ")" << std::endl;
+			<< "Property (" << prop_ev.property() << ")"
+			<< " on window " << cosmos::to_integral(*prop_ev.window()) << " changed ("
+			<< std::dec << cosmos::to_integral(prop_ev.state()) << ")" << std::endl;
 
-		const bool is_delete = ev.xproperty.state == PropertyDelete;
+		using Notification = xpp::PropertyNotification;
 
-		switch (ev.xproperty.state) {
-		case PropertyDelete: /* FALLTHROUGH */
-		case PropertyNewValue: {
-			XWindow w(ev.xproperty.window);
+		switch (prop_ev.state()) {
+		case Notification::PROPERTY_DELETE: /* FALLTHROUGH */
+		case Notification::NEW_VALUE: {
+			const auto is_delete = prop_ev.state() == Notification::PROPERTY_DELETE;
+			xpp::XWindow win{*prop_ev.window()};
 			updateTime();
 
-			FileSysWriteGuard write_guard(m_fs_root);
+			FileSysWriteGuard write_guard{m_fs_root};
 
-			if (w == m_root_win) {
+			const auto prop = prop_ev.property();
+
+			if (win == m_root_win) {
 				is_delete ?
-					m_wm_dir->delProp(ev.xproperty.atom) :
-					m_wm_dir->update(ev.xproperty.atom);
+					m_wm_dir->delProp(prop) :
+					m_wm_dir->update(prop);
 			} else {
 				if (is_delete) {
-					m_win_dir->deleteProperty(w, ev.xproperty.atom);
+					m_win_dir->deleteProperty(win, prop);
 				} else {
-					m_win_dir->updateProperty(w, ev.xproperty.atom);
+					m_win_dir->updateProperty(win, prop);
 
-					if (ev.xproperty.atom == std_props.atom_ewmh_window_desktop) {
-						m_desktop_dir->handleWindowDesktopChanged(w);
+					if (prop == xpp::atoms::ewmh_window_desktop) {
+						m_desktop_dir->handleWindowDesktopChanged(win);
 					}
 				}
 			}
@@ -411,44 +421,53 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 		break;
 	}
 	// called upon window size/appearance changes
-	case ConfigureNotify: {
-		XWindow w{ev.xconfigure.window};
+	case Type::CONFIGURE_NOTIFY: {
+		xpp::ConfigureEvent config_ev{ev};
+		xpp::XWindow w{config_ev.window()};
 		updateTime();
 
 		FileSysWriteGuard write_guard{m_fs_root};
 
-		m_win_dir->updateGeometry(w, ev.xconfigure);
+		m_win_dir->updateGeometry(w, config_ev);
 		break;
 	}
-	case CirculateNotify: {
+	case Type::CIRCULATE_NOTIFY: {
 		break;
 	}
 	// called if parts of the window become
 	// visible/invisible
-	case UnmapNotify:
-	case MapNotify: {
-		XWindow w{ev.xmap.window};
-		if (isIgnored(w)) {
+	case Type::UNMAP_NOTIFY:
+	case Type::MAP_NOTIFY: {
+		xpp::XWindow map_window;
+		if (ev.type() == Type::MAP_NOTIFY) {
+			const auto event = xpp::MapEvent{ev};
+			map_window = xpp::XWindow{event.window()};
+		} else {
+			const auto event = xpp::UnmapEvent{ev};
+			map_window = xpp::XWindow{event.window()};
+		}
+		if (isIgnored(map_window)) {
 			break;
 		}
 		updateTime();
 		FileSysWriteGuard write_guard{m_fs_root};
-		m_win_dir->updateMappedState(w, ev.type == MapNotify);
+		m_win_dir->updateMappedState(map_window, ev.type() == Type::MAP_NOTIFY);
 		break;
 	}
-	case GravityNotify: {
+	case Type::GRAVITY_NOTIFY: {
 		break;
 	}
-	case ReparentNotify: {
-		XWindow w{ev.xreparent.window};
-		w.setParent(ev.xreparent.parent);
+	case Type::REPARENT_NOTIFY: {
+		const auto reparent_ev = xpp::ReparentEvent{ev};
+		xpp::XWindow w{reparent_ev.reparentedWindow()};
+		w.setParent(reparent_ev.newParent());
 		FileSysWriteGuard write_guard{m_fs_root};
 		m_win_dir->updateParent(w);
 		break;
 	}
-	case SelectionNotify:
-	case SelectionClear:
-	case SelectionRequest: {
+	case Type::SELECTION_NOTIFY:
+	case Type::SELECTION_CLEAR:
+	case Type::SELECTION_REQUEST: {
 		handleSelectionEvent(ev);
 		break;
 	}
@@ -456,46 +475,48 @@ void Xwmfs::handleEvent(const XEvent &ev) {
 		logger->debug()
 			<< __FUNCTION__
 			<< ": Some unknown event "
-			<< ev.type << " for window "
-			<< XWindow(ev.xany.window) << " received" << "\n";
+			<< cosmos::to_integral(ev.type()) << " for window "
+			<< xpp::XWindow{xpp::WinID{ev.toAnyEvent().window}} << " received" << "\n";
 		break;
 	}
 }
 
-bool Xwmfs::isPseudoWindow(const XCreateWindowEvent &ev) const {
+bool Xwmfs::isPseudoWindow(const xpp::CreateEvent &ev) const {
 	// Xlib manual says one should generally ignore these
 	// events as they come from popups
-	if (ev.override_redirect) {
-		logger->debug() << "Ignoring override_redirect window " << ev.window << std::endl;
+	if (ev.overrideRedirect()) {
+		logger->debug() << "Ignoring override_redirect window "
+			<< cosmos::to_integral(ev.window()) << std::endl;
 		return true;
-	} else if (ev.parent != m_root_win.id()) {
+	} else if (ev.parent() != m_root_win.id()) {
 		// this is grand-kid or something. we could add these
 		// in a hierarchical manner as sub-windows but for now
 		// we ignore them
-		logger->debug() << "Ignoring grand-child-window" << ev.window << std::endl;
+		logger->debug() << "Ignoring grand-child-window"
+			<< cosmos::to_integral(ev.window()) << std::endl;
 		return true;
 	}
 
 	return false;
 }
 
-bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
+bool Xwmfs::handleCreateEvent(const xpp::CreateEvent &ev) {
 	if (!m_opts.handlePseudoWindows()) {
 		if (isPseudoWindow(ev)) {
 			return false;
 		}
 	}
 
-	XWindow w{ev.window};
-	w.setParent(ev.parent);
+	xpp::XWindow w{ev.window()};
+	w.setParent(ev.parent());
 
 	logger->debug() << "Window " << w << " was created!" << std::endl;
-	logger->debug() << "\tParent: " << XWindow(w.getParent()) << std::endl;
+	logger->debug() << "\tParent: " << xpp::XWindow{w.getParent()} << std::endl;
 	logger->debug() << "\twin name = ";
 
 	try {
 		logger->debug() << w.getName() << std::endl;
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const std::exception &ex) {
 		logger->debug() << "error getting win name: " << ex.what() << std::endl;
 	}
 
@@ -505,15 +526,15 @@ bool Xwmfs::handleCreateEvent(const XCreateWindowEvent &ev) {
 		m_win_dir->addWindow(w);
 		m_wm_dir->windowLifecycleEvent(w, true);
 		m_desktop_dir->handleWindowCreated(w);
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const std::exception &ex) {
 		logger->debug() << "\terror adding window: " << ex.what() << std::endl;
 	}
 
 	return true;
 }
 
-void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev) {
-	XWindow w{ev.window};
+void Xwmfs::handleDestroyEvent(const xpp::DestroyEvent &ev) {
+	xpp::XWindow w{ev.window()};
 
 	logger->debug() << "Window " << w << " was destroyed!" << std::endl;
 
@@ -523,8 +544,10 @@ void Xwmfs::handleDestroyEvent(const XDestroyWindowEvent &ev) {
 	m_desktop_dir->handleWindowDestroyed(w);
 }
 
-void Xwmfs::handleSelectionEvent(const XEvent &ev) {
-	XWindow w{ev.xany.window};
+void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
+	/// NOTE: the generic window() returned here might not always be what
+	/// we expect? Maybe we need to inspect the concrete events.
+	const xpp::XWindow w{*xpp::AnyEvent{ev}.window()};
 
 	if (w != m_selection_window) {
 		logger->warn() << "Got selection buffer related event, but it's not for our selection window?"
@@ -532,17 +555,17 @@ void Xwmfs::handleSelectionEvent(const XEvent &ev) {
 		return;
 	}
 
-	logger->debug() << "Selection buffer event of type " << ev.type << "\n";
+	logger->debug() << "Selection buffer event of type " << cosmos::to_integral(ev.type()) << "\n";
 
-	if (ev.type == SelectionNotify) {
+	if (ev.type() == xpp::EventType::SELECTION_NOTIFY) {
 		// the conversion data has arrived
-		m_selection_dir->conversionResult(ev.xselection);
-	} else if (ev.type == SelectionClear) {
+		m_selection_dir->conversionResult(xpp::SelectionEvent{ev});
+	} else if (ev.type() == xpp::EventType::SELECTION_CLEAR) {
 		// we lost ownership of the selection
-		m_selection_dir->lostOwnership(ev.xselectionclear);
-	} else if (ev.type == SelectionRequest) {
+		m_selection_dir->lostOwnership(xpp::SelectionClearEvent{ev});
+	} else if (ev.type() == xpp::EventType::SELECTION_REQUEST) {
 		// somebody wants to get the selection from us
-		m_selection_dir->conversionRequest(ev.xselectionrequest);
+		m_selection_dir->conversionRequest(xpp::SelectionRequestEvent{ev});
 	}
 }
 

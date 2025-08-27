@@ -3,10 +3,12 @@
 // cosmos
 #include <cosmos/thread/Condition.hxx>
 
+// libxpp
+#include <xpp/types.hxx>
+#include <xpp/XWindow.hxx>
+
 // xwmfs
 #include "fuse/FileEntry.hxx"
-#include "x11/XAtom.hxx"
-#include "x11/XWindow.hxx"
 
 namespace xwmfs {
 
@@ -39,20 +41,20 @@ public: // functions
 	 * 	The atom identifier of the selection type this file entry
 	 * 	should handle
 	 **/
-	SelectionAccessFile(const std::string &n, SelectionDirEntry &parent, const XAtom &type);
+	SelectionAccessFile(const std::string &n, SelectionDirEntry &parent, const xpp::AtomID type);
 
 	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
 	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
 
-	void reportConversionResult(Atom result_prop);
+	void reportConversionResult(const xpp::AtomID result_prop);
 
-	void provideConversion(XWindow &requestor, const XAtom &target_prop) const;
+	void provideConversion(xpp::XWindow &requestor, const xpp::AtomID target_prop) const;
 
 	//! \see EventFile::enableDirectIO()
 	bool enableDirectIO() const override { return true; }
 
-	const XAtom& type() const { return m_sel_type; }
+	xpp::AtomID type() const { return m_sel_type; }
 
 protected: // functions
 
@@ -76,14 +78,14 @@ protected: // data
 	//! parent dir with helper routines
 	SelectionDirEntry &m_parent;
 	//! the X selection type we represent
-	const XAtom m_sel_type;
+	const xpp::AtomID m_sel_type;
 	//! property where requested selection buffer conversions go to
-	const XAtom m_target_prop;
+	const xpp::AtomID m_target_prop;
 	//! caches the current owner window of the selection we're representing
-	XWindow m_owner;
+	xpp::XWindow m_owner;
 	cosmos::Condition m_result_cond;
 	bool m_result_arrived = false;
-	XAtom m_result_prop;
+	xpp::AtomID m_result_prop;
 };
 
 } // end ns

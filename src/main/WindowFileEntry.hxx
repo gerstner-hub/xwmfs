@@ -1,8 +1,10 @@
 #pragma once
 
+// libxpp
+#include <xpp/XWindow.hxx>
+
 // xwmfs
 #include "fuse/FileEntry.hxx"
-#include "x11/XWindow.hxx"
 
 namespace xwmfs {
 
@@ -18,7 +20,7 @@ class WindowFileEntry :
 	public FileEntry {
 public:
 	//! Creates a WindowFileEntry associated with \c win
-	WindowFileEntry(const std::string &n, const XWindow& win,
+	WindowFileEntry(const std::string &n, const xpp::XWindow& win,
 			const time_t &t = 0, const bool writable = true) :
 		FileEntry{n, writable, t},
 		m_win{win} {
@@ -37,14 +39,7 @@ public:
 		m_win.setName(name);
 	}
 
-	void writeDesktop(const char *data, const size_t bytes) {
-		int the_num;
-		const auto parsed = parseInteger(data, bytes, the_num);
-
-		if (parsed >= 0) {
-			m_win.setDesktop(the_num);
-		}
-	}
+	void writeDesktop(const char *data, const size_t bytes);
 
 	void writeCommand(const char *data, const size_t bytes);
 
@@ -63,14 +58,14 @@ public:
 	 * 	If this file system entry is associated with \c w then \c true
 	 * 	is returned. \c false otherwise.
 	 **/
-	bool operator==(const XWindow &w) const { return m_win == w; }
-	bool operator!=(const XWindow &w) const { return !((*this) == w); }
+	bool operator==(const xpp::XWindow &w) const { return m_win == w; }
+	bool operator!=(const xpp::XWindow &w) const { return !((*this) == w); }
 
 	/**
 	 * \brief
 	 * 	Casts the object to its associated XWindow type
 	 **/
-	operator XWindow&() { return m_win; }
+	operator xpp::XWindow&() { return m_win; }
 
 protected: // types
 
@@ -80,7 +75,7 @@ protected: // types
 protected: // data
 
 	//! XWindow associated with this FileEntry
-	XWindow m_win; // currently a flat copy of the window, it's not much data
+	xpp::XWindow m_win; // currently a flat copy of the window, it's not much data
 
 	// a mapping of file system names to their associated write functions
 	static const WriteMemberFunctionMap m_write_member_function_map;

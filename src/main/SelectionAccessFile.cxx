@@ -1,3 +1,6 @@
+// libxpp
+#include <xpp/AtomMapper.hxx>
+
 // xwmfs
 #include "fuse/AbortHandler.hxx"
 #include "fuse/xwmfs_fuse.hxx"
@@ -8,12 +11,12 @@
 
 namespace xwmfs {
 
-SelectionAccessFile::SelectionAccessFile(
-			const std::string &n, SelectionDirEntry &parent, const XAtom &type) :
+SelectionAccessFile::SelectionAccessFile(const std::string &n,
+			SelectionDirEntry &parent, const xpp::AtomID type) :
 		FileEntry{n, true, 0},
 		m_parent{parent},
 		m_sel_type{type},
-		m_target_prop{XAtomMapper::getInstance().getAtom(n)},
+		m_target_prop{xpp::atom_mapper.mapAtom(n)},
 		m_result_cond{parent.getLock()} {
 	this->createAbortHandler(m_result_cond);
 }
@@ -50,17 +53,9 @@ int SelectionAccessFile::write(
 		return -EOPNOTSUPP;
 	}
 
-	auto &xwmfs = xwmfs::Xwmfs::getInstance();
+	auto &sel_window = xwmfs::Xwmfs::getInstance().getSelectionWindow();
 
-	if (XSetSelectionOwner(
-			XDisplay::getInstance(),
-			m_sel_type,
-			xwmfs.getSelectionWindow().id(),
-			CurrentTime) != 1) {
-		logger->error() << "Failed to become selection owner for "
-			<< m_sel_type << "\n";
-		return -EIO;
-	}
+	sel_window.makeSelectionOwner(m_sel_type, CurrentTime);
 
 	// store the data for later requests to provide the selection buffer
 	this->str("");
@@ -69,7 +64,7 @@ int SelectionAccessFile::write(
 	return bytes;
 }
 
-void SelectionAccessFile::reportConversionResult(Atom result_prop) {
+void SelectionAccessFile::reportConversionResult(const xpp::AtomID result_prop) {
 	{
 		cosmos::MutexGuard g{m_parent.getLock()};
 		m_result_arrived = true;
@@ -79,22 +74,21 @@ void SelectionAccessFile::reportConversionResult(Atom result_prop) {
 	m_result_cond.signal();
 }
 
-void SelectionAccessFile::provideConversion(
-		XWindow &requestor, const XAtom &target_prop) const {
+void SelectionAccessFile::provideConversion(xpp::XWindow &requestor,
+		const xpp::AtomID target_prop) const {
 	cosmos::MutexGuard g{m_parent.getLock()};
 	const auto copy = this->str();
-	Property<utf8_string> data(utf8_string(copy.c_str()));
+	xpp::Property<xpp::utf8_string> data{xpp::utf8_string{copy.c_str()}};
 	requestor.setProperty(target_prop, data);
 }
 
 int SelectionAccessFile::updateSelection() {
 	auto &xwmfs = Xwmfs::Xwmfs::getInstance();
 	auto &sel_win = xwmfs.getSelectionWindow();
-	auto &std_props = StandardProps::instance();
 
 	cosmos::MutexGuard g{m_parent.getLock()};
 
-	m_result_prop.reset();
+	m_result_prop = xpp::AtomID::INVALID;
 	m_result_arrived = false;
 
 	sel_win.convertSelection(
@@ -102,7 +96,7 @@ int SelectionAccessFile::updateSelection() {
 		// currently we hard-codedly deal with utf8 data
 		// -> this could be expanded later on by passing the desired
 		// mime type some way
-		std_props.atom_ewmh_utf8_string,
+		xpp::atoms::ewmh_utf8_string,
 		m_target_prop
 	);
 
@@ -119,28 +113,28 @@ int SelectionAccessFile::updateSelection() {
 		m_abort_handler->finishedBlockingCall();
 	}
 
-	if (!m_result_prop.valid()) {
+	if (m_result_prop == xpp::AtomID::INVALID) {
 		// conversion was not possible
 		xwmfs::logger->error()
 			<< "Selection conversion for "
-			<< m_sel_type << " failed.";
+			<< cosmos::to_integral(m_sel_type) << " failed.";
 		return -EIO;
 	} else if (m_result_prop != m_target_prop) {
 		// was written to a different property?!
 		xwmfs::logger->error()
-			<< "Selection conversion was sent to "
-			<< m_result_prop << " instead of " <<
-			m_target_prop;
+			<< "Selection conversion was sent to property "
+			<< cosmos::to_integral(m_result_prop) << " instead of "
+			<< cosmos::to_integral(m_target_prop);
 		return -EIO;
 	}
 
 	try {
-		Property<utf8_string> selection_data;
+		xpp::Property<xpp::utf8_string> selection_data;
 		sel_win.getProperty(m_target_prop, selection_data);
 
 		this->str("");
 		(*this) << selection_data.get().str;
-	} catch (const Exception &ex) {
+	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to acquire selection buffer conversion data: "
 			<< ex.what();
@@ -155,7 +149,7 @@ void SelectionAccessFile::updateOwner() {
 	auto &xwmfs = Xwmfs::Xwmfs::getInstance();
 	cosmos::MutexGuard g{xwmfs.getEventLock()};
 
-	m_owner = XWindow{m_parent.getSelectionOwner(m_sel_type)};
+	m_owner = xpp::XWindow{m_parent.getSelectionOwner(m_sel_type)};
 }
 
 } // end ns

@@ -3,10 +3,17 @@
 // C++
 #include <set>
 
+// libxpp
+#include <xpp/XWindow.hxx>
+
 // xwmfs
 #include "fuse/DirEntry.hxx"
 #include "main/UpdateableDir.hxx"
-#include "x11/XWindow.hxx"
+
+namespace xpp {
+	class XWindowAttrs;
+	class ConfigureEvent;
+}
 
 namespace xwmfs {
 
@@ -32,17 +39,17 @@ public: // functions
 	 * 	If set then during construction some window parameters will be
 	 * 	polled from the window, instead of waiting for update events
 	 **/
-	explicit WindowDirEntry(const XWindow &win, const bool query_attrs = false);
+	explicit WindowDirEntry(const xpp::XWindow &win, const bool query_attrs = false);
 
 	/**
 	 * \brief
 	 * 	Update window data denoted by \c changed_atom
 	 **/
-	void update(Atom changed_atom) { propertyChanged(changed_atom, false); }
+	void update(xpp::AtomID changed_atom) { propertyChanged(changed_atom, false); }
 
 	void update(const EntrySpec &spec);
 
-	void delProp(Atom deleted_atom) { propertyChanged(deleted_atom, true); }
+	void delProp(xpp::AtomID deleted_atom) { propertyChanged(deleted_atom, true); }
 
 	void delProp(const EntrySpec &spec);
 
@@ -50,10 +57,10 @@ public: // functions
 	void newMappedState(const bool mapped);
 
 	//! the window geometry changed according to \c event
-	void newGeometry(const XConfigureEvent &event);
+	void newGeometry(const xpp::ConfigureEvent &event);
 
 	//! the window's parent has been changed
-	void newParent(const XWindow &win);
+	void newParent(const xpp::XWindow &win);
 
 	/**
 	 * \brief
@@ -66,7 +73,7 @@ public: // functions
 
 protected: // functions
 
-	void propertyChanged(Atom changed_atom, bool is_delete);
+	void propertyChanged(const xpp::AtomID changed_atom, const bool is_delete);
 
 	//! adds all directory file entries for the represented window
 	void addEntries();
@@ -126,7 +133,7 @@ protected: // functions
 	void updateParent();
 
 	//! Updates the geometry entry according to \c attrs
-	void updateGeometry(const XWindowAttrs &attrs);
+	void updateGeometry(const xpp::XWindowAttrs &attrs);
 
 	//! Actively query some attributes
 	void queryAttrs();
@@ -137,7 +144,7 @@ protected: // functions
 protected: // data
 
 	//! the window we're representing with this directory
-	XWindow m_win;
+	xpp::XWindow m_win;
 
 	//! an event file from which programs can efficiently read individual
 	//! window events

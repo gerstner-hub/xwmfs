@@ -13,11 +13,23 @@
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
 
+// libxpp
+#include <xpp/Event.hxx>
+#include <xpp/RootWin.hxx>
+#include <xpp/XDisplay.hxx>
+
 // Xwmfs
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
 #include "main/logger.hxx"
-#include "x11/RootWin.hxx"
+#include "x11/WinManagerWindow.hxx"
+
+namespace xpp {
+
+	class CreateEvent;
+	class DestroyEvent;
+
+}
 
 namespace xwmfs {
 
@@ -104,12 +116,14 @@ public: // functions
 	cosmos::Mutex& getEventLock() { return m_event_lock; }
 
 	//! Returns the root window held in the Xwmfs
-	xwmfs::RootWin& getRootWin() { return m_root_win; }
+	auto& getRootWin() { return m_root_win; }
+
+	auto& getDisplay() { return m_display; }
 
 	//! returns the file system structure root entry
 	xwmfs::RootEntry& getFS() { return m_fs_root; }
 
-	XWindow& getSelectionWindow() { return m_selection_window; }
+	xpp::XWindow& getSelectionWindow() { return m_selection_window; }
 
 	//! returns the options in effect for Xwmfs
 	xwmfs::Options& getOptions() { return m_opts; }
@@ -223,7 +237,7 @@ protected: // functions
 	 * \brief
 	 * 	Handles a single X11 event received by the x11 event thread
 	 **/
-	void handleEvent(const XEvent &ev);
+	void handleEvent(const xpp::Event &ev);
 
 	/**
 	 * \brief
@@ -231,29 +245,29 @@ protected: // functions
 	 * \return
 	 * 	Whether the window has been added to the file system or not
 	 **/
-	bool handleCreateEvent(const XCreateWindowEvent &ev);
+	bool handleCreateEvent(const xpp::CreateEvent &ev);
 
 	/**
 	 * \brief
 	 * 	Handles a window DestroyNotify event
 	 **/
-	void handleDestroyEvent(const XDestroyWindowEvent &ev);
+	void handleDestroyEvent(const xpp::DestroyEvent &ev);
 
 	/**
 	 * \brief
 	 * 	Handles any selection buffer related events
 	 **/
-	void handleSelectionEvent(const XEvent &ev);
+	void handleSelectionEvent(const xpp::Event &ev);
 
 	/**
 	 * \brief
 	 * 	Returns whether the given CreateNotify event refers to a
 	 * 	pseudo window
 	 **/
-	bool isPseudoWindow(const XCreateWindowEvent &ev) const;
+	bool isPseudoWindow(const xpp::CreateEvent &ev) const;
 
-	bool isIgnored(const XWindow &win) const {
-		return m_ignored_windows.find(win.id()) != m_ignored_windows.end();
+	bool isIgnored(const xpp::WinID &win) const {
+		return m_ignored_windows.find(win) != m_ignored_windows.end();
 	}
 
 private: // types
@@ -274,14 +288,17 @@ private: // types
 		pthread_t thread = 0;
 	};
 
-	using WindowSet = std::set<Window>;
+	using WindowSet = std::set<xpp::WinID>;
 
 private: // data
+
+	//! The display we're operating on.
+	xpp::XDisplay &m_display;
 
 	//! \brief
 	//! The gathered window manager information for the current X
 	//! display (X11 part of XWMFS)
-	xwmfs::RootWin m_root_win;
+	WinManagerWindow m_root_win;
 
 	//! \brief
 	//! The file system root entry that composes the complete file system
@@ -297,15 +314,14 @@ private: // data
 	xwmfs::Options &m_opts;
 
 	//! this is the fd for the connection to the display
-	int m_dis_fd = -1;
+	cosmos::FileDescriptor m_dis_fd;
 	//! wakeup pipe read and write end
 	int m_wakeup_pipe[2];
 
 	//! file descriptors to monitor for events
 	fd_set m_select_set;
 
-	XEvent m_ev;
-	Display *m_display = nullptr;
+	xpp::Event m_ev;
 
 	//! the time of the last event that might lead to creating new file
 	//! system objects
@@ -340,7 +356,7 @@ private: // data
 	cosmos::Mutex m_event_lock;
 
 	//! an XWindow created by the xwmfs for managing selection buffers
-	XWindow m_selection_window;
+	xpp::XWindow m_selection_window;
 
 private: // functions
 

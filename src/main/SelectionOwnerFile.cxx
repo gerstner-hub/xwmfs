@@ -1,8 +1,10 @@
+// libxpp
+#include <xpp/XWindow.hxx>
+
 // xwmfs
 #include "main/SelectionDirEntry.hxx"
 #include "main/SelectionOwnerFile.hxx"
 #include "main/Xwmfs.hxx"
-#include "x11/XWindow.hxx"
 
 namespace xwmfs {
 
@@ -39,12 +41,12 @@ int SelectionOwnerFile::read(
 void SelectionOwnerFile::updateOwners() {
 	this->str("");
 
-	XWindow owner;
+	xpp::XWindow owner;
 
 	for (const auto &selection: m_selection_dir.getSelectionTypes()) {
-		owner = XWindow{m_selection_dir.getSelectionOwner(selection.first)};
+		owner = xpp::XWindow{m_selection_dir.getSelectionOwner(selection.first)};
 
-		(*this) << selection.second << ": " << owner << "\n";
+		(*this) << selection.second << ": " << xpp::to_string(owner.id()) << "\n";
 	}
 }
 

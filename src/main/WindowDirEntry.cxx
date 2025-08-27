@@ -2,6 +2,15 @@
 #include <iostream>
 #include <sstream>
 
+// libxpp
+#include <xpp/AtomMapper.hxx>
+#include <xpp/atoms.hxx>
+#include <xpp/event/ConfigureEvent.hxx>
+#include <xpp/helpers.hxx>
+#include <xpp/Property.hxx>
+#include <xpp/X11Exception.hxx>
+#include <xpp/XWindowAttrs.hxx>
+
 // xwmfs
 #include "fuse/EventFile.hxx"
 #include "main/Exception.hxx"
@@ -9,13 +18,11 @@
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "x11/XAtom.hxx"
-#include "x11/XWindowAttrs.hxx"
 
 namespace xwmfs {
 
-WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
-		UpdateableDir{win.idStr(), getSpecVector()},
+WindowDirEntry::WindowDirEntry(const xpp::XWindow &win, const bool query_attrs) :
+		UpdateableDir{xpp::to_string(win.id()), getSpecVector()},
 		m_win{win} {
 	addEntries();
 
@@ -28,11 +35,11 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	m_geometry = new WindowFileEntry{"geometry", m_win, m_modify_time, true};
 	addEntry(m_geometry);
 	{
-		XWindowAttrs attrs;
+		xpp::XWindowAttrs attrs;
 		try {
 			m_win.getAttrs(attrs);
 			updateGeometry(attrs);
-		} catch (const X11Exception &ex) {
+		} catch (const xpp::X11Exception &ex) {
 			// window disappeared again?
 		}
 	}
@@ -43,7 +50,7 @@ WindowDirEntry::WindowDirEntry(const XWindow &win, const bool query_attrs) :
 	addEntry(m_parent);
 	try {
 		m_win.updateFamily();
-	} catch (const X11Exception &ex) {
+	} catch (const xpp::X11Exception &ex) {
 		// window disappeared again?
 	}
 	updateParent();
@@ -68,37 +75,35 @@ bool WindowDirEntry::markDeleted() {
 }
 
 WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const {
-	auto std_props = StandardProps::instance();
-
 	return SpecVector{ {
 		EntrySpec{"id", &WindowDirEntry::updateId, false},
 		EntrySpec{"name", &WindowDirEntry::updateWindowName, true,
 			{
-				std_props.atom_icccm_window_name,
-				std_props.atom_ewmh_window_name
+				xpp::atoms::icccm_window_name,
+				xpp::atoms::ewmh_window_name
 			}
 		},
 		EntrySpec{"desktop", &WindowDirEntry::updateDesktop, true,
-			std_props.atom_ewmh_desktop_nr},
+			xpp::atoms::ewmh_desktop_nr},
 		EntrySpec{"pid", &WindowDirEntry::updatePID, false,
-			std_props.atom_ewmh_wm_pid},
+			xpp::atoms::ewmh_wm_pid},
 		EntrySpec{"control", &WindowDirEntry::updateCommandControl, true},
 		EntrySpec{"client_machine", &WindowDirEntry::updateClientMachine, false},
 		EntrySpec{"properties", &WindowDirEntry::updateProperties, true,
 			true /* always update this entry */},
 		EntrySpec{"class", &WindowDirEntry::updateClass, false,
-			std_props.atom_icccm_wm_class
+			xpp::atoms::icccm_wm_class
 		},
 		EntrySpec{"command", &WindowDirEntry::updateCommand, false,
-			std_props.atom_icccm_wm_command},
+			xpp::atoms::icccm_wm_command},
 		EntrySpec{"locale", &WindowDirEntry::updateLocale, false,
-			std_props.atom_icccm_wm_locale},
+			xpp::atoms::icccm_wm_locale},
 		EntrySpec{"protocols", &WindowDirEntry::updateProtocols, false,
-			std_props.atom_icccm_wm_protocols},
+			xpp::atoms::icccm_wm_protocols},
 		EntrySpec{"client_leader", &WindowDirEntry::updateClientLeader, false,
-			std_props.atom_icccm_wm_client_leader},
+			xpp::atoms::icccm_wm_client_leader},
 		EntrySpec{"window_type", &WindowDirEntry::updateWindowType, false,
-			std_props.atom_ewmh_wm_window_type}
+			xpp::atoms::ewmh_wm_window_type}
 	}};
 }
 
@@ -109,7 +114,7 @@ void WindowDirEntry::addSpecEntry(const UpdateableDir<WindowDirEntry>::EntrySpec
 
 	try {
 		(this->*(spec.member_func))(*entry);
-	} catch (const Exception &ex) {
+	} catch (const std::exception &ex) {
 		// this can happen legally. It is a race condition. We've been
 		// so fast to register the window but it hasn't got a name or
 		// whatever property yet.
@@ -117,7 +122,7 @@ void WindowDirEntry::addSpecEntry(const UpdateableDir<WindowDirEntry>::EntrySpec
 		// The name will be noticed later on via a property update.
 		xwmfs::logger->debug()
 			<< "Couldn't get " << spec.name
-			<< " for window " << m_win.id()
+			<< " for window " << xpp::to_string(m_win.id())
 			<< " right away" << std::endl;
 		delete entry;
 		return;
@@ -149,12 +154,12 @@ void WindowDirEntry::updateAll() {
 	}
 }
 
-void WindowDirEntry::propertyChanged(Atom changed_atom, bool is_delete) {
+void WindowDirEntry::propertyChanged(const xpp::AtomID changed_atom, const bool is_delete) {
 	// do the same for delete and update at the moment
 	// upon delete empty files might remain in the process of updating
 	// them. Removal of those files is a TODO
 	(void)is_delete;
-	auto it = m_atom_update_map.find(XAtom{changed_atom});
+	auto it = m_atom_update_map.find(changed_atom);
 
 	if (it != m_atom_update_map.end()) {
 		update(it->second);
@@ -198,12 +203,13 @@ void WindowDirEntry::newMappedState(const bool mapped) {
 	m_events->addEvent("mapped");
 }
 
-void WindowDirEntry::newGeometry(const XConfigureEvent &event) {
-	XWindowAttrs attrs;
-	attrs.x = event.x;
-	attrs.y = event.y;
-	attrs.width = event.width;
-	attrs.height = event.height;
+void WindowDirEntry::newGeometry(const xpp::ConfigureEvent &event) {
+	xpp::XWindowAttrs attrs;
+	const auto spec = event.spec();
+	attrs.x = spec.x;
+	attrs.y = spec.y;
+	attrs.width = spec.width;
+	attrs.height = spec.height;
 	updateGeometry(attrs);
 	m_events->addEvent("geometry");
 }
@@ -221,11 +227,11 @@ void WindowDirEntry::updateDesktop(FileEntry &entry) {
 }
 
 void WindowDirEntry::updateId(FileEntry &entry) {
-	entry << m_win.idStr();
+	entry << xpp::to_string(m_win.id());
 }
 
 void WindowDirEntry::updatePID(FileEntry &entry) {
-	entry << m_win.getPID();
+	entry << cosmos::to_integral(m_win.getPID());
 }
 
 void WindowDirEntry::updateCommand(FileEntry &entry) {
@@ -237,15 +243,15 @@ void WindowDirEntry::updateLocale(FileEntry &entry) {
 }
 
 void WindowDirEntry::updateProtocols(FileEntry &entry) {
-	XWindow::AtomVector prots;
+	xpp::AtomIDVector prots;
 
 	m_win.getProtocols(prots);
 
-	const auto &mapper = XAtomMapper::getInstance();
+	const auto &mapper = xpp::atom_mapper;
 	bool first = true;
 
 	for (const auto &atom: prots) {
-		entry << (first ? "" : "\n") << mapper.getName(XAtom{atom});
+		entry << (first ? "" : "\n") << mapper.mapName(atom);
 		first = false;
 	}
 }
@@ -253,18 +259,16 @@ void WindowDirEntry::updateProtocols(FileEntry &entry) {
 void WindowDirEntry::updateClientLeader(FileEntry &entry) {
 	auto leader = m_win.getClientLeader();
 
-	entry << leader;
+	entry << xpp::to_string(leader);
 }
 
 void WindowDirEntry::updateWindowType(FileEntry &entry) {
-	auto _type = m_win.getWindowType();
+	const auto _type = m_win.getWindowType();
 
-	const auto &mapper = XAtomMapper::getInstance();
-
-	entry << mapper.getName(XAtom{_type});
+	entry << xpp::atom_mapper.mapName(_type);
 }
 
-void WindowDirEntry::updateGeometry(const XWindowAttrs &attrs) {
+void WindowDirEntry::updateGeometry(const xpp::XWindowAttrs &attrs) {
 	m_geometry->str("");
 	(*m_geometry) << attrs.x << "," << attrs.y << ":" << attrs.width << "x" << attrs.height << "\n";
 }
@@ -279,36 +283,34 @@ void WindowDirEntry::updateClientMachine(FileEntry &entry) {
 
 namespace {
 
-void getPropertyValue(
-		const XWindow &win, const XAtom &prop_atom,
-		const XWindow::PropertyInfo &info, std::stringstream &value) {
+void getPropertyValue(const xpp::XWindow &win, const xpp::AtomID prop_atom,
+		const xpp::XWindow::PropertyInfo &info, std::stringstream &value) {
 	/*
 	 * this code could be more compact via templates but would then also
 	 * be more complex ...
 	 */
-	auto std_props = StandardProps::instance();
-	const auto &mapper = XAtomMapper::getInstance();
+	using Atom = xpp::AtomID;
 
 	switch (info.type) {
-		case XA_ATOM: {
-			Property<std::vector<XAtom>> prop;
+		case Atom::ATOM: {
+			xpp::Property<std::vector<xpp::AtomID>> prop;
 			win.getProperty(prop_atom, prop, &info);
 			int i = 0;
 			for (const auto &val: prop.get()) {
-				const auto &name = mapper.getName(val);
+				const auto &name = xpp::atom_mapper.mapName(val);
 				if (i++)
 					value << " ";
 				value << name;
 			}
 			break;
 		}
-		case XA_CARDINAL: {
+		case Atom::CARDINAL: {
 			if (info.items == 1) {
-				Property<int> prop;
+				xpp::Property<int> prop;
 				win.getProperty(prop_atom, prop, &info);
 				value << prop.get();
 			} else {
-				Property<std::vector<int>> prop;
+				xpp::Property<std::vector<int>> prop;
 				win.getProperty(prop_atom, prop, &info);
 				for (const auto &val: prop.get()) {
 					value << val << " ";
@@ -316,21 +318,21 @@ void getPropertyValue(
 			}
 			break;
 		}
-		case XA_STRING: {
-			Property<const char*> prop;
+		case Atom::STRING: {
+			xpp::Property<const char*> prop;
 			win.getProperty(prop_atom, prop, &info);
 			value << prop.get();
 			break;
 		}
-		case XA_WINDOW: {
-			Property<Window> prop;
+		case Atom::WINDOW: {
+			xpp::Property<xpp::WinID> prop;
 			win.getProperty(prop_atom, prop, &info);
-			value << prop.get();
+			value << xpp::to_string(prop.get());
 			break;
 		}
 		default: {
-			if (info.type == std_props.atom_ewmh_utf8_string) {
-				Property<utf8_string> prop;
+			if (info.type == xpp::atoms::ewmh_utf8_string) {
+				xpp::Property<xpp::utf8_string> prop;
 				win.getProperty(prop_atom, prop, &info);
 				value << prop.get().str;
 			} else {
@@ -346,35 +348,33 @@ void getPropertyValue(
 } // end anon ns
 
 void WindowDirEntry::updateProperties(FileEntry &entry) {
-	const auto &mapper = XAtomMapper::getInstance();
-	XWindow::AtomVector atoms;
+	xpp::AtomIDVector atoms;
 	m_win.getPropertyList(atoms);
 
 	bool first = true;
-	XWindow::PropertyInfo info;
+	xpp::XWindow::PropertyInfo info;
 
-	for (const auto &plain_atom: atoms) {
-		const XAtom atom{plain_atom};
+	for (const auto atom: atoms) {
 		m_win.getPropertyInfo(atom, info);
-		const auto &name = mapper.getName(atom);
-		const auto &_type = mapper.getName(XAtom{info.type});
+		const auto &name = xpp::atom_mapper.mapName(atom);
+		const auto &_type = xpp::atom_mapper.mapName(info.type);
 
 		logger->debug()
-			<< "Querying property " << atom << " on window "
-			<< m_win << std::endl;
+			<< "Querying property " << cosmos::to_integral(atom) << " on window "
+			<< xpp::to_string(m_win) << std::endl;
 		logger->debug()
-			<< "type = " << info.type << ", items = " << info.items
+			<< "type = " << cosmos::to_integral(info.type) << ", items = " << info.items
 			<< ", format = " << info.format << std::endl;
 
 		entry << (first ? "" : "\n") << name << "(" << _type << ") = ";
 
 		try {
 			getPropertyValue(m_win, atom, info, entry);
-		} catch (const Exception &ex) {
+		} catch (const std::exception &ex) {
 			logger->error()
 				<< "Error getting property value for "
-				<< m_win << "/" << atom << ": " << ex.what()
-				<< std::endl;
+				<< xpp::to_string(m_win.id()) << "/" << cosmos::to_integral(atom)
+				<< ": " << ex.what() << std::endl;
 			entry << "<error>";
 		}
 		first = false;
@@ -387,15 +387,15 @@ void WindowDirEntry::updateClass(FileEntry &entry) {
 }
 
 void WindowDirEntry::queryAttrs() {
-	XWindowAttrs attrs;
+	xpp::XWindowAttrs attrs;
 	try {
 		m_win.getAttrs(attrs);
 
 		newMappedState(attrs.isMapped());
-	} catch (const xwmfs::Exception &ex) {
+	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
-			<< "Error getting window attrs for " << m_win << ": " << ex.what()
-			<< std::endl;
+			<< "Error getting window attrs for " << xpp::to_string(m_win.id())
+			<< ": " << ex.what() << std::endl;
 		setDefaultAttrs();
 	}
 }
@@ -406,10 +406,10 @@ void WindowDirEntry::setDefaultAttrs() {
 
 void WindowDirEntry::updateParent() {
 	m_parent->str("");
-	(*m_parent) << m_win.getParent() << "\n";
+	(*m_parent) << xpp::to_string(m_win.getParent()) << "\n";
 }
 
-void WindowDirEntry::newParent(const XWindow &win) {
+void WindowDirEntry::newParent(const xpp::XWindow &win) {
 	m_events->addEvent("parent");
 	m_win.setParent(win);
 
