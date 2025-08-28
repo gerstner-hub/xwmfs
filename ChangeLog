@@ -1,3 +1,10 @@
+2025-08-28 Matthias Gerstner <Matthias.gerstner@nefkom.net>
+
+	version 1.00
+
+	- support libfuse3 API
+	- some bugfixes in the area of race conditions and robustness
+
 2023-02-16 Matthias Gerstner <Matthias.Gerstner@nefkom.net>
 
 	version 0.92
