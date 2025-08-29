@@ -8,7 +8,6 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <unistd.h> // pipe
-#include <signal.h>
 
 // FUSE
 #include <fuse.h>
@@ -17,6 +16,7 @@
 #include <cosmos/error/ApiError.hxx>
 #include <cosmos/formatting.hxx>
 #include <cosmos/fs/filesystem.hxx>
+#include <cosmos/proc/signal.hxx>
 
 // libxpp
 #include <xpp/atoms.hxx>
@@ -80,7 +80,6 @@ Xwmfs::~Xwmfs() {
 	::close(m_abort_pipe[0]);
 	::close(m_abort_pipe[1]);
 }
-
 
 void Xwmfs::updateTime() {
 	m_current_time = time(nullptr);
@@ -556,10 +555,10 @@ void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
 /*
  * global sync signal handler for the fuse abort signal
  */
-void fuse_abort_signal(int sig) {
+void fuse_abort_signal(const cosmos::Signal sig) {
 	auto &xwmfs = Xwmfs::getInstance();
 
-	const bool shutdown = sig != SIGUSR1;
+	const bool shutdown = sig != cosmos::signal::USR1;
 
 	xwmfs.abortBlockingCall(shutdown);
 }
@@ -571,9 +570,9 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 	 *
 	 * 1) when a blocking call is pending and the userspace process that
 	 * blocks on it wants to interrupt the call then this situation is
-	 * only made available to us via SIGUSR1.  This signal will be sent by
-	 * fuse in a thread directed manner i.e. we need to setup an
-	 * asynchronous signal handler and the thread this signal handlers
+	 * only made available to us via SIGUSR1. This signal will be sent by
+	 * FUSE in a thread directed manner i.e. we need to setup an
+	 * asynchronous signal handler and the thread this signal handler
 	 * runs in is the one that needs to abort its blocking request.
 	 *
 	 * Our EventFile implementation uses a Condition variable for
@@ -586,70 +585,71 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 	 * going on in which objects by which threads. Then the asynchronous
 	 * signal handler forwards the interrupt information to a global event
 	 * thread which sorts the information out and unblocks the right
-	 * thread. Pretty fucked up but that's just the way it is
+	 * thread. Pretty f***ed up but that's just the way it is.
 	 *
 	 * https://sourceforge.net/p/fuse/mailman/message/28816288/
 	 *
-	 * 2) When a blocking call is pending and the fuse userspace process
-	 * gets a SIGINT or SIGTERM for shutdown then fuse will internally
+	 * 2) When a blocking call is pending and the FUSE userspace process
+	 * gets a SIGINT or SIGTERM for shutdown then FUSE will internally
 	 * deadlock.
 	 *
 	 * When FUSE gets the interrupt it tries to join all of its running
 	 * threads before calling the fuse_exit() function. So we have no
 	 * chance of knowing that we'd need to unblock the Condition wait.
 	 *
-	 * The way fuse thinks we should deal with this is using
-	 * pthread_cancel and cancelation points. but this doesn't fly with us
-	 * in c++ where we need to call destructors and friends.
+	 * The way FUSE thinks we should deal with this is by using
+	 * pthread_cancel and cancellation points. But this doesn't fly with us
+	 * in C++ where we need to call destructors and friends.
 	 *
 	 * Therefore we're overwriting the SIGINT and SIGTERM signal handlers
 	 * so we get a chance to abort all ongoing blocking calls. The tricky
-	 * part is to forward the interrupt request to the internal fuse
+	 * part is to forward the interrupt request to the internal FUSE
 	 * routines, however.
 	 *
 	 * a) For this we need to know the struct fuse which is a low level
 	 * data structure normally not available when we use the high level
-	 * API of fuse. We need this structure for explicitly shutting down
-	 * fuse when we intercept a SIGINT or SIGTERM.
+	 * API of FUSE. We need this structure for explicitly shutting down
+	 * FUSE when we intercept a SIGINT or SIGTERM.
 	 *
 	 * b) Another alternative is to catch the SIGINT, unblock our blocking
-	 * threads and then reinstate the original SIGINT handler for fuse to
+	 * threads and then reinstate the original SIGINT handler for FUSE to
 	 * shut down the regular way.
 	 *
 	 * Both approaches leave room for a race condition when we've
-	 * unblocked our waiting threads but before fuse has a chance to
-	 * shutdown another blocking call comes into existence.  There's
+	 * unblocked our waiting threads but before FUSE has a chance to
+	 * shutdown another blocking call comes into existence. There's
 	 * nothing much we can do against this, except maybe polling for
 	 * blocked threads or so. Or a shutdown flag which we now have in
 	 * m_shutdown.
 	 *
-	 * Actually the fuse_get_context() is only valid for the duraction of
-	 * a request call, but I hope the fuse pointer is an exception, as
-	 * this shouldn't change for the lifetime of the fuse instance.
+	 * Actually the fuse_get_context() is only valid for the duration of
+	 * a request call, but I hope the FUSE pointer is an exception, as
+	 * this shouldn't change for the lifetime of the FUSE instance.
 	 *
 	 * After some testing I'm going for solution b). This works now.
-	 * Solution a) had strange problems when the fuse main thread didn't
+	 * Solution a) had strange problems when the FUSE main thread didn't
 	 * react to the fuse_exit() call on the first attempt. It seems the
 	 * sem_wait() the fuse main thread does did not always return EINTR in
-	 * these situations. All pretty f***ed up.
+	 * these situations.
 	 */
-	struct sigaction act, orig;
-	std::memset(&act, 0, sizeof(struct sigaction));
-	act.sa_handler = &fuse_abort_signal;
+	cosmos::SigAction action, orig;
+	action.setHandler(&fuse_abort_signal);
 
-	std::vector<int> sigs;
+	for (const auto signal: {
+			cosmos::signal::USR1,
+			cosmos::signal::INTERRUPT,
+			cosmos::signal::TERMINATE}) {
 
-	sigs.push_back(SIGUSR1);
-	sigs.push_back(SIGINT);
-	sigs.push_back(SIGTERM);
-
-	for (const auto sig: sigs) {
-		if (sigaction(sig, on_off ? &act : &m_signal_handlers[sig], &orig) != 0 ) {
-			throw Exception{"Failed to change abort sighandler"};
+		try {
+			cosmos::signal::set_action(signal, on_off ? action : m_signal_handlers[signal], &orig);
+		} catch (const std::exception &ex) {
+			throw Exception{cosmos::sprintf(
+					"Failed to setup abort signal handlers: %s", ex.what())};
 		}
 
 		if (on_off) {
-			m_signal_handlers[sig] = orig;
+			// save the original signal handle to restore it later
+			m_signal_handlers[signal] = orig;
 		}
 	}
 }

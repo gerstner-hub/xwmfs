@@ -6,9 +6,10 @@
 #include <set>
 
 // cosmos
+#include <cosmos/io/EventFile.hxx>
+#include <cosmos/proc/SigAction.hxx>
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
-#include <cosmos/io/EventFile.hxx>
 
 // libxpp
 #include <xpp/Event.hxx>
@@ -134,7 +135,7 @@ public: // functions
 
 protected: // functions
 
-	friend void fuse_abort_signal(int);
+	friend void fuse_abort_signal(const cosmos::Signal);
 
 	/// Called from an asynchronous signal handler in case a blocking shall be aborted.
 	void abortBlockingCall(const bool all);
@@ -206,7 +207,7 @@ protected: // functions
 private: // types
 
 	using BlockingCallMap = std::map<pthread_t, Entry*>;
-	using SignalHandlerMap = std::map<int, struct sigaction>;
+	using SignalHandlerMap = std::map<cosmos::Signal, cosmos::SigAction>;
 
 	/// Different abort signal contexts
 	enum class AbortType {
