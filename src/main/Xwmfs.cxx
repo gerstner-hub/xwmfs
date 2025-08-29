@@ -1,11 +1,6 @@
 // C++
-#include <algorithm>
 #include <functional>
 #include <vector>
-
-// POSIX
-#include <fcntl.h>
-#include <sys/stat.h>
 
 // FUSE
 #include <fuse.h>
@@ -24,6 +19,7 @@
 #include <xpp/event/ConfigureEvent.hxx>
 #include <xpp/event/CreateEvent.hxx>
 #include <xpp/event/DestroyEvent.hxx>
+#include <xpp/Event.hxx>
 #include <xpp/event/MapEvent.hxx>
 #include <xpp/event/PropertyEvent.hxx>
 #include <xpp/event/ReparentEvent.hxx>
@@ -34,6 +30,7 @@
 #include <xpp/PropertyTraits.hxx>
 #include <xpp/XDisplay.hxx>
 
+
 // xwmfs
 #include "fuse/Entry.hxx"
 #include "fuse/xwmfs_fuse.hxx"
@@ -41,8 +38,6 @@
 #include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/SelectionDirEntry.hxx"
-#include "main/WindowDirEntry.hxx"
-#include "main/WindowFileEntry.hxx"
 #include "main/WindowsRootDir.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -67,119 +62,14 @@ Xwmfs::~Xwmfs() {
 	m_win_dir = nullptr;
 }
 
-void Xwmfs::updateTime() {
-	m_current_time = time(nullptr);
-}
-
-void Xwmfs::createFS() {
-	updateTime();
-
-	m_fs_root.setModifyTime(m_current_time);
-	m_fs_root.setStatusTime(m_current_time);
-
-	// window manager (wm) directory that contains files for wm
-	// information
-	m_wm_dir = new xwmfs::WinManagerDirEntry{m_root_win};
-	m_fs_root.addEntry(m_wm_dir);
-
-	// now add a directory that contains each window
-	m_win_dir = new WindowsRootDir{};
-	m_fs_root.addEntry(m_win_dir);
-
-	m_desktop_dir = new DesktopsRootDir{m_root_win};
-	m_fs_root.addEntry(m_desktop_dir);
-
-	m_selection_dir = new xwmfs::SelectionDirEntry{};
-	m_fs_root.addEntry(m_selection_dir);
-
-	const std::vector<xpp::WinID> *windows = nullptr;
-
-	if (m_opts.handlePseudoWindows()) {
-		/*
-		 * if we want to display all pseudo windows then we can't rely
-		 * on the client list the window manager provides, because
-		 * this only contains actual application windows.
-		 *
-		 * instead we need to query the complete window tree. from
-		 * there on we get events for all created windows, even pseudo
-		 * ones.
-		 *
-		 * this is only a snapshot so there may be a race condition
-		 * and we end up with a slightly wrong initial state of
-		 * windows. not sure what to do against that.
-		 */
-		m_root_win.queryTree();
-		windows = &(m_root_win.windowTree());
-	} else {
-		m_root_win.queryWindows();
-		windows = &(m_root_win.windowList());
-	}
-
-	// add each window found in the list
-
-	{
-		FileSysWriteGuard write_guard{m_fs_root};
-
-		for (const auto &win: *windows) {
-			m_win_dir->addWindow(xpp::XWindow{win}, true, win == m_root_win);
-		}
-	}
-
-	m_desktop_dir->handleDesktopsChanged();
-}
-
-void Xwmfs::createSelectionWindow() {
-	m_selection_window = xpp::XWindow{m_root_win.createChild()};
-
-	m_selection_window.setName("xwmfs selection buffer window");
-
-	xwmfs::logger->info() << "Created selection window " << m_selection_window << "\n";
-}
-
-void Xwmfs::exit() noexcept {
-	try {
-		if (m_running.exchange(false)) {
-			m_wakeup_event.signal();
-
-			// finally join the thread
-			m_ev_thread.join();
-		}
-
-		m_fs_root.clear();
-	} catch (const std::exception &ex) {
-		logger->error() << "failed to join event thread / clear file system: " << ex.what() << "\n";
-	}
-}
-
-int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
-	(void)disp;
-	(void)error;
-
-	char err_msg[512];
-
-	XGetErrorText(disp, error->error_code, &err_msg[0], sizeof(err_msg));
-
-	logger->warn() << "An async X error occured: \"" << err_msg << "\"" << std::endl;
-
-	return 0;
-}
-
-int Xwmfs::XIOErrorHandler(Display *disp) {
-	(void)disp;
-
-	logger->error() << "A fatal async X error occured. Exiting." << std::endl;
-
-	// call the internal exit explicitly, the normal exit would cause
-	// follow up errors through destruction of static objects in
-	// unexpected states
-	::_exit(1);
-}
-
 void Xwmfs::early_init() {
-	// to get the current umask we need to temporarily change the umask.
-	// There seems to be no better system call. Starting from Linux 4.7 an
-	// entry will be in /proc/<pid>/status, so we could read it from there
-	// if present
+	/*
+	 * To get the current umask we need to temporarily change the umask.
+	 * There seems to be no better system call. Starting from Linux 4.7 an
+	 * entry will be in /proc/<pid>/status, so we could read it from
+	 * there, * if present. Since we know that we are single threaded at
+	 * this point it is still fine to use this approach.
+	 */
 	m_umask = cosmos::fs::set_umask(m_umask);
 	(void)cosmos::fs::set_umask(m_umask);
 }
@@ -188,7 +78,7 @@ int Xwmfs::init() noexcept {
 	int res = EXIT_SUCCESS;
 
 	try {
-		// sets the asynchronous error handler
+		// sets the asynchronous error handlers
 		::XSetErrorHandler(&Xwmfs::XErrorHandler);
 		::XSetIOErrorHandler(&Xwmfs::XIOErrorHandler);
 
@@ -198,8 +88,7 @@ int Xwmfs::init() noexcept {
 				logger->info() << "Operating in Xlib synchronous mode\n";
 			}
 
-			// this gets us information about newly created
-			// windows
+			// this gets us information about newly created windows
 			m_root_win.selectCreateEvent();
 			// this gets us information about changed global
 			// properties like the number of desktops
@@ -209,19 +98,19 @@ int Xwmfs::init() noexcept {
 			m_display.sync();
 
 			/*
-			 * there is a race condition that we can't really
+			 * There is a race condition that we can't really
 			 * avoid here:
 			 *
-			 * in createFS() we statically determine the current
+			 * In createFS() we statically determine the current
 			 * state of the window manager. We might already be
 			 * getting events about things that happened before
 			 * this initial lookup, thus artifacts like
 			 * destroy events for windows we don't know about or
 			 * creation events for windows we've already seen.
 			 *
-			 * this is probably better than the other way around:
+			 * This is probably better than the other way around:
 			 * losing events for things we should have known,
-			 * causing inconsistent data
+			 * causing inconsistent data.
 			 */
 
 			createFS();
@@ -245,6 +134,113 @@ int Xwmfs::init() noexcept {
 	}
 
 	return res;
+}
+
+
+void Xwmfs::exit() noexcept {
+	try {
+		if (m_running.exchange(false)) {
+			m_wakeup_event.signal();
+			// finally join the thread
+			m_ev_thread.join();
+		}
+
+		m_fs_root.clear();
+	} catch (const std::exception &ex) {
+		logger->error() << "failed to join event thread / clear file system: "
+			<< ex.what() << "\n";
+	}
+}
+
+void Xwmfs::updateTime() {
+	m_current_time = time(nullptr);
+}
+
+void Xwmfs::createFS() {
+	updateTime();
+
+	m_fs_root.setModifyTime(m_current_time);
+	m_fs_root.setStatusTime(m_current_time);
+
+	// window manager (WM) directory that contains files with global WM information
+	m_wm_dir = new xwmfs::WinManagerDirEntry{m_root_win};
+	m_fs_root.addEntry(m_wm_dir);
+
+	// now add a directory that contains a sub-directory for each window
+	m_win_dir = new WindowsRootDir{};
+	m_fs_root.addEntry(m_win_dir);
+
+	// desktop / workspace specific information
+	m_desktop_dir = new DesktopsRootDir{m_root_win};
+	m_fs_root.addEntry(m_desktop_dir);
+
+	// clipboard/select special files
+	m_selection_dir = new xwmfs::SelectionDirEntry{};
+	m_fs_root.addEntry(m_selection_dir);
+
+	const std::vector<xpp::WinID> *windows = nullptr;
+
+	if (m_opts.handlePseudoWindows()) {
+		/*
+		 * If we want to display all pseudo windows then we can't rely
+		 * on the client list the window manager provides, because
+		 * this only contains actual application windows.
+		 *
+		 * Instead we need to query the complete window tree. From
+		 * there on we get events for all created windows, even pseudo
+		 * ones.
+		 *
+		 * This is only a snapshot so there may be a race condition
+		 * and we can end up with a slightly wrong initial state of
+		 * windows. Not sure what to do against that.
+		 */
+		m_root_win.queryTree();
+		windows = &(m_root_win.windowTree());
+	} else {
+		m_root_win.queryWindows();
+		windows = &(m_root_win.windowList());
+	}
+
+	// add each window found to the file system
+
+	{
+		FileSysWriteGuard write_guard{m_fs_root};
+
+		for (const auto &win: *windows) {
+			m_win_dir->addWindow(xpp::XWindow{win},
+					/* initial = */ true,
+					/* is_root_win = */ win == m_root_win);
+		}
+	}
+
+	m_desktop_dir->handleDesktopsChanged();
+}
+
+void Xwmfs::createSelectionWindow() {
+	m_selection_window = xpp::XWindow{m_root_win.createChild()};
+	m_selection_window.setName("xwmfs selection buffer window");
+
+	xwmfs::logger->info() << "Created selection window " << m_selection_window << "\n";
+}
+
+int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
+	char err_msg[512];
+
+	::XGetErrorText(disp, error->error_code, &err_msg[0], sizeof(err_msg));
+
+	logger->warn() << "An async X error occurred: \"" << err_msg << "\"\n";
+
+	return 0;
+}
+
+int Xwmfs::XIOErrorHandler(Display *disp) {
+	(void)disp;
+
+	logger->error() << "A fatal async X error occurred. Exiting." << "\n";
+
+	// perform an immediate exit, the normal exit would cause follow up
+	// errors through destruction of static objects in unexpected states
+	cosmos::proc::exit(cosmos::ExitStatus::FAILURE);
 }
 
 void Xwmfs::eventThread() {
@@ -286,16 +282,18 @@ void Xwmfs::eventThread() {
 
 void Xwmfs::handlePendingEvents() {
 	cosmos::MutexGuard g{m_event_lock};
+	xpp::Event m_ev;
 
 	/*
-	 * this is important to avoid blocking while there are still events to
-	 * be processed. this is because the select() in the event thread only
-	 * wakes up when there's network data from the X server. But the
-	 * libX11 can read more than one event at once from the network in one
-	 * go, thus the socket might not be readable, still there would be
-	 * pending events that we wouldn't process
+	 * It is important to read all pending events to avoid blocking while
+	 * there are still events to be processed. This is because the
+	 * Poller in the event thread only wakes up when there's network
+	 * data coming in from the X server. But the libX11 can read more than
+	 * one event at once from the network in one go, thus the socket might
+	 * not be readable, still there would be pending events that we
+	 * wouldn't process.
 	 */
-	while (XPending(m_display) != 0) {
+	while (m_display.hasPendingEvents()) {
 		m_display.nextEvent(m_ev);
 
 		try {
@@ -308,7 +306,7 @@ void Xwmfs::handlePendingEvents() {
 			handleEvent(m_ev);
 		} catch (const std::exception &ex) {
 			logger->error() << "Failed to handle X11 event of type "
-				<< std::dec << cosmos::to_integral(m_ev.type()) << ": " << ex.what() << "\n";
+				<< cosmos::to_integral(m_ev.type()) << ": " << ex.what() << "\n";
 		}
 	}
 }
@@ -364,8 +362,9 @@ void Xwmfs::handleEvent(const xpp::Event &ev) {
 			const auto prop = prop_ev.property();
 
 			if (win == m_root_win) {
-				is_delete ?
-					m_wm_dir->delProp(prop) :
+				if (is_delete)
+					m_wm_dir->delProp(prop);
+				else
 					m_wm_dir->update(prop);
 			} else {
 				if (is_delete) {
@@ -412,9 +411,11 @@ void Xwmfs::handleEvent(const xpp::Event &ev) {
 			const auto event = xpp::UnmapEvent{ev};
 			map_window = xpp::XWindow{event.window()};
 		}
+
 		if (isIgnored(map_window)) {
 			break;
 		}
+
 		updateTime();
 		FileSysWriteGuard write_guard{m_fs_root};
 		m_win_dir->updateMappedState(map_window, ev.type() == Type::MAP_NOTIFY);
@@ -438,9 +439,7 @@ void Xwmfs::handleEvent(const xpp::Event &ev) {
 		break;
 	}
 	default:
-		logger->debug()
-			<< __FUNCTION__
-			<< ": Some unknown event "
+		logger->debug() << "Some unknown event "
 			<< cosmos::to_integral(ev.type()) << " for window "
 			<< xpp::XWindow{xpp::WinID{ev.toAnyEvent().window}} << " received" << "\n";
 		break;
@@ -452,14 +451,14 @@ bool Xwmfs::isPseudoWindow(const xpp::CreateEvent &ev) const {
 	// events as they come from popups
 	if (ev.overrideRedirect()) {
 		logger->debug() << "Ignoring override_redirect window "
-			<< cosmos::to_integral(ev.window()) << std::endl;
+			<< cosmos::to_integral(ev.window()) << "\n";
 		return true;
 	} else if (ev.parent() != m_root_win.id()) {
-		// this is grand-kid or something. we could add these
+		// This is grand-kid or something. We could add these
 		// in a hierarchical manner as sub-windows but for now
-		// we ignore them
+		// we ignore them.
 		logger->debug() << "Ignoring grand-child-window"
-			<< cosmos::to_integral(ev.window()) << std::endl;
+			<< cosmos::to_integral(ev.window()) << "\n";
 		return true;
 	}
 
@@ -467,10 +466,8 @@ bool Xwmfs::isPseudoWindow(const xpp::CreateEvent &ev) const {
 }
 
 bool Xwmfs::handleCreateEvent(const xpp::CreateEvent &ev) {
-	if (!m_opts.handlePseudoWindows()) {
-		if (isPseudoWindow(ev)) {
-			return false;
-		}
+	if (!m_opts.handlePseudoWindows() && isPseudoWindow(ev)) {
+		return false;
 	}
 
 	xpp::XWindow w{ev.window()};
@@ -481,9 +478,9 @@ bool Xwmfs::handleCreateEvent(const xpp::CreateEvent &ev) {
 	logger->debug() << "\twin name = ";
 
 	try {
-		logger->debug() << w.getName() << std::endl;
+		logger->debug() << w.getName() << "\n";
 	} catch (const std::exception &ex) {
-		logger->debug() << "error getting win name: " << ex.what() << std::endl;
+		logger->debug() << "<failed to get name>" << "\n";
 	}
 
 	try {
@@ -493,7 +490,7 @@ bool Xwmfs::handleCreateEvent(const xpp::CreateEvent &ev) {
 		m_wm_dir->windowLifecycleEvent(w, true);
 		m_desktop_dir->handleWindowCreated(w);
 	} catch (const std::exception &ex) {
-		logger->debug() << "\terror adding window: " << ex.what() << std::endl;
+		logger->debug() << "\terror adding window: " << ex.what() << "\n";
 	}
 
 	return true;
@@ -502,7 +499,7 @@ bool Xwmfs::handleCreateEvent(const xpp::CreateEvent &ev) {
 void Xwmfs::handleDestroyEvent(const xpp::DestroyEvent &ev) {
 	xpp::XWindow w{ev.window()};
 
-	logger->debug() << "Window " << w << " was destroyed!" << std::endl;
+	logger->debug() << "Window " << w << " was destroyed!" << "\n";
 
 	FileSysWriteGuard write_guard{m_fs_root};
 	m_win_dir->removeWindow(w);
@@ -516,7 +513,8 @@ void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
 	const xpp::XWindow w{*xpp::AnyEvent{ev}.window()};
 
 	if (w != m_selection_window) {
-		logger->warn() << "Got selection buffer related event, but it's not for our selection window?"
+		logger->warn()
+			<< "Got selection buffer related event, but it's not for our selection window?"
 			<< "\n";
 		return;
 	}
@@ -535,9 +533,7 @@ void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
 	}
 }
 
-/*
- * global sync signal handler for the fuse abort signal
- */
+/// Global sync signal handler for the fuse abort signal.
 void fuse_abort_signal(const cosmos::Signal sig) {
 	auto &xwmfs = Xwmfs::getInstance();
 
@@ -638,9 +634,11 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 }
 
 void Xwmfs::abortBlockingCall(const bool all) {
-	// send the ID of the thread that got the signal over the abort pipe
-	// so the event thread can deal with the situation without
-	// restrictions of async signal handling
+	/*
+	 * Send the ID of the thread that got the signal over the abort pipe
+	 * so that the event thread can deal with the situation without
+	 * restrictions of async signal handling
+	 */
 
 	AbortMsg msg;
 	msg.type = all ? AbortType::SHUTDOWN : AbortType::CALL;
@@ -686,10 +684,10 @@ void Xwmfs::abortAllBlockingCalls() {
 	}
 
 	/*
-	 * this signaling flag is necessary to avoid race conditions: all
+	 * This signaling flag is necessary to avoid race conditions: all
 	 * blocking calls may return but userspace programs often react to
 	 * EINTR by retrying the blocking calls, which would cause again a
-	 * deadlock. This flag helps us to continously return EINTR to
+	 * deadlock. This flag helps us to continuously return EINTR to
 	 * successive calls.
 	 */
 	m_shutdown = true;

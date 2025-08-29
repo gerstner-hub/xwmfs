@@ -13,9 +13,6 @@
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
 
-// libxpp
-#include <xpp/Event.hxx>
-
 // Xwmfs
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
@@ -129,6 +126,9 @@ public: // functions
 	 * 
 	 * In any case the caller must call unregisterBlockingCall() after the
 	 * blocking call is over, whether aborted or not.
+	 *
+	 * \return If `false` is returned then no blocking call can take place
+	 * right now and the operation should be aborted with an error.
 	 **/
 	bool registerBlockingCall(Entry *f);
 
@@ -164,7 +164,7 @@ protected: // functions
 	 * operation to us like race conditions e.g. a window property updated
 	 * but then the window also is destroyed but we still attempt to get
 	 * the properties from the already dead window.
-	 * 
+	 *
 	 * For being able to recover such situations, we overwrite the error
 	 * handler and simply print out information to stdout without exiting.
 	 **/
@@ -250,9 +250,6 @@ private: // data
 
 	/// File descriptor poller for the event thread.
 	cosmos::Poller m_event_poller;
-
-	/// Currently handled X11 event.
-	xpp::Event m_ev;
 
 	/// the time of the last event that might lead to creating new file system objects.
 	time_t m_current_time = 0;
