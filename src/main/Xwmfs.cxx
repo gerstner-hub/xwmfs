@@ -23,6 +23,7 @@
 // cosmos
 #include <cosmos/error/ApiError.hxx>
 #include <cosmos/formatting.hxx>
+#include <cosmos/fs/filesystem.hxx>
 
 // libxpp
 #include <xpp/atoms.hxx>
@@ -55,7 +56,7 @@
 
 namespace xwmfs {
 
-mode_t Xwmfs::m_umask = 0777;
+cosmos::FileMode Xwmfs::m_umask = cosmos::FileMode{cosmos::ModeT{0777}};
 
 void Xwmfs::updateTime() {
 	m_current_time = time(nullptr);
@@ -172,8 +173,8 @@ void Xwmfs::early_init() {
 	// There seems to be no better system call. Starting from Linux 4.7 an
 	// entry will be in /proc/<pid>/status, so we could read it from there
 	// if present
-	m_umask = ::umask(0777);
-	(void)::umask(m_umask);
+	m_umask = cosmos::fs::set_umask(m_umask);
+	(void)cosmos::fs::set_umask(m_umask);
 }
 
 int Xwmfs::init() noexcept {

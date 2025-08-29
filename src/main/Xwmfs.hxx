@@ -115,7 +115,7 @@ public: // functions
 	xwmfs::Options& getOptions() { return m_opts; }
 
 	/// Returns the umask of the current process.
-	static mode_t getUmask() { return m_umask; }
+	static cosmos::FileMode getUmask() { return m_umask; }
 
 	/// Returns the current time (updated for each new X event)
 	time_t getCurrentTime() const { return m_current_time; }
@@ -283,7 +283,7 @@ private: // data
 	SignalHandlerMap m_signal_handlers;
 
 	/// The active umask of the current process.
-	static mode_t m_umask;
+	static cosmos::FileMode m_umask;
 
 	/// Currently existing windows that are ignored by us.
 	WindowSet m_ignored_windows;

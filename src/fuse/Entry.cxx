@@ -90,7 +90,7 @@ void Entry::getStat(struct stat *s) const {
 	}
 
 	// apply the current process's umask to the file permissions
-	s->st_mode &= ~(Xwmfs::getUmask());
+	s->st_mode &= ~(cosmos::to_integral(Xwmfs::getUmask().raw()));
 }
 
 int Entry::isOperationAllowed() const {
