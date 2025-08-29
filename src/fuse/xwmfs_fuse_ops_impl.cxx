@@ -20,6 +20,7 @@
 #include "fuse/OpenContext.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "fuse/xwmfs_fuse_ops.h"
+#include "main/logger.hxx"
 #include "main/Xwmfs.hxx"
 
 namespace xwmfs {

@@ -5,6 +5,7 @@
 #include "fuse/AbortHandler.hxx"
 #include "fuse/xwmfs_fuse.hxx"
 #include "main/Exception.hxx"
+#include "main/logger.hxx"
 #include "main/SelectionAccessFile.hxx"
 #include "main/SelectionDirEntry.hxx"
 #include "main/Xwmfs.hxx"

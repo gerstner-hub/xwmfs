@@ -1,9 +1,5 @@
 #pragma once
 
-// POSIX
-#include <signal.h>
-#include <sys/select.h>
-
 // C++
 #include <atomic>
 #include <map>
@@ -15,13 +11,10 @@
 
 // libxpp
 #include <xpp/Event.hxx>
-#include <xpp/RootWin.hxx>
-#include <xpp/XDisplay.hxx>
 
 // Xwmfs
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
-#include "main/logger.hxx"
 #include "x11/WinManagerWindow.hxx"
 
 namespace xpp {

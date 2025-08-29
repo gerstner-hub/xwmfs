@@ -9,6 +9,7 @@
 
 // xwmfs
 #include "fuse/FileEntry.hxx"
+#include "main/logger.hxx"
 #include "main/SelectionAccessFile.hxx"
 #include "main/SelectionDirEntry.hxx"
 #include "main/SelectionOwnerFile.hxx"

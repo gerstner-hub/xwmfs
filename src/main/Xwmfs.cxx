@@ -1,21 +1,14 @@
 // C++
 #include <algorithm>
 #include <functional>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <string>
 #include <vector>
-
-// C
-#include <stdio.h>
-#include <stdlib.h> // EXIT_*
 
 // POSIX
 #include <fcntl.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <unistd.h> // pipe
+#include <signal.h>
 
 // FUSE
 #include <fuse.h>
@@ -39,6 +32,7 @@
 #include <xpp/event/SelectionRequestEvent.hxx>
 #include <xpp/formatting.hxx>
 #include <xpp/PropertyTraits.hxx>
+#include <xpp/XDisplay.hxx>
 
 // xwmfs
 #include "fuse/Entry.hxx"
@@ -46,7 +40,6 @@
 #include "main/DesktopsRootDir.hxx"
 #include "main/Exception.hxx"
 #include "main/logger.hxx"
-#include "main/Options.hxx"
 #include "main/SelectionDirEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
@@ -683,7 +676,7 @@ void Xwmfs::abortBlockingCall(const bool all) {
 	// writing to the pipe <= PIPE_BUF is atomic so we don't need to fear
 	// partial writes here. But the call may block if the pipe is full.
 	if (::write(m_abort_pipe[1], &msg, sizeof(msg)) != sizeof(msg)) {
-		std::cerr << "failed to write to abort pipe\n";
+		logger->error() << "failed to write to abort pipe\n";
 	}
 }
 
