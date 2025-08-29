@@ -7,6 +7,7 @@
 
 // cosmos
 #include <cosmos/io/EventFile.hxx>
+#include <cosmos/io/Pipe.hxx>
 #include <cosmos/proc/SigAction.hxx>
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
@@ -267,7 +268,7 @@ private: // data
 	SelectionDirEntry *m_selection_dir = nullptr;
 
 	/// Abort pipe to signal abort requests for a specific thread.
-	int m_abort_pipe[2];
+	cosmos::Pipe m_abort_pipe;
 	/// A mapping of active blocking threads and their associated files.
 	BlockingCallMap m_blocking_calls;
 	/// Synchronization for access to m_blocking_calls.

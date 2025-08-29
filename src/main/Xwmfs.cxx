@@ -16,6 +16,8 @@
 #include <cosmos/error/ApiError.hxx>
 #include <cosmos/formatting.hxx>
 #include <cosmos/fs/filesystem.hxx>
+#include <cosmos/io/StreamIO.hxx>
+#include <cosmos/proc/process.hxx>
 #include <cosmos/proc/signal.hxx>
 
 // libxpp
@@ -61,12 +63,6 @@ Xwmfs::Xwmfs() :
 	// e.g. a shutdown request we need to get the lower level file
 	// descriptor that X is operating on.
 	m_dis_fd = m_display.connectionNumber();
-
-	// this is a pipe that allows to pass thread IDs to abort blocking
-	// calls for to the event handling thread
-	if (::pipe2(m_abort_pipe, O_CLOEXEC) != 0) {
-		throw cosmos::ApiError{"Unable to create abort pipe"};
-	}
 }
 
 Xwmfs::~Xwmfs() {
@@ -76,9 +72,6 @@ Xwmfs::~Xwmfs() {
 	FD_ZERO(&m_select_set);
 	m_wm_dir = nullptr;
 	m_win_dir = nullptr;
-
-	::close(m_abort_pipe[0]);
-	::close(m_abort_pipe[1]);
 }
 
 void Xwmfs::updateTime() {
@@ -265,7 +258,7 @@ void Xwmfs::eventThread() {
 	const std::vector<int> fds{{
 		cosmos::to_integral(m_dis_fd.raw()),
 		cosmos::to_integral(m_wakeup_event.fd().raw()),
-		m_abort_pipe[0]
+		cosmos::to_integral(m_abort_pipe.readEnd().raw())
 	}};
 	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
 
@@ -290,7 +283,7 @@ void Xwmfs::eventThread() {
 		if (FD_ISSET(cosmos::to_integral(m_wakeup_event.fd().raw()), &m_select_set)) {
 			logger->info() << "Caught cancel request. Shutting down...\n";
 			return;
-		} else if (FD_ISSET(m_abort_pipe[0], &m_select_set)) {
+		} else if (FD_ISSET(cosmos::to_integral(m_abort_pipe.readEnd().raw()), &m_select_set)) {
 			readAbortPipe();
 			continue;
 		}
@@ -663,10 +656,16 @@ void Xwmfs::abortBlockingCall(const bool all) {
 	msg.type = all ? AbortType::SHUTDOWN : AbortType::CALL;
 	msg.thread = pthread_self();
 
-	// writing to the pipe <= PIPE_BUF is atomic so we don't need to fear
-	// partial writes here. But the call may block if the pipe is full.
-	if (::write(m_abort_pipe[1], &msg, sizeof(msg)) != sizeof(msg)) {
-		logger->error() << "failed to write to abort pipe\n";
+	auto pipe_fd = m_abort_pipe.writeEnd();
+	cosmos::StreamIO pipe_io{pipe_fd};
+
+	try {
+		// writes of <= PIPE_BUF bytes are atomic so we don't need to
+		// fear partial writes here. But the call may block if the
+		// pipe is full.
+		pipe_io.writeAll(&msg, sizeof(msg));
+	} catch (const std::exception &ex) {
+		logger->error() << "failed to write to abort pipe: " << ex.what() << "\n";
 	}
 }
 
@@ -708,13 +707,14 @@ void Xwmfs::abortAllBlockingCalls() {
 
 void Xwmfs::readAbortPipe() {
 	AbortMsg msg;
+	auto pipe_fd = m_abort_pipe.readEnd();
+	cosmos::StreamIO pipe_io{pipe_fd};
 
-	// read <= PIPE_BUF bytes from the pipe is atomic,
-	// should never even block
-	if (read(m_abort_pipe[0], &msg, sizeof(msg)) != sizeof(msg)) {
-		logger->error()
-			<< "Failed to read from abort pipe"
-			<< std::endl;
+	// reads <= PIPE_BUF bytes from the pipe are atomic, shouldn't even block.
+	try {
+		pipe_io.readAll(reinterpret_cast<void*>(&msg), sizeof(msg));
+	} catch (const std::exception &ex) {
+		logger->error() << "Failed to read from abort pipe: " << ex.what() << "\n";
 		return;
 	}
 
@@ -724,7 +724,7 @@ void Xwmfs::readAbortPipe() {
 		abortAllBlockingCalls();
 		/* reinstate original signal handlers */
 		setupAbortSignals(false);
-		::kill(getpid(), SIGINT);
+		cosmos::signal::send(cosmos::proc::get_own_pid(), cosmos::signal::INTERRUPT);
 	}
 }
 
