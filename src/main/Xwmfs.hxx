@@ -26,8 +26,8 @@
 
 namespace xpp {
 
-	class CreateEvent;
-	class DestroyEvent;
+class CreateEvent;
+class DestroyEvent;
 
 }
 
@@ -36,237 +36,176 @@ namespace xwmfs {
 class Entry;
 class DesktopsRootDir;
 class SelectionDirEntry;
-class WindowDirEntry;
 class WindowsRootDir;
 class WinManagerDirEntry;
 
+/// The main application class that provides XWMFS functionality.
 /**
- * \brief
- * 	The main application class that provides XWMFS functionality
- * \details
- * 	This is the connector class between the X11 and FUSE related XWMFS
- * 	parts. It keeps the window manager information on the one hand and the
- * 	FUSE file system representation on the other hand.
- *
- * 	This is a singleton class such that it can be accessed globally from
- * 	anyhwere. Any application-global data is kept here.
- *
- * 	This class also runs its own thread that is responsible for dealing
- * 	with events dispatched from Xlib to us. This allows us to update the
- * 	file system structure whenever relevant window manager information
- * 	changes.
+ * This is the connector class between the X11 and FUSE related XWMFS
+ * parts. It keeps the window manager information on the one hand and the
+ * FUSE file system representation on the other hand.
+ * 
+ * This is a singleton class such that it can be accessed globally from
+ * anywhere. Any application-global data is kept here.
+ * 
+ * This class also runs its own thread that is responsible for dealing
+ * with events dispatched from Xlib to us. This allows us to update the
+ * file system structure whenever relevant window manager information
+ * changes.
  **/
 class Xwmfs {
 public: // functions
 
-	/**
-	 * \brief
-	 * 	An early initialization function that needs to be called from
-	 * 	the main() function early on
-	 **/
+	/// Initialization routine that needs to be called from main() early on.
 	static void early_init();
 
+	/// Initialization routine that needs to be called by the FUSE initialization logic.
 	/**
-	 * \brief
-	 *	This function is called by FUSE for initialization
-	 * \details
-	 * 	This function is only called from within FUSE initialization
-	 * 	and thus can't throw any exceptions.
+	 *  This function is only called from within FUSE initialization and
+	 *  thus must not throw any exceptions.
+	 *
 	 * \return
 	 *	EXIT_SUCCESS if initialization went well, else otherwise.
 	 **/
-	int init();
+	int init() noexcept;
 
-	/**
-	 * \brief
-	 *	This function is called by FUSE for cleanup
-	 **/
-	void exit();
+	/// This function is called by FUSE for cleanup.
+	void exit() noexcept;
 
 	~Xwmfs();
 
-	//! returns the global XWMFS instance
+	/// Returns the global XWMFS instance.
 	static xwmfs::Xwmfs& getInstance() {
 		static Xwmfs w;
 
 		return w;
 	}
 
+	/// Lock for the X11 event handling in the event handling thread.
 	/**
-	 * \brief
-	 * 	Locks the X11 event handling in the separated event thread
-	 * \details
-	 * 	This is to work around issues in libX11 itself. It's
-	 * 	surrounding the multithreading, for example when calling
-	 * 	XInternAtom from other threads then neither the separte Event
-	 * 	thread nor the thread calling XInternAtom will unblock as long
-	 * 	as no additional events are occuring that the event thread can
-	 * 	consume.
-	 *
-	 * 	This is a FIXME in libX11 source file xcb_io.c in function
-	 * 	_XReply() we're running into here. This lock here is supposed
-	 * 	to prevent entering this situation by only calling into
-	 * 	XNextEvent() when no other threads are actually doing
-	 * 	asynchronous X calls.
-	 *
-	 * 	This currently mostly happens in the "properties" node where
-	 * 	custom atom names are handling in the context of a FUSE
-	 * 	thread.
+	 * This is to work around issues in libX11 itself. It's surrounding
+	 * the multithreading, for example when calling XInternAtom from other
+	 * threads then neither the separate Event thread nor the thread
+	 * calling XInternAtom will unblock as long as no additional events
+	 * are occurring that the event thread can consume.
+	 * 
+	 * This is a FIXME in libX11 source file xcb_io.c in function
+	 * _XReply() we're running into here. This lock here is supposed
+	 * to prevent entering this situation by only calling into
+	 * XNextEvent() when no other threads are actually doing
+	 * asynchronous X calls.
+	 * 
+	 * This currently mostly happens in the "properties" node where
+	 * custom atom names are handled in the context of a FUSE thread.
 	 **/
 	cosmos::Mutex& getEventLock() { return m_event_lock; }
 
-	//! Returns the root window held in the Xwmfs
-	auto& getRootWin() { return m_root_win; }
+	/// Returns the global window manager window representation.
+	WinManagerWindow& getRootWin() { return m_root_win; }
 
+	/// Returns the application-wide XDisplay instance.
 	auto& getDisplay() { return m_display; }
 
-	//! returns the file system structure root entry
-	xwmfs::RootEntry& getFS() { return m_fs_root; }
+	/// Returns the file system structure root entry.
+	RootEntry& getFS() { return m_fs_root; }
 
 	xpp::XWindow& getSelectionWindow() { return m_selection_window; }
 
-	//! returns the options in effect for Xwmfs
+	/// Returns the options in effect for Xwmfs.
 	xwmfs::Options& getOptions() { return m_opts; }
 
-	//! returns the umask of the current process
+	/// Returns the umask of the current process.
 	static mode_t getUmask() { return m_umask; }
 
-	//! returns the current time (updated for each new X event)
+	/// Returns the current time (updated for each new X event)
 	time_t getCurrentTime() const { return m_current_time; }
 
-	//! returns the "desktops" directory node
+	/// Returns the "desktops" directory node.
 	DesktopsRootDir* getDesktopsDir() { return m_desktop_dir; }
 
+	/// Registers a blocking call situation.
 	/**
-	 * \brief
-	 * 	Registers blocking call situation
-	 * \details
-	 * 	The calling thread will be associated with the given file
-	 * 	object. The callee will make sure that fuse signals to abort
-	 * 	the blocking request will be caught and the blocking call
-	 * 	woken up.
-	 *
-	 * 	In any case the caller must call unregisterBlockingCall()
-	 * 	after the blocking call is over, whether aborted or not.
+	 * The calling thread will be associated with the given file object.
+	 * The callee will make sure that fuse signals to abort the blocking
+	 * request will be caught and the blocking call woken up in that
+	 * situation.
+	 * 
+	 * In any case the caller must call unregisterBlockingCall() after the
+	 * blocking call is over, whether aborted or not.
 	 **/
 	bool registerBlockingCall(Entry *f);
 
-	/**
-	 * \brief
-	 * 	Unregisters a previously registered blocking call situation
-	 **/
+	/// Unregisters a previously registered blocking call situation.
 	void unregisterBlockingCall();
 
 protected: // functions
 
-	friend void fuseAbortSignal(int);
+	friend void fuse_abort_signal(int);
 
-	/**
-	 * \brief
-	 * 	Called from an asynchronous signal handler in case a blocking
-	 * 	call shall be aborted for the calling thread
-	 **/
+	/// Called from an asynchronous signal handler in case a blocking shall be aborted.
 	void abortBlockingCall(const bool all);
 
+	/// Abort a blocking call for the given thread
 	/**
-	 * \brief
-	 * 	Abort a blocking call for the given thread, called
-	 * 	synchronously from the event handling thread
+	 * This is called synchronously from the event handling thread.
 	 **/
 	void abortBlockingCall(pthread_t thread);
 
-	/**
-	 * \brief
-	 * 	Called synchronously from the event calling thread to abort
-	 * 	all pending blocking calls
-	 **/
+	/// Abort all pending blocking calls.
 	void abortAllBlockingCalls();
 
-
-	/**
-	 * \brief
-	 * 	Read an available message from the abort pipe
-	 **/
+	/// Read an available message from the abort pipe.
 	void readAbortPipe();
 
-	/**
-	 * \brief
-	 * 	Sets up any asynchronous signal handlers we need for aborting
-	 * 	blocking calls
-	 **/
+	/// Sets up asynchronous signal handlers needed for aborting blocking calls.
 	void setupAbortSignals(const bool on_off);
 
+	/// Callback for Xlib protocol errors.
 	/**
-	 * \brief
-	 * 	Called from Xlib on protocol errors
-	 * \details
-	 * 	If we don't overwrite this handler then the default handler
-	 * 	from xlib will call exit() in situations that can happen in
-	 * 	normal operation to us like race conditions e.g. a window
-	 * 	property updated but then the window also is destroyed but we
-	 * 	still attempt to get the properties from the already dead
-	 * 	window.
-	 *
-	 * 	For being able to recover such situations we overwrite the
-	 * 	error handler and simply print out information to stdout
-	 * 	without exiting.
+	 * If we don't overwrite this handler then the default handler from
+	 * Xlib will call exit() in situations that can happen in normal
+	 * operation to us like race conditions e.g. a window property updated
+	 * but then the window also is destroyed but we still attempt to get
+	 * the properties from the already dead window.
+	 * 
+	 * For being able to recover such situations, we overwrite the error
+	 * handler and simply print out information to stdout without exiting.
 	 **/
 	static int XErrorHandler(Display *disp, XErrorEvent *error);
 
+	/// Callback for Xlib fatal error conditions.
 	/**
-	 * \brief
-	 * 	Called from Xlib on fatal error conditions
-	 * \details
-	 * 	This is called if fatal errors occur like the X connection
-	 * 	being lost. It's supposed not to return, otherwise Xlib calls
-	 * 	exit()
+	 * This is called if fatal errors occur like the X connection being
+	 * lost. It's supposed not to return, otherwise Xlib calls exit().
 	 **/
 	static int XIOErrorHandler(Display *disp);
 
-	//! working loop for the event handling thread
+	/// Working loop for the event handling thread
 	void eventThread();
 
-	/**
-	 * \brief
-	 * 	Reads and processes all events that can currently be read
-	 * 	without blocking
-	 **/
+	/// Processes all events that can currently be read without blocking.
 	void handlePendingEvents();
 
-	/**
-	 * \brief
-	 * 	Handles a single X11 event received by the x11 event thread
-	 **/
+	/// Handles a single X11 event received by the event thread.
 	void handleEvent(const xpp::Event &ev);
 
+	/// Handles a window creation event.
 	/**
-	 * \brief
-	 * 	Handles a window CreateNotify event
 	 * \return
 	 * 	Whether the window has been added to the file system or not
 	 **/
 	bool handleCreateEvent(const xpp::CreateEvent &ev);
 
-	/**
-	 * \brief
-	 * 	Handles a window DestroyNotify event
-	 **/
+	/// Handles a window destruction event
 	void handleDestroyEvent(const xpp::DestroyEvent &ev);
 
-	/**
-	 * \brief
-	 * 	Handles any selection buffer related events
-	 **/
+	/// Handles any selection buffer related events.
 	void handleSelectionEvent(const xpp::Event &ev);
 
-	/**
-	 * \brief
-	 * 	Returns whether the given CreateNotify event refers to a
-	 * 	pseudo window
-	 **/
+	/// Returns whether the given event refers to pseudo window.
 	bool isPseudoWindow(const xpp::CreateEvent &ev) const;
 
-	bool isIgnored(const xpp::WinID &win) const {
+	bool isIgnored(const xpp::WinID win) const {
 		return m_ignored_windows.find(win) != m_ignored_windows.end();
 	}
 
@@ -275,11 +214,11 @@ private: // types
 	using BlockingCallMap = std::map<pthread_t, Entry*>;
 	using SignalHandlerMap = std::map<int, struct sigaction>;
 
-	//! different abort signal contexts
+	/// Different abort signal contexts
 	enum class AbortType {
-		//! abort just a single ongoing call in the associated thread
+		/// Abort just a single ongoing call in the associated thread.
 		CALL,
-		//! abort all ongoing blocking calls to prepare for shutdown
+		/// Abort all ongoing blocking calls to prepare for shutdown.
 		SHUTDOWN
 	};
 
@@ -292,92 +231,85 @@ private: // types
 
 private: // data
 
-	//! The display we're operating on.
+	/// The display we're operating on.
 	xpp::XDisplay &m_display;
 
-	//! \brief
-	//! The gathered window manager information for the current X
-	//! display (X11 part of XWMFS)
+	/// Access to window manager information for the current X display (X11 part of XWMFS).
 	WinManagerWindow m_root_win;
 
-	//! \brief
-	//! The file system root entry that composes the complete file system
-	//! (FUSE part of XWMFS)
+	/// The file system root entry that composes the complete file system (FUSE part of XWMFS).
 	xwmfs::RootEntry m_fs_root;
 
-	//! Thread evaluating X11 events and updating m_wmi, m_fs_root
+	/// X11 event handling thread.
 	cosmos::PosixThread m_ev_thread;
-	//! flag for m_ev_thread
+	/// Whether m_ev_thread should still be running.
 	std::atomic_bool m_running;
 
-	//! options for the current instance
+	/// Options in effect for the current instance
 	xwmfs::Options &m_opts;
 
-	//! this is the fd for the connection to the display
+	/// This is the fd for the connection to the X11 display.
 	cosmos::FileDescriptor m_dis_fd;
-	//! wakeup pipe read and write end
+	/// Wakeup pipe read and write end.
 	int m_wakeup_pipe[2];
 
-	//! file descriptors to monitor for events
+	/// File descriptors to monitor for events.
 	fd_set m_select_set;
 
+	/// Currently handled X11 event.
 	xpp::Event m_ev;
 
-	//! the time of the last event that might lead to creating new file
-	//! system objects
+	/// the time of the last event that might lead to creating new file system objects.
 	time_t m_current_time = 0;
 
-	//! directory node containing all windows
+	/// Directory node containing all windows.
 	WindowsRootDir *m_win_dir = nullptr;
-	//! directory node containing all desktops and their windows
+	/// Directory node containing all desktops and their windows.
 	DesktopsRootDir *m_desktop_dir = nullptr;
-	//! directory node containing global wm information
+	/// Directory node containing global window manager information.
 	WinManagerDirEntry *m_wm_dir = nullptr;
-	//! directory ndoe containing selection buffer information
+	/// Directory node containing selection buffer information.
 	SelectionDirEntry *m_selection_dir = nullptr;
 
-	//! abort pipe to signal abort requests for a specific thread
+	/// Abort pipe to signal abort requests for a specific thread.
 	int m_abort_pipe[2];
-	//! a mapping of active blocking threads and their associated files
+	/// A mapping of active blocking threads and their associated files.
 	BlockingCallMap m_blocking_calls;
-	//! protection for m_blocking_calls
+	/// Synchronization for access to m_blocking_calls.
 	cosmos::Mutex m_blocking_call_lock;
-	//! whether we're in a shutdown condition
+	/// Whether we're in a shutdown condition.
 	bool m_shutdown = false;
-	//! used for storing the original fuse signal handlers
+	/// used for storing the original fuse signal handlers.
 	SignalHandlerMap m_signal_handlers;
 
-	//! the active umask of the current process
+	/// The active umask of the current process.
 	static mode_t m_umask;
 
-	//! currently existing windows that are ignored by us
+	/// Currently existing windows that are ignored by us.
 	WindowSet m_ignored_windows;
 
 	cosmos::Mutex m_event_lock;
 
-	//! an XWindow created by the xwmfs for managing selection buffers
+	/// An XWindow created by us for managing selection buffers.
 	xpp::XWindow m_selection_window;
 
 private: // functions
 
-	//! private constructor to enforce singleton pattern
+	/// Private constructor to enforce singleton pattern.
 	Xwmfs();
 
-	//! deleted copy constructor to enforce singleton pattern
+	/// Deleted copy constructor to enforce singleton pattern.
 	Xwmfs(const Xwmfs &w) = delete;
 
-	/**
-	 * \brief
-	 * 	Creates the initial filesystem
-	 **/
+	/// Creates the initial file system.
 	void createFS();
 
 	void createSelectionWindow();
 
-	//! print application state for debugging purposes
+	/// Print application state for debugging purposes.
 	void printWMInfo();
 
-	//! updates m_current_time with the current time :-)
+	/// Updates m_current_time with the current time :-)
 	void updateTime();
 };
 

@@ -126,7 +126,7 @@ void Xwmfs::createSelectionWindow() {
 	xwmfs::logger->info() << "Created selection window " << m_selection_window << "\n";
 }
 
-void Xwmfs::exit() {
+void Xwmfs::exit() noexcept {
 	if (m_running.exchange(false)) {
 		const int dummy_data = 1;
 		// we need to wakeup the thread to signal it that stuff is
@@ -176,7 +176,7 @@ void Xwmfs::early_init() {
 	(void)::umask(m_umask);
 }
 
-int Xwmfs::init() {
+int Xwmfs::init() noexcept {
 	int res = EXIT_SUCCESS;
 
 	try {
@@ -572,7 +572,7 @@ void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
 /*
  * global sync signal handler for the fuse abort signal
  */
-void fuseAbortSignal(int sig) {
+void fuse_abort_signal(int sig) {
 	auto &xwmfs = Xwmfs::getInstance();
 
 	const bool shutdown = sig != SIGUSR1;
@@ -651,7 +651,7 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 	 */
 	struct sigaction act, orig;
 	std::memset(&act, 0, sizeof(struct sigaction));
-	act.sa_handler = &fuseAbortSignal;
+	act.sa_handler = &fuse_abort_signal;
 
 	std::vector<int> sigs;
 
