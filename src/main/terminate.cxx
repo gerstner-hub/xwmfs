@@ -3,30 +3,29 @@
 #include <iostream>
 #include <stdexcept>
 
-// POSIX
-#include <signal.h>
-
 // xwmfs
 #include "main/Exception.hxx"
 
-namespace xwmfs {
+namespace {
 
-/**
- * \brief
- * 	This class sets up a global C++ exception and terminate handler
- **/
+class TerminateHandler;
+// we need an extra pointer here to use the global instance in the class
+// implementation
+TerminateHandler *instance = nullptr;
+
+/// This class sets up a global C++ exception and terminate handler.
 class TerminateHandler {
 public:
 	TerminateHandler() {
-		if (m_instance) {
+		if (instance) {
 			// LOL!
 			std::terminate();
 		}
 
-		m_instance = this;
+		instance = this;
 
 		m_orig_terminate = std::set_terminate(
-			TerminateHandler::wmfs_terminate
+			TerminateHandler::xwmfs_terminate
 		);
 	}
 
@@ -47,7 +46,7 @@ public:
 		try {
 			// let's inspect the active exception then
 			throw;
-		} catch (const Exception &ex) {
+		} catch (const xwmfs::Exception &ex) {
 			std::cerr << "xwmfs::Exception: " << ex.what() << "\n";
 		} catch (const std::exception &ex) {
 			std::cerr << "std::exception: " << ex.what() << "\n";
@@ -63,17 +62,15 @@ public:
 		return static_cast<bool>(std::current_exception());;
 	}
 
-	static void wmfs_terminate(void) {
-		m_instance->terminate();
+	static void xwmfs_terminate(void) {
+		instance->terminate();
 	}
 
 protected: // data
 
 	std::terminate_handler m_orig_terminate;
-	static TerminateHandler *m_instance;
 };
 
-TerminateHandler* TerminateHandler::m_instance = nullptr;
 TerminateHandler terminate_handler;
 
 } // end ns
