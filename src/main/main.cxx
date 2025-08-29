@@ -78,7 +78,6 @@ void Main::printHelp() {
 }
 
 cosmos::ExitStatus Main::main(const std::string_view argv0, const cosmos::StringViewVector &args) {
-	xpp::Init xpp_init;
 	auto logger = cosmos::StdLogger{};
 	xwmfs::set_logger(logger);
 
@@ -107,15 +106,23 @@ cosmos::ExitStatus Main::main(const std::string_view argv0, const cosmos::String
 		return cosmos::ExitStatus::FAILURE;
 	}
 
-	// the actual initialization is currently done via init and
-	// destroy functions called from FUSE
-	const int fuse_res = fuse_main(fuse_args.argc, fuse_args.argv, &xwmfs_oper, NULL);
+	try {
+		xpp::Init xpp_init;
 
-	if (print_xwmfs_help) {
-		printHelp();
+		// the actual initialization is currently done via init and
+		// destroy functions called from FUSE
+		const int fuse_res = fuse_main(fuse_args.argc, fuse_args.argv, &xwmfs_oper, NULL);
+
+		if (print_xwmfs_help) {
+			printHelp();
+		}
+
+		return cosmos::ExitStatus{fuse_res};
+	} catch (const xpp::XDisplay::DisplayOpenError &error) {
+		std::cerr << "Failed to open X11 display: " << error.what() << "\n";
+		std::cerr << "Is X running? Is the DISPLAY environment variable set correctly?\n";
+		return cosmos::ExitStatus::FAILURE;
 	}
-
-	return cosmos::ExitStatus{fuse_res};
 }
 
 } // end ns
