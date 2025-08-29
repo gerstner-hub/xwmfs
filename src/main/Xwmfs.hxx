@@ -146,7 +146,7 @@ protected: // functions
 	/**
 	 * This is called synchronously from the event handling thread.
 	 **/
-	void abortBlockingCall(pthread_t thread);
+	void abortBlockingCall(const cosmos::pthread::ID thread);
 
 	/// Abort all pending blocking calls.
 	void abortAllBlockingCalls();
@@ -208,7 +208,7 @@ protected: // functions
 
 private: // types
 
-	using BlockingCallMap = std::map<pthread_t, Entry*>;
+	using BlockingCallMap = std::map<cosmos::pthread::ID, Entry*>;
 	using SignalHandlerMap = std::map<cosmos::Signal, cosmos::SigAction>;
 
 	/// Different abort signal contexts

@@ -642,7 +642,7 @@ void Xwmfs::abortBlockingCall(const bool all) {
 
 	AbortMsg msg;
 	msg.type = all ? AbortType::SHUTDOWN : AbortType::CALL;
-	msg.thread = pthread_self();
+	msg.thread = cosmos::pthread::get_id().raw();
 
 	auto pipe_fd = m_abort_pipe.writeEnd();
 	cosmos::StreamIO pipe_io{pipe_fd};
@@ -657,7 +657,7 @@ void Xwmfs::abortBlockingCall(const bool all) {
 	}
 }
 
-void Xwmfs::abortBlockingCall(pthread_t thread) {
+void Xwmfs::abortBlockingCall(const cosmos::pthread::ID thread) {
 	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	auto it = m_blocking_calls.find(thread);
@@ -671,16 +671,16 @@ void Xwmfs::abortBlockingCall(pthread_t thread) {
 
 	auto ef = it->second;
 
-	ef->abortBlockingCall(thread);
+	ef->abortBlockingCall(thread.raw());
 }
 
 void Xwmfs::abortAllBlockingCalls() {
 	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	for (auto it: m_blocking_calls) {
-		auto ef = it.second;
+		auto entry = it.second;
 
-		ef->abortBlockingCall(it.first);
+		entry->abortBlockingCall(it.first.raw());
 	}
 
 	/*
@@ -707,7 +707,7 @@ void Xwmfs::readAbortPipe() {
 	}
 
 	if (msg.type == AbortType::CALL) {
-		abortBlockingCall(msg.thread);
+		abortBlockingCall(cosmos::pthread::ID{msg.thread});
 	} else {
 		abortAllBlockingCalls();
 		/* reinstate original signal handlers */
@@ -716,14 +716,14 @@ void Xwmfs::readAbortPipe() {
 	}
 }
 
-bool Xwmfs::registerBlockingCall(Entry *f) {
+bool Xwmfs::registerBlockingCall(Entry *entry) {
 	cosmos::MutexGuard g{m_blocking_call_lock};
 
 	if (m_shutdown) {
 		return false;
 	}
 
-	m_blocking_calls.insert(std::make_pair(pthread_self(), f));
+	m_blocking_calls.insert(std::make_pair(cosmos::pthread::get_id(), entry));
 
 	return true;
 }
@@ -731,7 +731,7 @@ bool Xwmfs::registerBlockingCall(Entry *f) {
 void Xwmfs::unregisterBlockingCall() {
 	cosmos::MutexGuard g(m_blocking_call_lock);
 
-	m_blocking_calls.erase(pthread_self());
+	m_blocking_calls.erase(cosmos::pthread::get_id());
 }
 
 } // end ns
