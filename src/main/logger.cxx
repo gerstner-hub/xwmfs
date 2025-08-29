@@ -1,3 +1,4 @@
+// xwmfs
 #include "main/logger.hxx"
 
 namespace xwmfs {
