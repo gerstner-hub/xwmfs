@@ -51,6 +51,37 @@ namespace xwmfs {
 
 cosmos::FileMode Xwmfs::m_umask = cosmos::FileMode{cosmos::ModeT{0777}};
 
+Xwmfs::Xwmfs() :
+		m_display{xpp::display},
+		m_root_win{m_display},
+		m_ev_thread{},
+		m_opts{xwmfs::Options::getInstance()} {
+	m_running.store(true);
+	// to get X events in a blocking way but still be able to react to
+	// e.g. a shutdown request we need to get the lower level file
+	// descriptor that X is operating on.
+	m_dis_fd = m_display.connectionNumber();
+
+	// this is a pipe that allows to pass thread IDs to abort blocking
+	// calls for to the event handling thread
+	if (::pipe2(m_abort_pipe, O_CLOEXEC) != 0) {
+		throw cosmos::ApiError{"Unable to create abort pipe"};
+	}
+}
+
+Xwmfs::~Xwmfs() {
+	if (m_selection_window.valid()) {
+		m_selection_window.destroy();
+	}
+	FD_ZERO(&m_select_set);
+	m_wm_dir = nullptr;
+	m_win_dir = nullptr;
+
+	::close(m_abort_pipe[0]);
+	::close(m_abort_pipe[1]);
+}
+
+
 void Xwmfs::updateTime() {
 	m_current_time = time(nullptr);
 }
@@ -121,20 +152,18 @@ void Xwmfs::createSelectionWindow() {
 }
 
 void Xwmfs::exit() noexcept {
-	if (m_running.exchange(false)) {
-		const int dummy_data = 1;
-		// we need to wakeup the thread to signal it that stuff is
-		// over now
-		const ssize_t write_res =
-			::write(m_wakeup_pipe[1], &dummy_data, 1);
+	try {
+		if (m_running.exchange(false)) {
+			m_wakeup_event.signal();
 
-		assert(write_res != -1);
+			// finally join the thread
+			m_ev_thread.join();
+		}
 
-		// finally join the thread
-		m_ev_thread.join();
+		m_fs_root.clear();
+	} catch (const std::exception &ex) {
+		logger->error() << "failed to join event thread / clear file system: " << ex.what() << "\n";
 	}
-
-	m_fs_root.clear();
 }
 
 int Xwmfs::XErrorHandler(Display *disp, XErrorEvent *error) {
@@ -233,49 +262,10 @@ int Xwmfs::init() noexcept {
 	return res;
 }
 
-Xwmfs::Xwmfs() :
-		m_display{xpp::display},
-		m_root_win{m_display},
-		m_ev_thread{},
-		m_opts{xwmfs::Options::getInstance()} {
-	m_running.store(true);
-	// to get X events in a blocking way but still be able to react to
-	// e.  g. a shutdown request we need to get the lower level file
-	// descriptor that X is operating on.
-	m_dis_fd = m_display.connectionNumber();
-
-	// this is a pipe that allows us to wake up the event handling thread
-	// in case of shutdown
-	if (::pipe2(m_wakeup_pipe, O_CLOEXEC) != 0) {
-		throw cosmos::ApiError{"Unable to create wakeup pipe"};
-	}
-
-	// this is a pipe that allows to pass thread IDs to abort blocking
-	// calls for to the event handling thread
-	if (::pipe2(m_abort_pipe, O_CLOEXEC) != 0) {
-		throw cosmos::ApiError{"Unable to create abort pipe"};
-	}
-}
-
-Xwmfs::~Xwmfs() {
-	if (m_selection_window.valid()) {
-		m_selection_window.destroy();
-	}
-	FD_ZERO(&m_select_set);
-	m_wm_dir = nullptr;
-	m_win_dir = nullptr;
-
-	::close(m_wakeup_pipe[0]);
-	::close(m_wakeup_pipe[1]);
-
-	::close(m_abort_pipe[0]);
-	::close(m_abort_pipe[1]);
-}
-
 void Xwmfs::eventThread() {
 	const std::vector<int> fds{{
 		cosmos::to_integral(m_dis_fd.raw()),
-		m_wakeup_pipe[0],
+		cosmos::to_integral(m_wakeup_event.fd().raw()),
 		m_abort_pipe[0]
 	}};
 	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
@@ -298,7 +288,7 @@ void Xwmfs::eventThread() {
 		}
 
 		// if the pipe is readable then we have to shutdown
-		if (FD_ISSET(m_wakeup_pipe[0], &m_select_set)) {
+		if (FD_ISSET(cosmos::to_integral(m_wakeup_event.fd().raw()), &m_select_set)) {
 			logger->info() << "Caught cancel request. Shutting down...\n";
 			return;
 		} else if (FD_ISSET(m_abort_pipe[0], &m_select_set)) {

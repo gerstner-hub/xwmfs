@@ -8,6 +8,7 @@
 // cosmos
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
+#include <cosmos/io/EventFile.hxx>
 
 // libxpp
 #include <xpp/Event.hxx>
@@ -243,8 +244,8 @@ private: // data
 
 	/// This is the fd for the connection to the X11 display.
 	cosmos::FileDescriptor m_dis_fd;
-	/// Wakeup pipe read and write end.
-	int m_wakeup_pipe[2];
+	/// Wakeup signaling file descriptor.
+	cosmos::EventFile m_wakeup_event;
 
 	/// File descriptors to monitor for events.
 	fd_set m_select_set;
