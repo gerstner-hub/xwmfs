@@ -5,9 +5,7 @@
 
 // POSIX
 #include <fcntl.h>
-#include <sys/select.h>
 #include <sys/stat.h>
-#include <unistd.h> // pipe
 
 // FUSE
 #include <fuse.h>
@@ -59,17 +57,12 @@ Xwmfs::Xwmfs() :
 		m_ev_thread{},
 		m_opts{xwmfs::Options::getInstance()} {
 	m_running.store(true);
-	// to get X events in a blocking way but still be able to react to
-	// e.g. a shutdown request we need to get the lower level file
-	// descriptor that X is operating on.
-	m_dis_fd = m_display.connectionNumber();
 }
 
 Xwmfs::~Xwmfs() {
 	if (m_selection_window.valid()) {
 		m_selection_window.destroy();
 	}
-	FD_ZERO(&m_select_set);
 	m_wm_dir = nullptr;
 	m_win_dir = nullptr;
 }
@@ -255,42 +248,39 @@ int Xwmfs::init() noexcept {
 }
 
 void Xwmfs::eventThread() {
-	const std::vector<int> fds{{
-		cosmos::to_integral(m_dis_fd.raw()),
-		cosmos::to_integral(m_wakeup_event.fd().raw()),
-		cosmos::to_integral(m_abort_pipe.readEnd().raw())
-	}};
-	const int max_fd = *(std::max_element(fds.begin(), fds.end())) + 1;
+	m_event_poller.create();
+
+	/*
+	 * listen on the low level XDisplay file descriptor as well as on the
+	 * wakeup event (for shutdown) and the abort pipe (for aborting
+	 * blocking calls).
+	 */
+
+	for (auto fd: {m_display.connectionNumber(), m_wakeup_event.fd(), m_abort_pipe.readEnd()}) {
+		m_event_poller.addFD(fd, cosmos::Poller::MonitorFlag::INPUT);
+	}
 
 	while (m_running.load()) {
-		FD_ZERO(&m_select_set);
-		for (int fd: fds) {
-			FD_SET(fd, &m_select_set);
-		}
+		try {
+			auto events = m_event_poller.wait();
 
-		// here we wait until one of the file descriptors is readable
-		const int sel_res = ::select(
-			max_fd,
-			&m_select_set, nullptr, nullptr, nullptr
-		);
-
-		if (sel_res == -1) {
-			::perror("unable to select on event fds");
+			for (const auto &event: events) {
+				if (auto fd = event.fd(); fd == m_wakeup_event.fd()) {
+					logger->info() << "Caught cancel request. Shutting down...\n";
+					return;
+				} else if (fd == m_abort_pipe.readEnd()) {
+					readAbortPipe();
+					continue;
+				} else {
+					// now we should be able to read at
+					// least one X11 event without blocking
+					handlePendingEvents();
+				}
+			}
+		} catch (const std::exception &ex) {
+			logger->error() << "unable to poll for events: " << ex.what() << "\n";
 			return;
 		}
-
-		// if the pipe is readable then we have to shutdown
-		if (FD_ISSET(cosmos::to_integral(m_wakeup_event.fd().raw()), &m_select_set)) {
-			logger->info() << "Caught cancel request. Shutting down...\n";
-			return;
-		} else if (FD_ISSET(cosmos::to_integral(m_abort_pipe.readEnd().raw()), &m_select_set)) {
-			readAbortPipe();
-			continue;
-		}
-
-		// now we should be able to read at least one event without
-		// blocking
-		handlePendingEvents();
 	}
 }
 

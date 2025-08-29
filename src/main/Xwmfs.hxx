@@ -8,6 +8,7 @@
 // cosmos
 #include <cosmos/io/EventFile.hxx>
 #include <cosmos/io/Pipe.hxx>
+#include <cosmos/io/Poller.hxx>
 #include <cosmos/proc/SigAction.hxx>
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
@@ -244,13 +245,11 @@ private: // data
 	/// Options in effect for the current instance
 	xwmfs::Options &m_opts;
 
-	/// This is the fd for the connection to the X11 display.
-	cosmos::FileDescriptor m_dis_fd;
 	/// Wakeup signaling file descriptor.
 	cosmos::EventFile m_wakeup_event;
 
-	/// File descriptors to monitor for events.
-	fd_set m_select_set;
+	/// File descriptor poller for the event thread.
+	cosmos::Poller m_event_poller;
 
 	/// Currently handled X11 event.
 	xpp::Event m_ev;
