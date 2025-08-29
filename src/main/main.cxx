@@ -46,12 +46,12 @@ bool Main::parseOptions(const cosmos::StringViewVector &args, struct fuse_args &
 
 	for (const auto arg: args) {
 		if (arg == "--xsync") {
-			opts.xsync(true);
+			opts.setXsync(true);
 		} else if (arg.starts_with("--logger=")) {
 			auto logger_opts = arg.substr(arg.find_first_of('=') + 1);
 			parseLoggerSettings(logger_opts);
 		} else if (arg == "--handle-pseudo-windows") {
-			opts.handlePseudoWindows(true);
+			opts.setHandlePseudoWindows(true);
 		} else {
 			if (arg == "-h" || arg == "--help") {
 				ret = true;

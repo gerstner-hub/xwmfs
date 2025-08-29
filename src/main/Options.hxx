@@ -2,42 +2,39 @@
 
 namespace xwmfs {
 
+/// Simple class to store global XWMFS program options
 /**
- * \brief
- * 	Simple class to store global XWMFS program options
- * \details
- * 	These options are set in the main() during parsing command line
- * 	arguments.
+ * These options are set in the main() during parsing command line arguments.
  *
- * 	It is a singleton class.
+ * This is a singleton class, mostly because of initialization order issues
+ * with the Xwmfs singleton. We could place this as a regular member into
+ * Xwmfs, but then the command line parsing would already constructor the
+ * Xwmfs instance, possibly aborting due to X11 access issues.
  **/
 class Options {
 public: // functions
 
-	//! returns whether the synchronized mode is set in the options
+	/// Returns whether the synchronized mode is set in the options.
 	bool xsync() const { return m_xsync; }
 
-	//! sets the synchronized X mode to \c val
-	void xsync(const bool val) { m_xsync = val; }
+	/// Sets the synchronized X mode to \c val
+	void setXsync(const bool val) { m_xsync = val; }
 
+	/// Returns whether pseudo windows should be handled by Xwmfs.
 	/**
-	 * \brief
-	 * 	Returns whether pseudo windows should be handled by Xwmfs
-	 * \details
-	 * 	Pseudo windows are windows that are no direct childs of the
-	 * 	root window, or have the override_redirect flag set in the
-	 * 	create event.
+	 * Pseudo windows are windows that are no direct children of the root
+	 * window, or have the override_redirect flag set in the create event.
 	 *
-	 * 	These windows can be popups handled within applications, for
-	 * 	example, or they can be window decorations added by the window
-	 * 	manager.
+	 * These windows can be popups handled within applications, for
+	 * example, or they can be window decorations added by the window
+	 * manager.
 	 **/
 	bool handlePseudoWindows() const { return m_handle_pseudo_windows; }
 
-	//! sets the pseudo windows handling to \c val
-	void handlePseudoWindows(const bool val) { m_handle_pseudo_windows = val; }
+	/// Sets the pseudo windows handling to \c val
+	void setHandlePseudoWindows(const bool val) { m_handle_pseudo_windows = val; }
 
-	//! Returns the singleton instance of the options object
+	/// Returns the singleton instance of the options object
 	static Options& getInstance() {
 		static Options opt;
 
@@ -45,10 +42,11 @@ public: // functions
 	}
 
 private: // functions
-	//! private ctor. to implement singelton
+
+	/// Private constructor to implement singleton pattern.
 	Options() {}
 
-	// singleton pattern
+	/// singleton pattern
 	Options(const Options &) = delete;
 
 private: // data
