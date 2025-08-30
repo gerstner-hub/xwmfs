@@ -8,7 +8,6 @@
 #include <xpp/event/SelectionRequestEvent.hxx>
 
 // xwmfs
-#include "fuse/FileEntry.hxx"
 #include "main/logger.hxx"
 #include "main/SelectionAccessFile.hxx"
 #include "main/SelectionDirEntry.hxx"
@@ -26,26 +25,30 @@ SelectionDirEntry::SelectionDirEntry() :
 }
 
 xpp::WinID SelectionDirEntry::getSelectionOwner(const xpp::AtomID _type) const {
-	// it seems there is no general event mechanism available to keep
-	// track of the selection owner when we're not currently involved in a
-	// selection owner/get ourselves. this requires us to refresh the
-	// selection owner content upon each read in m_owners.
-	//
-	// https://stackoverflow.com/questions/28578220/process-receiving-x11-selectionnotify-event-xev-doesnt-show-the-event-why-is#28595450
+	/*
+	 * It seems there is no general event mechanism available to keep
+	 * track of the selection owner when we're not currently involved in a
+	 * selection ownership/retrieval ourselves. This requires us to
+	 * refresh the selection owner content upon each read in m_owners.
+	 *
+	 * https://stackoverflow.com/questions/28578220/process-receiving-x11-selectionnotify-event-xev-doesnt-show-the-event-why-is#28595450
+	 */
 	auto &display = Xwmfs::getInstance().getDisplay();
 	auto winid = display.selectionOwner(_type);
 	return winid ? *winid : xpp::WinID::INVALID;
 }
 
 void SelectionDirEntry::collectSelectionTypes() {
-	// there are constants XA_PRIMARY, XA_SECONDARY and XA_CLIPBOARD but
-	// the latter requires the display as parameter, also it seems to
-	// belong to libXmu all quite complicated just for some atoms.
-	//
-	// we can also just resolve atoms ourselves using the play string
-	// names.
-	// NOTE: for some reason resolving the SECONDARY atom fails with
-	// BadValue, so good riddance.
+	/*
+	 * There are constants XA_PRIMARY, XA_SECONDARY and XA_CLIPBOARD but
+	 * the latter requires the display as parameter, also it seems to
+	 * belong to libXmu all quite complicated just for some atoms.
+	 *
+	 * We can also just resolve atoms ourselves using the plain string
+	 * names.
+	 * NOTE: for some reason resolving the SECONDARY atom fails with
+	 * BadValue, so good riddance.
+	 */
 	const char *selections[] = {"PRIMARY", "CLIPBOARD"};
 
 	for (const auto _type: selections) {
@@ -55,10 +58,8 @@ void SelectionDirEntry::collectSelectionTypes() {
 }
 
 void SelectionDirEntry::createSelectionAccessFiles() {
-	SelectionAccessFile *file;
-
 	for (const auto &info: m_selection_types) {
-		file = new SelectionAccessFile{
+		auto file = new SelectionAccessFile{
 			cosmos::to_lower(info.second),
 			*this,
 			info.first

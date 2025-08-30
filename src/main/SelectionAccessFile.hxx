@@ -14,32 +14,28 @@ namespace xwmfs {
 
 class SelectionDirEntry;
 
+/// This file provides access to an arbitrary X selection buffer.
 /**
- * \brief
- * 	This file provides access to an arbitrary X selection buffer
- * \details
- * 	This file type makes it possible to
- *
- * 	- upon write, take ownership of a selection buffer and provide the
- * 	written contents to other X clients
- * 	- upon read, request the selection buffer content from the current
- * 	selection owner and return the data to the user
- *
- * 	for any available type of X selection buffer.
+ * This file type makes it possible to
+ * 
+ * - upon write, take ownership of a selection buffer and provide the written
+ *   contents to other X clients
+ * - upon read, request the selection buffer content from the current
+ *   selection owner and return the data to the user
+ * 
+ * for any available type of X selection buffer.
  **/
 class SelectionAccessFile :
 		public FileEntry {
 public: // functions
 
+	/// Creates a new selection access file of the given name and type.
 	/**
-	 * \brief
-	 * 	Creates a new selection access file of the given name and type
 	 * \param[in] parent
-	 * 	The parent directory which needs to be of type
-	 * 	SelectionDirEntry
+	 * 	The parent directory which needs to be of type SelectionDirEntry.
 	 * \param[in] type
 	 * 	The atom identifier of the selection type this file entry
-	 * 	should handle
+	 * 	should handle.
 	 **/
 	SelectionAccessFile(const std::string &n, SelectionDirEntry &parent, const xpp::AtomID type);
 
@@ -51,37 +47,31 @@ public: // functions
 
 	void provideConversion(xpp::XWindow &requestor, const xpp::AtomID target_prop) const;
 
-	//! \see EventFile::enableDirectIO()
+	/// \see EventFile::enableDirectIO()
 	bool enableDirectIO() const override { return true; }
 
 	xpp::AtomID type() const { return m_sel_type; }
 
 protected: // functions
 
-	/**
-	 * \brief
-	 * 	Updates the cached owner information in m_owner
-	 **/
+	/// Updates the cached owner information in m_owner.
 	void updateOwner();
 
+	/// Requests the current selection buffer contents and stores it as the file entry's data.
 	/**
-	 * \brief
-	 * 	Requests the current selection buffer contents and stores it
-	 * 	as the file entries data
-	 * \return
-	 * 	An errno error indication to return to FUSE or zero on success
+	 * \return An errno error indication to return to FUSE or zero on success.
 	 **/
 	int updateSelection();
 
 protected: // data
 
-	//! parent dir with helper routines
+	/// Parent dir with helper routines.
 	SelectionDirEntry &m_parent;
-	//! the X selection type we represent
+	/// The X selection type we represent.
 	const xpp::AtomID m_sel_type;
-	//! property where requested selection buffer conversions go to
+	/// The property where requested selection buffer conversions go to.
 	const xpp::AtomID m_target_prop;
-	//! caches the current owner window of the selection we're representing
+	/// Caches the current owner window of the selection we're representing.
 	xpp::XWindow m_owner;
 	cosmos::Condition m_result_cond;
 	bool m_result_arrived = false;

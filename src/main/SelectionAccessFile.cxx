@@ -105,11 +105,10 @@ int SelectionAccessFile::updateSelection() {
 	while (!m_result_arrived) {
 		if (m_abort_handler->wasAborted()) {
 			return -EINTR;
-		}
-
-		if (!m_abort_handler->prepareBlockingCall(this)) {
+		} else if (!m_abort_handler->prepareBlockingCall(this)) {
 			return -EINTR;
 		}
+
 		m_result_cond.wait();
 		m_abort_handler->finishedBlockingCall();
 	}

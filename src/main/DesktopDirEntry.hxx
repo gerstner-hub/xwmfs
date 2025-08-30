@@ -6,7 +6,7 @@
 namespace xwmfs {
 
 class DesktopDirEntry :
-	public DirEntry {
+		public DirEntry {
 public: // functions
 
 	DesktopDirEntry(size_t nr, const std::string &name);

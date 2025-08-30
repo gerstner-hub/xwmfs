@@ -10,16 +10,12 @@
 
 namespace xwmfs {
 
-DesktopsRootDir::DesktopsRootDir(WinManagerWindow &root) :
-		DirEntry{"desktops"}, m_root_win{root} {
-}
-
 using WindowMap = std::map<size_t, std::vector<xpp::XWindow>>;
 
 static WindowMap buildWindowMap(const xpp::RootWin &root_win) {
 	WindowMap ret;
 
-	for (const auto &winid: root_win.windowList()) {
+	for (const auto winid: root_win.windowList()) {
 		try {
 			auto window = xpp::XWindow{winid};
 			// TODO: libxpp conversion: this no longer uses caching
@@ -34,6 +30,10 @@ static WindowMap buildWindowMap(const xpp::RootWin &root_win) {
 	return ret;
 }
 
+DesktopsRootDir::DesktopsRootDir(WinManagerWindow &root) :
+		DirEntry{"desktops"}, m_root_win{root} {
+}
+
 void DesktopsRootDir::handleDesktopsChanged() {
 	// Currently we rebuild the complete structure every time desktop
 	// names change or desktops (dis)appear. This could be more
@@ -45,7 +45,6 @@ void DesktopsRootDir::handleDesktopsChanged() {
 	m_root_win.queryWindows();
 
 	const auto window_map = buildWindowMap(m_root_win);
-
 	const auto &desktops = m_root_win.getDesktopNames();
 
 	for (size_t i = 0; i < desktops.size(); i++) {
@@ -65,7 +64,7 @@ void DesktopsRootDir::handleDesktopsChanged() {
 
 void DesktopsRootDir::addWindowToDesktop(DesktopDirEntry *dir, const xpp::XWindow &window) {
 	const auto winid_str = xpp::to_string(window.id());
-	const auto target = std::string("../../../windows/") + winid_str;
+	const auto target = std::string{"../../../windows/"} + winid_str;
 
 	auto symlink = new SymlinkEntry{winid_str, target};
 	dir->getWindowsDir()->addEntry(symlink);

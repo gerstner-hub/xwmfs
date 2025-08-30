@@ -5,7 +5,7 @@
 
 // xpp
 #include <xpp/fwd.hxx>
-#include <xpp/XWindow.hxx>
+#include <xpp/types.hxx>
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
@@ -15,22 +15,20 @@ namespace xwmfs {
 class DesktopDirEntry;
 class WinManagerWindow;
 
+/// A directory containing per-desktop window information.
 /**
- * \brief
- * 	A directory containing per-desktop window information
- * \details
- * 	This directory keeps a sub-directory for each known desktop. Desktops
- * 	don't have unique IDs but only have an index that can change over
- * 	time. So the first desktop has index 0 and so on.
- *
- * 	Each desktop sub-directory contains a `name` node containing the
- * 	actual desktop name and a `windows` sub-directory which contains
- * 	symlinks to each window present on the respective desktop. The
- * 	symlinks point towards the top-level `windows/<id>` directory where
- * 	detailed window information can be obtained.
+ * This directory keeps a sub-directory for each known desktop. Desktops don't
+ * have unique IDs but only have an index that can change over time. So the
+ * first desktop has index 0 and so on.
+ * 
+ * Each desktop sub-directory contains a `name` node containing the actual
+ * desktop name and a `windows` sub-directory which contains symlinks to each
+ * window present on the respective desktop. The symlinks point towards the
+ * top-level `windows/<id>` directory where detailed window information can be
+ * obtained.
  **/
 class DesktopsRootDir :
-	public DirEntry {
+		public DirEntry {
 public: // functions
 
 	DesktopsRootDir(WinManagerWindow &root);
