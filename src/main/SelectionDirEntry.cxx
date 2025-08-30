@@ -116,10 +116,12 @@ void SelectionDirEntry::conversionRequest(const xpp::SelectionRequestEvent &ev) 
 
 void SelectionDirEntry::replyConversionRequest(
 		const xpp::SelectionRequestEvent &req, const bool good) {
-	logger->error() << "Failed to convert selection buffer '"
-		<< selectionBufferLabel(req.selection())
-		<< "' to requested target format "
-		<< cosmos::to_integral(req.target()) << "\n";
+	if (!good) {
+		logger->error() << "Failed to convert selection buffer '"
+			<< selectionBufferLabel(req.selection())
+			<< "' to requested target format "
+			<< cosmos::to_integral(req.target()) << "\n";
+	}
 
 	xpp::Event reply{xpp::EventType::SELECTION_NOTIFY};
 	xpp::SelectionEventBuilder selection{reply};
