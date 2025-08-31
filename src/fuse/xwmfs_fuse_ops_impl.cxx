@@ -7,12 +7,13 @@
  */
 
 // C/C++
-#include <assert.h>
+#include <cassert>
 #include <errno.h>
 #include <exception>
-#include <iostream>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+
+// libcosmos
+#include <cosmos/proc/process.hxx>
 
 // xwmfs
 #include "fuse/Entry.hxx"
@@ -39,20 +40,20 @@ static Entry* entry_from_fi(struct fuse_file_info *fi) {
 
 } // end ns
 
+/// Get stat information about a file system entry.
 /**
- * \brief
- * 	Get stat information about a file system entry
- * \details
- * 	stat may happen with or without file open context in `fi`.
+ * stat may happen with or without file open context in `fi`.
  **/
 int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
-	memset(stbuf, 0, sizeof(struct stat));
+	cosmos::zero_object(*stbuf);
 	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
 
-	const xwmfs::Entry *entry = fi ? xwmfs::entry_from_fi(fi) : xwmfs::filesystem->findEntry(path);
+	const xwmfs::Entry *entry = fi ?
+		xwmfs::entry_from_fi(fi) :
+		xwmfs::filesystem->findEntry(path);
 	if (!entry) {
 		xwmfs::logger->debug()
-			<< __FUNCTION__ << ": noent for path "
+			<< __FUNCTION__ << ": ENOENT for path "
 			<< path << "\n";
 		return -ENOENT;
 	}
@@ -66,12 +67,10 @@ int xwmfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *f
 	return 0;
 }
 
+/// A request to list the contents of a directory.
 /**
- * \brief
- * 	Request to list the contents of a directory
- * \details
- * 	The \c filler object allows for easy creation of the required dirent
- * 	structures behind the scene.
+ * The \c filler object allows for easy creation of the required dirent
+ * structures behind the scene.
  **/
 int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi,
@@ -90,33 +89,29 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	 * However, we're currently always allowing access to directories for
 	 * reading. Also this is the only relevant operation for directories
 	 * we're currently implementing so the performance benefit from
-	 * implement opendir() is small.
+	 * implementing opendir() is small.
 	 */
 	xwmfs::Entry *entry = xwmfs::filesystem->findEntry(path);
-
 	xwmfs::DirEntry *dir_entry = xwmfs::Entry::tryCastDirEntry(entry);
 
 	if (!entry) {
 		xwmfs::logger->debug()
-			<< __FUNCTION__ << ": no such entity: "
-			<< path << "\n";
+			<< __FUNCTION__ << ": no such entity: " << path << "\n";
 
 		return -ENOENT;
 	} else if (!dir_entry) {
 		xwmfs::logger->debug()
-			<< __FUNCTION__ << ": not a dir: "
-			<< path << "\n";
+			<< __FUNCTION__ << ": not a dir: " << path << "\n";
 		return -ENOTDIR;
 	}
 
 	// okay we found a valid directory to list the contents of
 	const auto &entries = dir_entry->getEntries();
 
-	/*
-	 * the kernel would like stat information for each entry right away.
-	 */
+	// the kernel would like stat information for each entry right away.
 	const bool provide_stat = (flags & FUSE_READDIR_PLUS) != 0;
-	const enum fuse_fill_dir_flags fill_flags = provide_stat ? FUSE_FILL_DIR_PLUS : FUSE_FILL_DIR_DEFAULTS;
+	const enum fuse_fill_dir_flags fill_flags = provide_stat ?
+		FUSE_FILL_DIR_PLUS : FUSE_FILL_DIR_DEFAULTS;
 	struct stat stbuf;
 
 	for (const auto &it: entries) {
@@ -130,15 +125,13 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
+/// Create an open-context for a given path.
 /**
- * \brief
- * 	Create an open-context for a given path
- * \details
- *	This call is used to check whether the given flags are okay for
- *	opening the file
- *
- *	We can set fi->fh (file handle) here and it will be available in any
- *	other operations coming up.
+ * This call is used to check whether the given flags are okay for opening the
+ * file
+ * 
+ * We can set `fi->fh` (file handle) here and it will be available in any
+ * other operations coming up.
  **/
 int xwmfs_open(const char *path, struct fuse_file_info *fi) {
 	xwmfs::FileSysReadGuard read_guard{*xwmfs::filesystem};
@@ -174,10 +167,9 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi) {
 	return 0;
 }
 
+/// This is called as soon as a user of a given file object closes it's file descriptor.
 /**
- * \brief
- * 	This is the counter part to xmwfs_open(), called as soon as a user of
- * 	a given file object closes it's file descriptor
+ * This is the counterpart to xwmfs_open().
  **/
 int xwmfs_release(const char *path, struct fuse_file_info *fi) {
 	(void)path;
@@ -252,30 +244,30 @@ int xwmfs_write(const char *path, const char *buf, size_t size,
 }
 
 int xwmfs_truncate(const char *path, off_t size, struct fuse_file_info *fi) {
-	// do nothing
-	//
-	// note: doing nothing on a "proc like fs" is okay I guess
-	//
-	// If you try to append or truncate a writable file on proc then
-	// nothing happens. We simply implement "overwrite" all the time.
-	//
-	// This null implementation is needed for shell operations to succeed
-	// that try to truncate a file upon writing.
+	/*
+	 * Do nothing.
+	 *
+	 * Note: Doing nothing on a "proc like fs" is okay I guess.
+	 *
+	 * If you try to append or truncate a writable file on proc then
+	 * nothing happens. We simply implement "overwrite" all the time.
+	 *
+	 * This null implementation is needed for shell operations to succeed
+	 * that try to truncate a file upon writing.
+	 */
 	(void)path;
 	(void)size;
 	(void)fi;
 	return 0;
 }
 
+/// Request to create a file on the file system.
 /**
- * \brief
- * 	Request to create a file on the file system
- * \details
- * 	Right now we have no feature that allows creating a file. Thus we
- * 	return EROFS, read-only file system error.
- * \note
- * 	On kernels < 2.6.15 mknod() and open() will be called instead of
- * 	create.
+ * Right now we have no feature that allows creating a file. Thus we return
+ * EROFS, read-only file system error.
+ *
+ * \note On kernels < 2.6.15 mknod() and open() will be called instead of
+ * create.
  **/
 int xwmfs_create(const char *path, mode_t mode, struct fuse_file_info *ffi) {
 	(void)path;
@@ -284,18 +276,16 @@ int xwmfs_create(const char *path, mode_t mode, struct fuse_file_info *ffi) {
 	return -EROFS;
 }
 
+/// File system initialization.
 /**
- *  \brief
- *  	File system initialization
- *  \details
- *  	This function is called from FUSE to setup the file system.
+ * This function is called from FUSE to setup the file system.
+ * 
+ * We initialize the XWMFS. It will gather all window manager related
+ * information and build the file system from it. We set our global file
+ * system pointer to that file system for further FUSE processing.
  *
- *  	We initialize the XWMFS. It will gather all window manager related
- *  	information and build the file system from it. We set our global file
- *  	system pointer to that file system for further FUSE processing.
- *  \return
- *  	The returned value is passed to all other operations in the
- *  	fuse_context structure and also to xwmfs_destroy(void*)
+ * \return The returned value is passed to all other operations in the
+ * fuse_context structure and also to xwmfs_destroy(void*).
  **/
 void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 	(void)conn;
@@ -307,10 +297,10 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 	try {
 		xwmfs::Xwmfs &xwmfs = xwmfs::Xwmfs::getInstance();
 
-		const int xwmfs_res = xwmfs.init();
+		const auto res = xwmfs.init();
 
-		if (xwmfs_res != EXIT_SUCCESS) {
-			::exit(xwmfs_res);
+		if (res != cosmos::ExitStatus::SUCCESS) {
+			cosmos::proc::exit(res);
 		}
 
 		xwmfs::filesystem = &xwmfs.getFS();
@@ -320,8 +310,7 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 			<< e.what() << "\n";
 	} catch(...) {
 		xwmfs::logger->error()
-			<< "Error setting up XWMFS."
-			" Unknown exception caught\n";
+			<< "Error setting up XWMFS. Unknown exception caught\n";
 	}
 
 	assert(xwmfs::filesystem);
@@ -331,11 +320,9 @@ void* xwmfs_init(struct fuse_conn_info *conn, struct fuse_config *config) {
 	return xwmfs::filesystem;
 }
 
+/// File System cleanup callback.
 /**
- * \brief
- *	File System cleanup
- * \details
- * 	This function is called by FUSE to cleanup the file system
+ * This function is called by FUSE to cleanup the complete file system.
  **/
 void xwmfs_destroy(void* data) {
 	(void)data;

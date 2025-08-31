@@ -3,17 +3,16 @@
 // xwmfs
 #include "fuse/RootEntry.hxx"
 
-/*
+/**
+ * \file
+ *
  * This header defines miscellaneous data structures for the fuse part of
- * xwmfs
- */
+ * xwmfs.
+ **/
 
 namespace xwmfs {
 
-/**
- * \brief
- * 	A scope-guard object for read-locking a complete file system
- **/
+/// A scope-guard object for read-locking a complete file system.
 class FileSysReadGuard {
 public:
 	FileSysReadGuard(const RootEntry &root) :
@@ -28,11 +27,7 @@ private:
 	const RootEntry &m_root;
 };
 
-/**
- * \brief
- * 	A scope-guard object for temporarily releasing a real-lock of the
- * 	complete file system
- **/
+/// A scope-guard object for temporarily releasing a real-lock of the complete file system.
 class FileSysRevReadGuard {
 public:
 	FileSysRevReadGuard(const RootEntry &root) :
@@ -47,10 +42,7 @@ private:
 	const RootEntry &m_root;
 };
 
-/**
- * \brief
- * 	A scope-guard object for write-locking a complete file system
- **/
+/// A scope-guard object for write-locking a complete file system.
 class FileSysWriteGuard {
 public:
 	FileSysWriteGuard(RootEntry &root) :
@@ -58,7 +50,9 @@ public:
 		root.writelock();
 	}
 
-	~FileSysWriteGuard() { m_root.unlock(); }
+	~FileSysWriteGuard() {
+		m_root.unlock();
+	}
 private:
 	RootEntry &m_root;
 };

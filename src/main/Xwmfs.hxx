@@ -10,6 +10,7 @@
 #include <cosmos/io/Pipe.hxx>
 #include <cosmos/io/Poller.hxx>
 #include <cosmos/proc/SigAction.hxx>
+#include <cosmos/proc/types.hxx>
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
 
@@ -61,7 +62,7 @@ public: // functions
 	 * \return
 	 *	EXIT_SUCCESS if initialization went well, else otherwise.
 	 **/
-	int init() noexcept;
+	cosmos::ExitStatus init() noexcept;
 
 	/// This function is called by FUSE for cleanup.
 	void exit() noexcept;

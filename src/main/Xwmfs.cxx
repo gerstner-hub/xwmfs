@@ -74,8 +74,8 @@ void Xwmfs::early_init() {
 	(void)cosmos::fs::set_umask(m_umask);
 }
 
-int Xwmfs::init() noexcept {
-	int res = EXIT_SUCCESS;
+cosmos::ExitStatus Xwmfs::init() noexcept {
+	auto res = cosmos::ExitStatus::SUCCESS;
 
 	try {
 		// sets the asynchronous error handlers
@@ -126,10 +126,10 @@ int Xwmfs::init() noexcept {
 			throw Exception{cosmos::sprintf("Error querying window manager properties: %s", ex.what())};
 		}
 	} catch (const std::exception &ex) {
-		res = EXIT_FAILURE;
+		res = cosmos::ExitStatus::FAILURE;
 		logger->error() << "Error in FS operation: " << ex.what() << "\n";
 	} catch(...) {
-		res = EXIT_FAILURE;
+		res = cosmos::ExitStatus::FAILURE;
 		logger->error() << "Error in FS operation: Unknown exception caught. Terminating.\n";
 	}
 
