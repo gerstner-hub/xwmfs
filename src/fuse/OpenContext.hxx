@@ -1,7 +1,5 @@
 #pragma once
 
-// xwmfs
-
 namespace xwmfs {
 
 class Entry;
@@ -22,9 +20,9 @@ public: // functions
 
 protected: // data
 
-	//! the file entry that has been opened
+	/// The file entry that has been opened.
 	Entry *m_entry;
-	//! whether the file descriptor is in non-blocking mode
+	/// Whether the file descriptor is in non-blocking mode
 	bool m_nonblocking = false;
 };
 
