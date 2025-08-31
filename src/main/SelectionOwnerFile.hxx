@@ -6,20 +6,16 @@ namespace xwmfs {
 
 class SelectionDirEntry;
 
+/// Holds information about the owner windows of the various X selections.
 /**
- * \brief
- * 	Holds information about the owner windows of the various X selections
- * \details
- * 	The selection buffers in X are actually handled by the clients, the
- * 	server is just a broker to help clients find the communication partner
- * 	needed.
+ * The selection buffers in X are actually handled by the clients, the server
+ * is just a broker to help clients find the communication partner needed.
  *
- * 	Therefore each X selection has an owner. This is the window that
- * 	currently is responsible for providing the content of a given
- * 	selection buffer.
+ * Therefore each X selection has an owner. This is the window that currently
+ * is responsible for providing the content of a given selection buffer.
  *
- * 	This file here returns one line per supported selection buffer in the
- * 	form "<selection>: <window-id>".
+ * This file here returns one line per supported selection buffer in the form
+ * "<selection>: <window-id>".
  **/
 class SelectionOwnerFile :
 		public FileEntry {
