@@ -25,8 +25,8 @@ class WinManagerWindow;
 struct WinManagerFileEntry :
 		public FileEntry {
 
-	WinManagerFileEntry(const std::string &n, const time_t &t = 0) :
-			FileEntry{n, true, t} {
+	WinManagerFileEntry(const std::string &n, const time_t t = 0) :
+			FileEntry{n, Writable{true}, t} {
 	}
 
 	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;

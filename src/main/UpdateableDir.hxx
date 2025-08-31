@@ -8,51 +8,56 @@
 #include <xpp/types.hxx>
 
 // xwmfs
+#include "common/types.hxx"
 #include "fuse/DirEntry.hxx"
 
 namespace xwmfs {
 
-/**
- * \brief
- * 	Base class for directories that contain updateable files
- **/
+/// Base class for directories that contain updateable files.
 template <typename CLASS>
 class UpdateableDir :
 		public DirEntry {
 protected: // types
 
 	using UpdateFunction = void (CLASS::*)(FileEntry &entry);
-	using AtomVector = std::vector<xpp::AtomID>;
+	using AlwaysUpdate = cosmos::NamedBool<struct always_update_t, false>;
 
-	//! holds information about a single file entry
+	/// Holds information about a single file entry.
 	struct EntrySpec {
-		//! the name of the entry
+		/// The file-system name of the entry.
 		const char *name = nullptr;
-		//! whether this is a read-only or read-write entry
-		const bool read_write = false;
-		//! if set then the update function is called for any atom,
-		//! not just the ones in \c atoms
-		const bool always_update = false;
-		//! a member function of the derived class type to call for
-		//! updates of the entry value
+		/// Whether this is a read-only or read-write entry.
+		const Writable writable;
+		/// Whether to update for all atom changes ignoring `atoms`.
+		const AlwaysUpdate always_update;
+		/// Function in derived class to call upon update.
 		UpdateFunction member_func = nullptr;
-		//! the associated AtomIDs, if any
-		AtomVector atoms;
+		/// The associated AtomIDs, if any.
+		xpp::AtomIDVector atoms;
 
-		EntrySpec(const char *n, UpdateFunction f, const bool rw = false, const bool au = false) :
-			name{n}, read_write{rw}, always_update{au}, member_func{f}, atoms{{}} {
+		EntrySpec(const char *n, UpdateFunction f,
+				const Writable wrt = Writable{false},
+				const AlwaysUpdate always = AlwaysUpdate{false}) :
+			name{n}, writable{wrt},
+			always_update{always},
+			member_func{f}, atoms{{}} {
 		}
 
-		EntrySpec(const char *n, UpdateFunction f, const bool rw, xpp::AtomID a) :
-			name{n}, read_write{rw}, member_func{f}, atoms{{a}} {
+		EntrySpec(const char *n, UpdateFunction f,
+				const xpp::AtomID atom,
+				const Writable wrt = Writable{false}) :
+			name{n}, writable{wrt},
+			member_func{f}, atoms{{atom}} {
 		}
 
-		EntrySpec(const char *n, UpdateFunction f, const bool rw, AtomVector av) :
-			name(n), read_write(rw), member_func(f), atoms(av) {
+		EntrySpec(const char *n, UpdateFunction f,
+				const xpp::AtomIDVector &av,
+				const Writable wrt = Writable{false}) :
+			name(n), writable(wrt), member_func(f), atoms(av) {
 		}
 	};
 
-	//! a mapping of xpp::AtomID values to the corresponding file entry specs
+	/// A mapping of AtomID values to their corresponding file entry specs.
 	using AtomSpecMap = std::map<xpp::AtomID, EntrySpec>;
 	using SpecVector = std::vector<EntrySpec>;
 

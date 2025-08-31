@@ -9,7 +9,7 @@
 namespace xwmfs {
 
 SelectionOwnerFile::SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent) :
-		FileEntry{n, false, 0}, m_selection_dir{parent} {
+		FileEntry{n}, m_selection_dir{parent} {
 	updateOwners();
 }
 

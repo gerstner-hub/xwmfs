@@ -25,22 +25,32 @@ WinManagerDirEntry::WinManagerDirEntry(WinManagerWindow &root_win) :
 }
 
 WinManagerDirEntry::SpecVector WinManagerDirEntry::getSpecVector() const {
-	return SpecVector{ {
-		EntrySpec{"number_of_desktops", &WinManagerDirEntry::updateNumberOfDesktops, true,
-			xpp::atoms::ewmh_wm_nr_desktops},
-		EntrySpec{"desktop_names", &WinManagerDirEntry::updateDesktopNames, false,
+	return SpecVector{{
+		EntrySpec{"number_of_desktops",
+			&WinManagerDirEntry::updateNumberOfDesktops,
+			xpp::atoms::ewmh_wm_nr_desktops,
+			Writable{true}},
+		EntrySpec{"desktop_names",
+			&WinManagerDirEntry::updateDesktopNames,
 			xpp::atoms::ewmh_wm_desktop_names},
-		EntrySpec{"active_desktop", &WinManagerDirEntry::updateActiveDesktop, true,
-			xpp::atoms::ewmh_wm_cur_desktop},
-		EntrySpec{"active_window", &WinManagerDirEntry::updateActiveWindow, true,
-			xpp::atoms::ewmh_wm_active_window},
-		EntrySpec{"show_desktop_mode", &WinManagerDirEntry::updateShowDesktopMode, false,
+		EntrySpec{"active_desktop",
+			&WinManagerDirEntry::updateActiveDesktop,
+			xpp::atoms::ewmh_wm_cur_desktop,
+			Writable{true}},
+		EntrySpec{"active_window",
+			&WinManagerDirEntry::updateActiveWindow,
+			xpp::atoms::ewmh_wm_active_window,
+			Writable{true}},
+		EntrySpec{"show_desktop_mode",
+			&WinManagerDirEntry::updateShowDesktopMode,
 			xpp::atoms::ewmh_wm_desktop_shown},
-		EntrySpec{"name", &WinManagerDirEntry::updateName, false,
+		EntrySpec{"name",
+			&WinManagerDirEntry::updateName,
 			xpp::atoms::ewmh_window_name},
-		EntrySpec{"class", &WinManagerDirEntry::updateClass, false,
+		EntrySpec{"class",
+			&WinManagerDirEntry::updateClass,
 			xpp::atoms::icccm_wm_class}
-	} };
+	}};
 }
 
 void WinManagerDirEntry::forwardEvent(const EntrySpec &changed_entry) {
@@ -56,10 +66,10 @@ void WinManagerDirEntry::addEntries() {
 void WinManagerDirEntry::addSpecEntry(const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec) {
 	FileEntry *entry = nullptr;
 
-	if (spec.read_write)
+	if (spec.writable)
 		entry = new xwmfs::WinManagerFileEntry{spec.name};
 	else
-		entry = new xwmfs::FileEntry{spec.name, false};
+		entry = new xwmfs::FileEntry{spec.name};
 
 	(this->*(spec.member_func))(*entry);
 

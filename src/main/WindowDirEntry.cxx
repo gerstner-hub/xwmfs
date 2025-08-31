@@ -29,10 +29,12 @@ WindowDirEntry::WindowDirEntry(const xpp::XWindow &win, const bool query_attrs) 
 	m_events = new EventFile{*this, "events"};
 	addEntry(m_events);
 
-	m_mapped = new WindowFileEntry{"mapped", m_win, m_modify_time, false};
+	m_mapped = new WindowFileEntry{"mapped",
+		m_win, m_modify_time, Writable{false}};
 	addEntry(m_mapped);
 
-	m_geometry = new WindowFileEntry{"geometry", m_win, m_modify_time, true};
+	m_geometry = new WindowFileEntry{"geometry",
+		m_win, m_modify_time};
 	addEntry(m_geometry);
 	{
 		xpp::XWindowAttrs attrs;
@@ -46,7 +48,8 @@ WindowDirEntry::WindowDirEntry(const xpp::XWindow &win, const bool query_attrs) 
 
 	// NOTE: might become a writeable entry, using XReparentWindow(),
 	// pretty obscure though
-	m_parent = new WindowFileEntry{"parent", m_win, m_modify_time, false};
+	m_parent = new WindowFileEntry{"parent",
+		m_win, m_modify_time, Writable{false}};
 	addEntry(m_parent);
 	try {
 		m_win.updateFamily();
@@ -75,41 +78,46 @@ bool WindowDirEntry::markDeleted() {
 }
 
 WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const {
-	return SpecVector{ {
-		EntrySpec{"id", &WindowDirEntry::updateId, false},
-		EntrySpec{"name", &WindowDirEntry::updateWindowName, true,
-			{
+	return SpecVector{{
+		EntrySpec{"id", &WindowDirEntry::updateId},
+		EntrySpec{"name", &WindowDirEntry::updateWindowName, {
 				xpp::atoms::icccm_window_name,
 				xpp::atoms::ewmh_window_name
-			}
+			}, Writable{true}
 		},
-		EntrySpec{"desktop", &WindowDirEntry::updateDesktop, true,
-			xpp::atoms::ewmh_desktop_nr},
-		EntrySpec{"pid", &WindowDirEntry::updatePID, false,
+		EntrySpec{"desktop", &WindowDirEntry::updateDesktop,
+			xpp::atoms::ewmh_desktop_nr,
+			Writable{true}},
+		EntrySpec{"pid", &WindowDirEntry::updatePID,
 			xpp::atoms::ewmh_wm_pid},
-		EntrySpec{"control", &WindowDirEntry::updateCommandControl, true},
-		EntrySpec{"client_machine", &WindowDirEntry::updateClientMachine, false},
-		EntrySpec{"properties", &WindowDirEntry::updateProperties, true,
-			true /* always update this entry */},
-		EntrySpec{"class", &WindowDirEntry::updateClass, false,
+		EntrySpec{"control", &WindowDirEntry::updateCommandControl,
+			Writable{true}},
+		EntrySpec{"client_machine",
+			&WindowDirEntry::updateClientMachine},
+		EntrySpec{"properties",
+			&WindowDirEntry::updateProperties,
+			Writable{true},
+			AlwaysUpdate{true}},
+		EntrySpec{"class", &WindowDirEntry::updateClass,
 			xpp::atoms::icccm_wm_class
 		},
-		EntrySpec{"command", &WindowDirEntry::updateCommand, false,
+		EntrySpec{"command", &WindowDirEntry::updateCommand,
 			xpp::atoms::icccm_wm_command},
-		EntrySpec{"locale", &WindowDirEntry::updateLocale, false,
+		EntrySpec{"locale", &WindowDirEntry::updateLocale,
 			xpp::atoms::icccm_wm_locale},
-		EntrySpec{"protocols", &WindowDirEntry::updateProtocols, false,
+		EntrySpec{"protocols", &WindowDirEntry::updateProtocols,
 			xpp::atoms::icccm_wm_protocols},
-		EntrySpec{"client_leader", &WindowDirEntry::updateClientLeader, false,
+		EntrySpec{"client_leader", &WindowDirEntry::updateClientLeader,
 			xpp::atoms::icccm_wm_client_leader},
-		EntrySpec{"window_type", &WindowDirEntry::updateWindowType, false,
+		EntrySpec{"window_type", &WindowDirEntry::updateWindowType,
 			xpp::atoms::ewmh_wm_window_type}
 	}};
 }
 
-void WindowDirEntry::addSpecEntry(const UpdateableDir<WindowDirEntry>::EntrySpec &spec) {
+void WindowDirEntry::addSpecEntry(
+		const UpdateableDir<WindowDirEntry>::EntrySpec &spec) {
 	FileEntry *entry = new xwmfs::WindowFileEntry{
-		spec.name, m_win, m_modify_time, spec.read_write
+		spec.name, m_win, m_modify_time, spec.writable
 	};
 
 	try {

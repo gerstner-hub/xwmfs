@@ -20,7 +20,7 @@ typename UpdateableDir<CLASS>::AtomSpecMap UpdateableDir<CLASS>::getUpdateMap() 
 
 	for (const auto &spec: m_specs) {
 		for (const auto &atom: spec.atoms) {
-			ret.insert({ atom, spec });
+			ret.insert({atom, spec});
 		}
 	}
 
@@ -28,7 +28,8 @@ typename UpdateableDir<CLASS>::AtomSpecMap UpdateableDir<CLASS>::getUpdateMap() 
 }
 
 template <typename CLASS>
-typename UpdateableDir<CLASS>::SpecVector UpdateableDir<CLASS>::getAlwaysUpdateSpecs() const {
+typename UpdateableDir<CLASS>::SpecVector
+UpdateableDir<CLASS>::getAlwaysUpdateSpecs() const {
 	SpecVector ret;
 
 	for (const auto &spec: m_specs) {

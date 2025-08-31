@@ -82,9 +82,7 @@ protected: // functions
 
 	SpecVector getSpecVector() const;
 
-	void addSpecEntry(
-		const UpdateableDir<WindowDirEntry>::EntrySpec &spec
-	);
+	void addSpecEntry(const EntrySpec &spec);
 
 	void forwardEvent(const EntrySpec &changed_entry);
 

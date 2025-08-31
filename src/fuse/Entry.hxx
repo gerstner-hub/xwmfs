@@ -6,6 +6,9 @@
 // POSIX
 #include <unistd.h>
 
+// xwmfs
+#include <common/types.hxx>
+
 // fwd. declaration
 struct stat;
 
@@ -251,11 +254,12 @@ protected: // functions
 	 * 	FileEntry.
 	 *
 	 * 	The file system entry will get the name \c n, the type \c t,
-	 * 	will be handled as writable if \c writable is set and the
+	 * 	will be handled as writable if `writable` is set and the
 	 * 	initial status and modification times will be \c time.
 	 **/
 	Entry(const std::string &n, const Type &t,
-			const bool writable = false, const time_t &time = 0) :
+			const Writable writable = Writable{false},
+			const time_t &time = 0) :
 		m_name{n}, m_type{t}, m_writable{writable},
 		m_modify_time{time}, m_status_time{time},
 		m_refcount{1} {
@@ -280,7 +284,7 @@ protected: // data
 
 	const std::string m_name;
 	const Type m_type = INVAL_TYPE;
-	const bool m_writable = false;
+	const Writable m_writable;
 
 	//! set to the last write/creation event
 	time_t m_modify_time = 0;

@@ -154,7 +154,7 @@ int xwmfs_open(const char *path, struct fuse_file_info *fi) {
 			<< __FUNCTION__ << " didn't find " << path << "\n";
 		return -ENOENT;
 	} else if((fi->flags & 3) != O_RDONLY && !entry->isWritable()) {
-		// don't allow any write access if entity is not writeable
+		// don't allow any write access if entity is not writable
 		return -EACCES;
 	}
 

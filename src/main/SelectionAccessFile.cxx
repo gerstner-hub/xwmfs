@@ -14,7 +14,7 @@ namespace xwmfs {
 
 SelectionAccessFile::SelectionAccessFile(const std::string &n,
 			SelectionDirEntry &parent, const xpp::AtomID type) :
-		FileEntry{n, true, 0},
+		FileEntry{n, Writable{true}},
 		m_parent{parent},
 		m_sel_type{type},
 		m_target_prop{xpp::atom_mapper.mapAtom(n)},

@@ -4,6 +4,7 @@
 #include <xpp/XWindow.hxx>
 
 // xwmfs
+#include "common/types.hxx"
 #include "fuse/FileEntry.hxx"
 
 namespace xwmfs {
@@ -21,7 +22,8 @@ class WindowFileEntry :
 public:
 	//! Creates a WindowFileEntry associated with \c win
 	WindowFileEntry(const std::string &n, const xpp::XWindow& win,
-			const time_t &t = 0, const bool writable = true) :
+			const time_t &t = 0,
+			const Writable writable = Writable{true}) :
 		FileEntry{n, writable, t},
 		m_win{win} {
 	}

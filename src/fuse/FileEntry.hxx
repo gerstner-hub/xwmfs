@@ -4,6 +4,7 @@
 #include <sstream>
 
 // xwmfs
+#include "common/types.hxx"
 #include "fuse/Entry.hxx"
 
 namespace xwmfs {
@@ -51,10 +52,12 @@ class FileEntry :
 public:
 	/**
 	 * \brief
-	 * 	Create a new FileEntry with name \c n, being read-write if \c
-	 * 	writable is set and using \c t for initial timestamps
+	 * 	Create a new FileEntry with name \c n, being read-write if
+	 * 	`writable` is set and using \c t for initial timestamps
 	 **/
-	FileEntry(const std::string &n, const bool writable = false, const time_t &t = 0) :
+	FileEntry(const std::string &n,
+			const Writable writable = Writable{false},
+			const time_t &t = 0) :
 			Entry{n, REG_FILE, writable, t} {
 	}
 

@@ -37,7 +37,7 @@ struct EventOpenContext :
 
 EventFile::EventFile(DirEntry &parent, const std::string &name,
 			const time_t time, const size_t max_backlog) :
-		Entry{name, REG_FILE, false, time},
+		Entry{name, REG_FILE, Writable{false}, time},
 		m_max_backlog{max_backlog},
 		m_cond{parent.getLock()} {
 	this->createAbortHandler(m_cond);
