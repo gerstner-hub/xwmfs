@@ -24,6 +24,8 @@ int SymlinkEntry::readlink(char *buf, size_t size) {
 	auto copylen = std::min(size-1, m_target.size());
 	std::memcpy(buf, &m_target[0], copylen);
 	buf[copylen] = '\0';
+	// FUSE somehow doesn't except the string length here, only 0 for
+	// sucecss
 	return 0;
 }
 

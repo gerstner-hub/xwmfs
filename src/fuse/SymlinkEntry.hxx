@@ -11,7 +11,7 @@ class SymlinkEntry :
 public:
 	SymlinkEntry(const std::string &n,
 				const std::string &target = std::string(),
-				const time_t &t = 0) :
+				const time_t t = 0) :
 			Entry{n, SYMLINK, t},
 			m_target{target} {
 	}
@@ -26,7 +26,7 @@ public:
 
 protected: // data
 
-	//! target file system location
+	/// target file system location
 	std::string m_target;
 };
 
