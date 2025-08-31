@@ -1,7 +1,3 @@
-// C++
-#include <iostream>
-#include <sstream>
-
 // libxpp
 #include <xpp/AtomMapper.hxx>
 #include <xpp/atoms.hxx>
@@ -13,15 +9,14 @@
 
 // xwmfs
 #include "fuse/EventFile.hxx"
-#include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/WindowFileEntry.hxx"
-#include "main/Xwmfs.hxx"
 
 namespace xwmfs {
 
-WindowDirEntry::WindowDirEntry(const xpp::XWindow &win, const bool query_attrs) :
+WindowDirEntry::WindowDirEntry(const xpp::XWindow &win,
+			const bool query_attrs) :
 		UpdateableDir{xpp::to_string(win.id()), getSpecVector()},
 		m_win{win} {
 	addEntries();
@@ -46,7 +41,7 @@ WindowDirEntry::WindowDirEntry(const xpp::XWindow &win, const bool query_attrs) 
 		}
 	}
 
-	// NOTE: might become a writeable entry, using XReparentWindow(),
+	// NOTE: might become a writable entry, using XReparentWindow(),
 	// pretty obscure though
 	m_parent = new WindowFileEntry{"parent",
 		m_win, m_modify_time, Writable{false}};
@@ -123,11 +118,13 @@ void WindowDirEntry::addSpecEntry(
 	try {
 		(this->*(spec.member_func))(*entry);
 	} catch (const std::exception &ex) {
-		// this can happen legally. It is a race condition. We've been
-		// so fast to register the window but it hasn't got a name or
-		// whatever property yet.
-		//
-		// The name will be noticed later on via a property update.
+		/*
+		 * This can happen legally. It is a race condition. We've been
+		 * so fast to register the window but it hasn't got a name or
+		 * whatever property yet.
+		 *
+		 * The name will be noticed later on via a property update.
+		 */
 		xwmfs::logger->debug()
 			<< "Couldn't get " << spec.name
 			<< " for window " << xpp::to_string(m_win.id())
@@ -145,7 +142,7 @@ void WindowDirEntry::addSpecEntry(
 std::string WindowDirEntry::getCommandInfo() {
 	std::string ret;
 
-	for (const auto command: { "destroy", "delete" }) {
+	for (const auto command: {"destroy", "delete"}) {
 		// provide the available commands as read content
 		ret += command;
 		ret += " ";
@@ -162,7 +159,9 @@ void WindowDirEntry::updateAll() {
 	}
 }
 
-void WindowDirEntry::propertyChanged(const xpp::AtomID changed_atom, const bool is_delete) {
+void WindowDirEntry::propertyChanged(
+		const xpp::AtomID changed_atom,
+		const bool is_delete) {
 	// do the same for delete and update at the moment
 	// upon delete empty files might remain in the process of updating
 	// them. Removal of those files is a TODO
@@ -192,11 +191,11 @@ void WindowDirEntry::update(const EntrySpec &spec) {
 	try {
 		entry->str("");
 		(this->*(spec.member_func))(*entry);
-		(*entry) << '\n';
-	} catch(...) {
+		*entry << '\n';
+	} catch(const std::exception &ex) {
 		xwmfs::logger->error()
-			<< "Error udpating property '" << spec.name << "'"
-			<< std::endl;
+			<< "Error updating property '" << spec.name << "': "
+			<< ex.what() << "\n";
 	}
 
 	entry->setModifyTime(m_modify_time);
@@ -206,7 +205,7 @@ void WindowDirEntry::update(const EntrySpec &spec) {
 
 void WindowDirEntry::newMappedState(const bool mapped) {
 	m_mapped->str("");
-	(*m_mapped) << (mapped ? "1" : "0") << "\n";
+	*m_mapped << (mapped ? "1" : "0") << "\n";
 
 	m_events->addEvent("mapped");
 }
@@ -255,11 +254,10 @@ void WindowDirEntry::updateProtocols(FileEntry &entry) {
 
 	m_win.getProtocols(prots);
 
-	const auto &mapper = xpp::atom_mapper;
 	bool first = true;
 
 	for (const auto &atom: prots) {
-		entry << (first ? "" : "\n") << mapper.mapName(atom);
+		entry << (first ? "" : "\n") << xpp::atom_mapper.mapName(atom);
 		first = false;
 	}
 }
@@ -278,7 +276,8 @@ void WindowDirEntry::updateWindowType(FileEntry &entry) {
 
 void WindowDirEntry::updateGeometry(const xpp::XWindowAttrs &attrs) {
 	m_geometry->str("");
-	(*m_geometry) << attrs.x << "," << attrs.y << ":" << attrs.width << "x" << attrs.height << "\n";
+	*m_geometry << attrs.x << "," << attrs.y
+		<< ":" << attrs.width << "x" << attrs.height << "\n";
 }
 
 void WindowDirEntry::updateCommandControl(FileEntry &entry) {
@@ -292,7 +291,8 @@ void WindowDirEntry::updateClientMachine(FileEntry &entry) {
 namespace {
 
 void getPropertyValue(const xpp::XWindow &win, const xpp::AtomID prop_atom,
-		const xpp::XWindow::PropertyInfo &info, std::stringstream &value) {
+		const xpp::XWindow::PropertyInfo &info,
+		std::stringstream &value) {
 	/*
 	 * this code could be more compact via templates but would then also
 	 * be more complex ...
@@ -300,57 +300,57 @@ void getPropertyValue(const xpp::XWindow &win, const xpp::AtomID prop_atom,
 	using Atom = xpp::AtomID;
 
 	switch (info.type) {
-		case Atom::ATOM: {
-			xpp::Property<std::vector<xpp::AtomID>> prop;
-			win.getProperty(prop_atom, prop, &info);
-			int i = 0;
-			for (const auto &val: prop.get()) {
-				const auto &name = xpp::atom_mapper.mapName(val);
-				if (i++)
-					value << " ";
-				value << name;
-			}
-			break;
+	case Atom::ATOM: {
+		xpp::Property<std::vector<xpp::AtomID>> prop;
+		win.getProperty(prop_atom, prop, &info);
+		int i = 0;
+		for (const auto &val: prop.get()) {
+			const auto &name = xpp::atom_mapper.mapName(val);
+			if (i++)
+				value << " ";
+			value << name;
 		}
-		case Atom::CARDINAL: {
-			if (info.items == 1) {
-				xpp::Property<int> prop;
-				win.getProperty(prop_atom, prop, &info);
-				value << prop.get();
-			} else {
-				xpp::Property<std::vector<int>> prop;
-				win.getProperty(prop_atom, prop, &info);
-				for (const auto &val: prop.get()) {
-					value << val << " ";
-				}
-			}
-			break;
-		}
-		case Atom::STRING: {
-			xpp::Property<const char*> prop;
+		break;
+	}
+	case Atom::CARDINAL: {
+		if (info.items == 1) {
+			xpp::Property<int> prop;
 			win.getProperty(prop_atom, prop, &info);
 			value << prop.get();
-			break;
-		}
-		case Atom::WINDOW: {
-			xpp::Property<xpp::WinID> prop;
+		} else {
+			xpp::Property<std::vector<int>> prop;
 			win.getProperty(prop_atom, prop, &info);
-			value << xpp::to_string(prop.get());
-			break;
-		}
-		default: {
-			if (info.type == xpp::atoms::ewmh_utf8_string) {
-				xpp::Property<xpp::utf8_string> prop;
-				win.getProperty(prop_atom, prop, &info);
-				value << prop.get().str;
-			} else {
-				// some unknown property type, display as hex
-				// TODO
+			for (const auto &val: prop.get()) {
+				value << val << " ";
 			}
-
-			break;
 		}
+		break;
 	}
+	case Atom::STRING: {
+		xpp::Property<const char*> prop;
+		win.getProperty(prop_atom, prop, &info);
+		value << prop.get();
+		break;
+	}
+	case Atom::WINDOW: {
+		xpp::Property<xpp::WinID> prop;
+		win.getProperty(prop_atom, prop, &info);
+		value << xpp::to_string(prop.get());
+		break;
+	}
+	default: {
+		if (info.type == xpp::atoms::ewmh_utf8_string) {
+			xpp::Property<xpp::utf8_string> prop;
+			win.getProperty(prop_atom, prop, &info);
+			value << prop.get().str;
+		} else {
+			// some unknown property type, display as hex
+			// TODO
+		}
+
+		break;
+	}
+	} // end switch
 }
 
 } // end anon ns
@@ -359,33 +359,35 @@ void WindowDirEntry::updateProperties(FileEntry &entry) {
 	xpp::AtomIDVector atoms;
 	m_win.getPropertyList(atoms);
 
-	bool first = true;
 	xpp::XWindow::PropertyInfo info;
 
 	for (const auto atom: atoms) {
 		m_win.getPropertyInfo(atom, info);
-		const auto &name = xpp::atom_mapper.mapName(atom);
-		const auto &_type = xpp::atom_mapper.mapName(info.type);
+		const auto &prop_name = xpp::atom_mapper.mapName(atom);
+		const auto &prop_type = xpp::atom_mapper.mapName(info.type);
 
 		logger->debug()
-			<< "Querying property " << cosmos::to_integral(atom) << " on window "
-			<< xpp::to_string(m_win) << std::endl;
+			<< "Querying property " << cosmos::to_integral(atom)
+			<< " on window " << xpp::to_string(m_win) << "\n";
 		logger->debug()
-			<< "type = " << cosmos::to_integral(info.type) << ", items = " << info.items
-			<< ", format = " << info.format << std::endl;
+			<< "type = " << cosmos::to_integral(info.type)
+			<< ", items = " << info.items
+			<< ", format = " << info.format << "\n";
 
-		entry << (first ? "" : "\n") << name << "(" << _type << ") = ";
+		entry << prop_name << "(" << prop_type << ") = ";
 
 		try {
 			getPropertyValue(m_win, atom, info, entry);
 		} catch (const std::exception &ex) {
 			logger->error()
 				<< "Error getting property value for "
-				<< xpp::to_string(m_win.id()) << "/" << cosmos::to_integral(atom)
+				<< xpp::to_string(m_win.id()) << "/"
+				<< cosmos::to_integral(atom)
 				<< ": " << ex.what() << std::endl;
 			entry << "<error>";
 		}
-		first = false;
+
+		entry << "\n";
 	}
 }
 
@@ -402,19 +404,20 @@ void WindowDirEntry::queryAttrs() {
 		newMappedState(attrs.isMapped());
 	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
-			<< "Error getting window attrs for " << xpp::to_string(m_win.id())
-			<< ": " << ex.what() << std::endl;
+			<< "Error getting window attrs for "
+			<< xpp::to_string(m_win.id()) << ": " << ex.what()
+			<< "\n";
 		setDefaultAttrs();
 	}
 }
 
 void WindowDirEntry::setDefaultAttrs() {
-	(*m_mapped) << "0\n";
+	*m_mapped << "0\n";
 }
 
 void WindowDirEntry::updateParent() {
 	m_parent->str("");
-	(*m_parent) << xpp::to_string(m_win.getParent()) << "\n";
+	*m_parent << xpp::to_string(m_win.getParent()) << "\n";
 }
 
 void WindowDirEntry::newParent(const xpp::XWindow &win) {
