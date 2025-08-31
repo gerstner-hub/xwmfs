@@ -50,7 +50,7 @@ void WindowsRootDir::addWindow(const xpp::XWindow &win,
 
 	try {
 		// the window directories are named after their IDs
-		addEntry(win_dir, false);
+		addEntry(win_dir, DirEntry::InheritTime{false});
 		logger->debug() << "Added window "
 			<< xpp::to_string(win.id()) << "\n";
 	} catch (const DirEntry::DoubleAddError &) {

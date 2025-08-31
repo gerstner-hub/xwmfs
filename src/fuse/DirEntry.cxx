@@ -1,19 +1,22 @@
 // C++
 #include <cassert>
-#include <sstream>
+#include <vector>
+
+// cosmos
+#include <cosmos/formatting.hxx>
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
 
 namespace xwmfs {
 
-Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time) {
+Entry* DirEntry::addEntry(Entry * const e, const InheritTime inherit_time) {
 	assert(e);
 
 	/*
-	 * we optimize here by not allocating a copy of the entry's
-	 * name but instead use a flat copy of that entries name as a
-	 * key. we need to be very careful about that, however, when
+	 * We optimize here by not allocating a copy of the entry's
+	 * name but instead use a flat copy of that entry's name as a
+	 * key. We need to be very careful about that, however, when
 	 * it comes to deleting entries again.
 	 */
 	auto insert_res = m_objs.insert(std::make_pair(e->name().c_str(), e));
@@ -24,7 +27,7 @@ Entry* DirEntry::addEntry(Entry * const e, const bool inherit_time) {
 
 	// we inherit our own time info to the new entry, if none has been
 	// specified
-	if(inherit_time) {
+	if (inherit_time) {
 		e->setModifyTime(m_modify_time);
 		e->setStatusTime(m_status_time);
 	}
@@ -38,9 +41,7 @@ void DirEntry::removeEntry(const char* s) {
 	auto it = m_objs.find(s);
 
 	if(it == m_objs.end()) {
-		std::stringstream ss;
-		ss << "removeEntry: No such entry \"" << s << "\"";
-		throw Exception{ss.str()};
+		throw Exception{cosmos::sprintf("removeEntry: No such entry \"%s\"", s)};
 	}
 
 	auto entry = it->second;
@@ -62,16 +63,16 @@ void DirEntry::clear() {
 	// mapped values. If we delete an entry then its key in the map
 	// becomes invalid.
 
-	for(auto it: m_objs) {
+	for (auto it: m_objs) {
 		auto entry = it.second;
-		if(entry->markDeleted()) {
+		if (entry->markDeleted()) {
 			to_delete.push_back(entry);
 		}
 	}
 
 	m_objs.clear();
 
-	for(auto &entry: to_delete) {
+	for (auto &entry: to_delete) {
 		delete entry;
 	}
 }

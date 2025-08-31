@@ -135,7 +135,7 @@ void WindowDirEntry::addSpecEntry(
 
 	*entry << '\n';
 
-	this->addEntry(entry, false);
+	this->addEntry(entry, DirEntry::InheritTime{false});
 }
 
 
