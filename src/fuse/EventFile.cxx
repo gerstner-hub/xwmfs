@@ -1,3 +1,6 @@
+// cosmos
+#include <cosmos/error/RuntimeError.hxx>
+
 // xwmfs
 #include "fuse/AbortHandler.hxx"
 #include "fuse/DirEntry.hxx"
@@ -8,12 +11,10 @@
 
 namespace xwmfs {
 
-const size_t INVAL_ID = SIZE_MAX;
-
 struct EventOpenContext :
 		public OpenContext {
 
-	EventOpenContext(Entry *entry, const size_t first_id) :
+	EventOpenContext(Entry *entry, const EventFile::Event::ID first_id) :
 			OpenContext{entry},
 			cur_id{first_id} {
 	}
@@ -21,18 +22,18 @@ struct EventOpenContext :
 	EventOpenContext(const EventOpenContext&) = delete;
 
 	/*
-	 * instead of storing a shared ptr and an offset to the event, reduce
-	 * our functionality to providing complete events only. Thus we can
-	 * switch to a std::deque of fixed maximum size.
+	 * We don't offer to read partial events, but reduce our functionality
+	 * to providing complete events only. Thus we can switch to a
+	 * std::deque of a fixed maximum size.
 	 *
-	 * only question is about the kind of errno signaling. There's no
+	 * The only question is about the kind of errno signaling. There's no
 	 * error to say "your buffer is too small". Because everything is
 	 * character/byte based. But there are cases like readlink(2) which
 	 * silently truncates in such cases. That's what we do.
 	 */
 
-	//! the next event ID to present the reader
-	size_t cur_id = INVAL_ID;
+	/// The next event ID to present the reader.
+	EventFile::Event::ID cur_id = EventFile::Event::ID::INVALID;
 };
 
 EventFile::EventFile(DirEntry &parent, const std::string &name,
@@ -57,6 +58,11 @@ bool EventFile::markDeleted() {
 	return ret;
 }
 
+EventFile::Event::ID EventFile::nextID() {
+	m_next_id = Event::ID{cosmos::to_integral(m_next_id) + 1};
+	return m_next_id;
+}
+
 void EventFile::addEvent(const std::string &text) {
 	{
 		cosmos::MutexGuard g{m_parent->getLock()};
@@ -70,53 +76,63 @@ void EventFile::addEvent(const std::string &text) {
 		}
 
 		if (m_event_queue.size() == m_max_backlog) {
+			// drop the oldest event
 			m_event_queue.pop_front();
 		}
 
-		m_event_queue.push_back(Event{text, m_next_id++});
+		m_event_queue.push_back(Event{text, nextID()});
 
-		if (m_next_id == INVAL_ID) {
-			m_next_id = 0;
+		if (m_next_id == Event::ID::INVALID) {
+			m_next_id = Event::ID{0};
 		}
 	}
 
-	// wake up all readers so they can read the new event, if required
+	// wake up all readers so they can read the new event, if possible.
 	m_cond.broadcast();
 }
 
-const EventFile::Event* EventFile::nextEvent(const size_t prev_id) {
+const EventFile::Event* EventFile::nextEvent(const Event::ID prev_id) {
 	if (m_event_queue.empty()) {
 		return nullptr;
 	}
 
 	const auto num_events = m_event_queue.size();
-	const auto oldest_id = m_event_queue[0].id;
-	const auto newest_id = m_event_queue[num_events-1].id;
+	const auto oldest_id = m_event_queue.front().id;
+	const auto newest_id = m_event_queue.back().id;
 
-	if (prev_id == INVAL_ID) {
+	if (prev_id == Event::ID::INVALID || oldest_id > prev_id) {
 		// no previous event available, return the oldest one then
-		return &m_event_queue[0];
+		return &m_event_queue.front();
 	} else if (newest_id == prev_id) {
 		// no new event available
 		return nullptr;
 	} else if (oldest_id > newest_id) {
 		// id wraparound situation, fallback to linear search to find
-		// the right current event
-		for (size_t i = 0; i < num_events; i++) {
-			const auto &event = m_event_queue[i];
-
-			if (event.id == prev_id) {
-				return &(m_event_queue[i+1]);
+		// the right current event.
+		bool found_prev = false;
+		for (const auto &event: m_event_queue) {
+			if (found_prev) {
+				return &event;
+			} else if (event.id == prev_id) {
+				found_prev = true;
 			}
 		}
-	} else if (oldest_id > prev_id) {
-		// some events have been lost for this reader
-		return &(m_event_queue[0]);
+
+		// shouldn't happen, but you never know.
+		throw cosmos::RuntimeError{"failed to find next event"};
 	}
-
-	const auto index = prev_id - oldest_id + 1;
-
-	return &(m_event_queue[index]);
+	else if (oldest_id > prev_id) {
+		// some events have been lost for this reader, return the
+		// oldest instead
+		//
+		// NOTE: only check for this after the wraparound check above,
+		// to prevent wrong logic.
+		return &m_event_queue.front();
+	} else {
+		// just return the next event then
+		const auto index = cosmos::to_integral(prev_id) - cosmos::to_integral(oldest_id) + 1;
+		return &(m_event_queue[index]);
+	}
 }
 
 int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size) {
@@ -143,7 +159,7 @@ int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size) {
 		m_abort_handler->finishedBlockingCall();
 	}
 
-	const auto copy_size = std::min( (event->text).size(), size - 1);
+	const auto copy_size = std::min(event->text.size(), size - 1);
 	std::memcpy(buf, (event->text).c_str(), copy_size);
 	// ship a newline after each event
 	buf[copy_size] = '\n';
@@ -158,11 +174,10 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	// the state of the open context here
 	(void)offset;
 	auto &evt_ctx = *(reinterpret_cast<EventOpenContext*>(ctx));
-
 	auto &fs_lock = xwmfs::Xwmfs::getInstance().getFS();
 
 	/*
-	 * This is a pretty stupid situation here. we need to release
+	 * This is a pretty stupid situation here. We need to release
 	 * the global filesystem read lock here to avoid deadlocks.
 	 * For example if the caller wants to close its file
 	 * descriptor while being blocked here, or practically any
@@ -172,7 +187,7 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	 * that one instead or the global lock to protect read
 	 * operations from write operations or events.
 	 *
-	 * the read lock is actually not required at all for
+	 * The read lock is actually not required at all for
 	 * EventFile for reading, but in general is required for other
 	 * entry types and is taken in xwmfs_read early on.
 	 */
@@ -197,7 +212,7 @@ OpenContext* EventFile::createOpenContext() {
 	auto ret = new EventOpenContext{
 		this,
 		// make sure no outdated events are presented to new readers
-		m_event_queue.empty() ? INVAL_ID : m_event_queue.back().id
+		m_event_queue.empty() ? Event::ID::INVALID : m_event_queue.back().id
 	};
 
 	this->ref();
