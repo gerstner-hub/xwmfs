@@ -1,6 +1,3 @@
-// C++
-#include <sstream>
-
 // libxpp
 #include <xpp/atoms.hxx>
 
@@ -63,7 +60,7 @@ void WinManagerDirEntry::addEntries() {
 	}
 }
 
-void WinManagerDirEntry::addSpecEntry(const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec) {
+void WinManagerDirEntry::addSpecEntry(const EntrySpec &spec) {
 	FileEntry *entry = nullptr;
 
 	if (spec.writable)
@@ -84,7 +81,8 @@ void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
 	if (it == m_atom_update_map.end()) {
 		logger->warn()
 			<< "Root window unknown property ("
-			<< cosmos::to_integral(changed_atom) << ") changed" << std::endl;
+			<< cosmos::to_integral(changed_atom) << ") changed"
+			<< "\n";
 		return;
 	}
 
@@ -94,11 +92,12 @@ void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
 	if (entry) {
 		logger->debug()
 			<< "WinManagerDirEntry::" << __FUNCTION__
-			<< ": update for " << update_spec.name << std::endl;
+			<< ": update for " << update_spec.name << "\n";
 	} else {
 		logger->warn()
+			<< "WinManagerDirEntry::" << __FUNCTION__
 			<< "File entry " << update_spec.name
-			<< " not existing?" << std::endl;
+			<< " not existing?" << "\n";
 		return;
 	}
 
@@ -108,11 +107,11 @@ void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
 
 	try {
 		(this->*(update_spec.member_func))(*entry);
-		(*entry) << '\n';
-	} catch (...) {
+		*entry << '\n';
+	} catch (const std::exception &ex) {
 		logger->error()
 			<< "Error udpating " << update_spec.name << " property"
-			<< std::endl;
+			<< ex.what() << "\n";
 		return;
 	}
 
@@ -123,14 +122,15 @@ void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
 
 void WinManagerDirEntry::delProp(const xpp::AtomID deleted_atom) {
 	(void)deleted_atom;
-	// TODO: do something here? is this a common use case?
+	// TODO: do something here? Is this a common use case?
 }
 
 void WinManagerDirEntry::windowLifecycleEvent(const xpp::XWindow &win,
 		const bool created_else_destroyed) {
-	std::stringstream ss;
-	ss << (created_else_destroyed ? "created" : "destroyed") << " " << xpp::to_string(win.id());
-	m_events->addEvent(ss.str());
+	std::string event = created_else_destroyed ? "created" : "destroyed";
+	event += " ";
+	event += xpp::to_string(win.id());
+	m_events->addEvent(event);
 }
 
 void WinManagerDirEntry::updateNumberOfDesktops(FileEntry &entry) {
@@ -158,7 +158,7 @@ void WinManagerDirEntry::updateDesktopNames(FileEntry &entry) {
 		entry << name;
 	}
 
-	// update the sibbling desktops directory structure
+	// update the sibling desktops directory structure
 	auto desktops = Xwmfs::getInstance().getDesktopsDir();
 	if (desktops) {
 		desktops->handleDesktopsChanged();
@@ -180,15 +180,18 @@ void WinManagerDirEntry::updateActiveWindow(FileEntry &entry) {
 }
 
 void WinManagerDirEntry::updateShowDesktopMode(FileEntry &entry) {
-	entry << (m_root_win.hasShowDesktopMode() ? m_root_win.getShowDesktopMode() : -1);
+	entry << (m_root_win.hasShowDesktopMode() ?
+		m_root_win.getShowDesktopMode() : -1);
 }
 
 void WinManagerDirEntry::updateName(FileEntry &entry) {
-	entry << (m_root_win.hasWMName() ? m_root_win.getWMName() : "N/A");
+	entry << (m_root_win.hasWMName() ?
+		m_root_win.getWMName() : "N/A");
 }
 
 void WinManagerDirEntry::updateClass(FileEntry &entry) {
-	entry << (m_root_win.hasWMClass() ? m_root_win.getWMClass() : "N/A");
+	entry << (m_root_win.hasWMClass() ?
+		m_root_win.getWMClass() : "N/A");
 }
 
 } // end ns

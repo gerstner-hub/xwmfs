@@ -1,28 +1,22 @@
 #pragma once
 
 // libxpp
-#include <xpp/RootWin.hxx>
+#include <xpp/fwd.hxx>
 #include <xpp/types.hxx>
 
 // xwmfs
 #include "main/UpdateableDir.hxx"
-
-namespace xpp {
-	class XWindow;
-}
 
 namespace xwmfs {
 
 class WinManagerWindow;
 class EventFile;
 
+/// A DirEntry that contains and manages global window manager properties.
 /**
- * \brief
- * 	A DirEntry that contains and manages global window manager properties
- * \details
- * 	This is a specialized DirEntry representing the window manager. It
- * 	contains a number of sub-entries that contain global window manager
- * 	properties and controls.
+ * This is a specialized DirEntry representing the window manager. It contains
+ * a number of sub-entries that contain global window manager properties and
+ * controls.
  **/
 class WinManagerDirEntry :
 		public UpdateableDir<WinManagerDirEntry> {
@@ -30,22 +24,13 @@ public: // functions
 
 	explicit WinManagerDirEntry(WinManagerWindow &root_win);
 
-	/**
-	 * \brief
-	 * 	Update window manager data denoted by \c changed_atom
-	 **/
+	/// Update window manager data denoted by `changed_atom`.
 	void update(const xpp::AtomID changed_atom);
 
-	/**
-	 * \brief
-	 * 	Reflect delection of the denoted \c deleted_atom
-	 **/
+	/// Reflect deletion of the denoted `deleted_atom` in the FS.
 	void delProp(const xpp::AtomID deleted_atom);
 
-	/**
-	 * \brief
-	 * 	To be called when a window was created or destroyed
-	 **/
+	/// To be called when a window was created or destroyed.
 	void windowLifecycleEvent(
 		const xpp::XWindow &win,
 		const bool created_else_destroyed
@@ -72,8 +57,7 @@ protected: // functions
 protected: // data
 
 	WinManagerWindow &m_root_win;
-	//! an event file from where programs can efficiently read individual
-	//! window manager events
+	/// File for reading window manager wide events.
 	EventFile *m_events = nullptr;
 };
 
