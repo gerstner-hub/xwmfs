@@ -1,26 +1,20 @@
 #pragma once
 
-// C++
-#include <map>
+// libxpp
+#include <xpp/fwd.hxx>
 
 // xwmfs
 #include "fuse/FileEntry.hxx"
-
-namespace xpp {
-	class XWindow;
-}
 
 namespace xwmfs {
 
 class WinManagerWindow;
 
+/// A FileEntry that is associated with global window manager data.
 /**
- * \brief
- * 	A FileEntry that is associated with a global window manager entry
- * \details
- * 	This is a specialized FileEntry for particular global entries relating
- * 	to the window manager. Mostly this is only used for writable files to
- * 	relay the write request correctly.
+ * This is a specialized FileEntry for particular global entries relating to
+ * the window manager. Mostly this is only used for writable files to relay
+ * the write request correctly.
  **/
 struct WinManagerFileEntry :
 		public FileEntry {
@@ -29,18 +23,11 @@ struct WinManagerFileEntry :
 			FileEntry{n, Writable{true}, t} {
 	}
 
-	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
+	int write(OpenContext *ctx, const char *data,
+			const size_t bytes, off_t offset) override;
+protected: // functions
 
-protected: // types
-
-	using SetIntFunction = void (WinManagerWindow::*)(const int);
-	using SetIntFunctionMap = std::map<std::string, SetIntFunction>;
-	using SetWindowFunction = void (WinManagerWindow::*)(const xpp::XWindow&);
-	using SetWindowFunctionMap = std::map<std::string, SetWindowFunction>;
-
-	// a mapping of file system names to their associated set int functions
-	static const SetIntFunctionMap m_set_int_function_map;
-	static const SetWindowFunctionMap m_set_window_function_map;
+	int callUpdateFunc(const int value) const;
 };
 
 } // end ns
