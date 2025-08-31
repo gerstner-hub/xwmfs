@@ -1,10 +1,8 @@
 // C++
-#include <iostream>
 #include <string>
 
 // POSIX
 #include <sys/stat.h>
-#include <unistd.h>
 
 // cosmos
 #include <cosmos/thread/Condition.hxx>
@@ -20,25 +18,19 @@ namespace xwmfs {
 const uid_t Entry::m_uid = ::getuid();
 const gid_t Entry::m_gid = ::getgid();
 
-
 Entry::~Entry() {
 	if (!m_parent || m_parent == this)
-		// no distict parent
+		// no distinct parent
 		return;
 
 	if (m_parent->unref()) {
 		delete m_parent,
 		m_parent = nullptr;
 	}
-
-	if (m_abort_handler) {
-		delete m_abort_handler;
-		m_abort_handler = nullptr;
-	}
 }
 
 void Entry::createAbortHandler(cosmos::Condition &cond) {
-	m_abort_handler = new AbortHandler{cond};
+	m_abort_handler = std::make_unique<AbortHandler>(cond);
 }
 
 void Entry::abortBlockingCall(const cosmos::pthread::ID thread) {
@@ -54,9 +46,8 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 	std::string string(data, bytes);
 
 	try {
-		result = std::stoi( string, &endpos );
+		result = std::stoi(string, &endpos);
 	} catch (const std::exception &ex) {
-		std::cerr << ex.what() << std::endl;
 		result = -1;
 		return -EINVAL;
 	}
@@ -119,16 +110,19 @@ void Entry::setParent(DirEntry *dir) {
 
 OpenContext* Entry::createOpenContext() {
 	// TODO: we could improve performance here by using pre-allocated
-	// objects for OpenContext
+	// objects for OpenContext. Probably overkill for the few files we
+	// currently handle, though.
 	auto ret = new OpenContext{this};
 
-	// increase the reference count to avoid deletion while the file is
-	// opened
-	//
-	// NOTE: this race conditions only shows if fuse is mounted with the
-	// direct_io option, otherwise heavy caching is employed that avoids
-	// the SEGFAULT when somebody tries to read from an Entry that's
-	// already been deleted
+	/*
+	 * Increase the reference count to avoid deletion while the file is
+	 * open.
+	 *
+	 * NOTE: this race conditions only occurs if FUSE is mounted with
+	 * the direct_io option, otherwise heavy caching is employed that
+	 * avoids the SEGFAULT when somebody tries to read from an Entry
+	 * that's already been deleted
+	 */
 	this->ref();
 
 	return ret;
