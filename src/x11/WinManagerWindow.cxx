@@ -4,6 +4,7 @@
 #include <xpp/atoms.hxx>
 
 // cosmos
+#include <cosmos/string.hxx>
 #include <cosmos/utils.hxx>
 
 // xwmfs

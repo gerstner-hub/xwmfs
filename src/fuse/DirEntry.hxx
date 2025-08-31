@@ -2,9 +2,9 @@
 
 // C++
 #include <map>
+#include <string_view>
 
 // cosmos
-#include <cosmos/string.hxx>
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/utils.hxx>
 
@@ -28,7 +28,7 @@ class DirEntry :
 public: // types
 
 	/// A map of file system names to their corresponding Entry objects.
-	using NameEntryMap = std::map<const char*, Entry*, cosmos::CompareCString>;
+	using NameEntryMap = std::map<std::string_view, Entry*>;
 
 	/// The type enum associated with DirEntry. Can be used in templates.
 	static constexpr Entry::Type type = Entry::DIRECTORY;
@@ -172,6 +172,13 @@ public: // functions
 protected: // data
 
 	/// Contains all entries existing in the directory with their names as keys.
+	/**
+	 * Note that the keys are flat copies of the `m_name` member in the
+	 * Entry type. This uses std::string_view to support copy-less lookup
+	 * in RootEntry::findEntry(). The string_views inserted here must
+	 * always be null terminated, however, otherwise the interfacing to
+	 * FUSE won't work properly.
+	 **/
 	NameEntryMap m_objs;
 
 	/// A lock for this directory and all its direct children.

@@ -1,3 +1,5 @@
+#include <cstring>
+
 // xwmfs
 #include "fuse/RootEntry.hxx"
 

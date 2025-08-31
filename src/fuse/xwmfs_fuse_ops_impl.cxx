@@ -119,7 +119,7 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			it.second->getStat(&stbuf);
 		}
 
-		filler(buf, it.first, provide_stat ? &stbuf : nullptr, 0, fill_flags);
+		filler(buf, it.first.data(), provide_stat ? &stbuf : nullptr, 0, fill_flags);
 	}
 
 	return 0;
