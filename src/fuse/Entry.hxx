@@ -224,8 +224,8 @@ protected: // functions
 	 * and modification times will be `time`.
 	 **/
 	Entry(const std::string &n, const Type &t,
-			const Writable writable = Writable{false},
-			const time_t &time = 0) :
+			const time_t &time,
+			const Writable writable = Writable{false}) :
 		m_name{n}, m_type{t}, m_writable{writable},
 		m_modify_time{time}, m_status_time{time},
 		m_refcount{1} {

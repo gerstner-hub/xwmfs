@@ -12,7 +12,7 @@ public:
 	SymlinkEntry(const std::string &n,
 				const std::string &target = std::string(),
 				const time_t &t = 0) :
-			Entry{n, SYMLINK, Writable{false}, t},
+			Entry{n, SYMLINK, t},
 			m_target{target} {
 	}
 

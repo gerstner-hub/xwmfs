@@ -58,7 +58,7 @@ public: // functions
 	 * 	modification times of the directory.
 	 **/
 	DirEntry(const std::string &n, const time_t &t = 0) :
-		Entry{n, DIRECTORY, Writable{false}, t} {
+		Entry{n, DIRECTORY, t} {
 	}
 
 	/**

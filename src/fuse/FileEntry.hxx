@@ -58,7 +58,7 @@ public:
 	FileEntry(const std::string &n,
 			const Writable writable = Writable{false},
 			const time_t &t = 0) :
-			Entry{n, REG_FILE, writable, t} {
+			Entry{n, REG_FILE, t, writable} {
 	}
 
 	/**
