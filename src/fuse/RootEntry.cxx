@@ -1,76 +1,66 @@
-#include <cstring>
+#include <string_view>
 
 // xwmfs
 #include "fuse/RootEntry.hxx"
 
 namespace xwmfs {
 
-Entry* RootEntry::findEntry(const char* path) {
+Entry* RootEntry::findEntry(const std::string_view path) {
 	// should start with the root
 	assert(path[0] == '/');
 
-	// the current directory entry we're looking at - start with
+	// the current directory entry we're looking at - starting with
 	// ourselves, of course
 	xwmfs::DirEntry *cur_dir = this;
-	// the current path entity we're looking at
-	std::string cur_entity;
-	// start of the current path entity string
-	const char *entity_start = path + 1;
-	// end of the current path entity string (at the path separator or end
-	// of string)
-	const char *entity_end = strchrnul(entity_start, '/');
-	// whether this is the last path entity in \c path
-	bool last_entity = (*entity_end == '\0');
+	// current path element
+	std::string_view element;
+	// start of the current path element string
+	size_t start = 1;
+	// end of the current path element string (at the path separator or end of string)
+	size_t end = path.find_first_of('/', start);
+	// whether this is the last path element in `path`
+	bool is_final_element = (end == element.npos);
 
-	// matching return entry, if any
-	// if "/" is queried then we immediatly know the result here
-	xwmfs::Entry *ret = (entity_start == entity_end ? this : nullptr);
+	xwmfs::Entry *ret = this;
 
-	// if start equals the end then the last entity has been reached
-	while (entity_start != entity_end) {
-		// assign the current entity to new string. this costs a
-		// single or few heap allocations per call and a copy
-		// operation per entity but otherwise we couldn't get a decent
-		// null terminator at the end of the entity
-		//
-		// XXX could be done via strncmp for better performance,
-		// but we'd need to couple it with the map find somehow...
-		cur_entity.assign(entity_start, entity_end - entity_start);
+	// if start equals the end then the last element has been reached
+	while (start < path.size()) {
+		// look at the current element.
+		element = path.substr(start, end-start);
 
-		if (!last_entity) {
-			cur_dir = xwmfs::Entry::tryCastDirEntry(
-				cur_dir->getEntry(cur_entity)
-			);
+		if (!is_final_element) {
+			cur_dir = xwmfs::Entry::tryCastDirEntry(cur_dir->getEntry(element));
 
-			// either the entity is no directory or not existing
+			// either the element is no directory or not existing
 			if (!cur_dir) {
 				return nullptr;
 			}
 		} else {
-			// the last entity may also be a file instead of a
-			// directory
-			ret = cur_dir->getEntry(cur_entity);
-			// last entity part is not existing
+			// the final element may also be a file instead of a directory
+			ret = cur_dir->getEntry(element);
+			// last element is not existing
 			if (!ret) {
 				return nullptr;
 			}
 		}
 
-		// the next entity starts one character after current
-		// entity_end, or if already reached the end then set equal to
-		// entity_end
-		entity_start = (last_entity ? entity_end : entity_end + 1);
+		if (is_final_element) {
+			// terminating condition
+			start = end;
+		} else {
+			// the next element starts one character after current
+			// end (after the slash).
+			start = end + 1;
+			end = path.find_first_of('/', start);
 
-		if (!last_entity) {
-			entity_end = strchrnul(entity_start, '/');
-
-			// the second check is for cases of "/some/path/" with
-			// a trailing slash
-			if (*entity_end == '\0' || *(entity_end + 1) == '\0') {
-				last_entity = true;
+			// the second part of the check is for cases of
+			// "/some/path/" with a trailing slash
+			if (end == element.npos || end + 1 == element.size()) {
+				is_final_element = true;
 				// this is for cases with an ending '/'
-				if (entity_start == entity_end)
+				if (start >= path.size()) {
 					ret = cur_dir;
+				}
 			}
 		}
 	}

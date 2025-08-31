@@ -93,18 +93,13 @@ public: // functions
 	 **/
 	Entry* addEntry(Entry * const e, const InheritTime inherit_time = InheritTime{true});
 
-	/// Wrapper for `getEntry(const char*)` using a std::string
-	Entry* getEntry(const std::string &s) const {
-		return getEntry(s.c_str());
-	}
-
 	/// Retrieve the contained entry with the name `n`.
 	/**
 	 * \return
 	 * 	A pointer to the contained Entry or nullptr if there is no
 	 * 	entry with that name contained in the current DirEntry.
 	 **/
-	Entry* getEntry(const char *n) const {
+	Entry* getEntry(const std::string_view n) const {
 		auto obj_it = m_objs.find(n);
 
 		return (obj_it == m_objs.end()) ? nullptr : obj_it->second;
@@ -115,7 +110,7 @@ public: // functions
 	 * If an entry of the given name exists, but has a different type,
 	 * then nullptr is returned.
 	 **/
-	Entry* getEntry(const char *n, const Entry::Type t) {
+	Entry* getEntry(const std::string_view n, const Entry::Type t) {
 		Entry *ret = this->getEntry(n);
 		if (ret && ret->type() != t)
 			return nullptr;
@@ -123,12 +118,8 @@ public: // functions
 		return ret;
 	}
 
-	DirEntry* getDirEntry(const char *n) {
+	DirEntry* getDirEntry(const std::string_view n) {
 		return reinterpret_cast<DirEntry*>(getEntry(n, Entry::Type::DIRECTORY));
-	}
-
-	DirEntry* getDirEntry(const std::string &n) {
-		return getDirEntry(n.c_str());
 	}
 
 	FileEntry* getFileEntry(const char *n) {
