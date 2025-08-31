@@ -9,18 +9,16 @@
 
 namespace xwmfs {
 
+/// A FileEntry that is associated with an XWindow object.
 /**
- * \brief
- * 	A FileEntry that is associated with an XWindow object
- * \details
- * 	This type is used for all files found within windows directories in
- * 	the file system. Depending on the actual file called the right
- * 	operations are performed at the associated window.
+ * This type is used for all files found within window directories in the
+ * file system. Depending on the actual file called the right operations are
+ * performed at the associated window.
  **/
 class WindowFileEntry :
 	public FileEntry {
 public:
-	//! Creates a WindowFileEntry associated with \c win
+	/// Creates a WindowFileEntry associated with `win`.
 	WindowFileEntry(const std::string &n, const xpp::XWindow& win,
 			const time_t &t = 0,
 			const Writable writable = Writable{true}) :
@@ -28,11 +26,7 @@ public:
 		m_win{win} {
 	}
 
-	/**
-	 * \brief
-	 * 	Implementation of write() that updates window properties
-	 * 	according to the file that is being written
-	 **/
+	/// Updates window properties in the context of the concrete file type.
 	int write(OpenContext *ctx, const char *data,
 			const size_t bytes, off_t offset) override;
 
@@ -53,34 +47,21 @@ public:
 
 	void delProperty(const std::string &name);
 
+	/// Compares this file system entry against the given window.
 	/**
-	 * \brief
-	 * 	Compares this file system entries against the given window
-	 * \details
-	 * 	If this file system entry is associated with \c w then \c true
-	 * 	is returned. \c false otherwise.
+	 * If this file system entry is associated with `w` then `true` is
+	 * returned. `false` otherwise.
 	 **/
 	bool operator==(const xpp::XWindow &w) const { return m_win == w; }
 	bool operator!=(const xpp::XWindow &w) const { return !((*this) == w); }
 
-	/**
-	 * \brief
-	 * 	Casts the object to its associated XWindow type
-	 **/
+	/// Casts the object to its associated XWindow type.
 	operator xpp::XWindow&() { return m_win; }
-
-protected: // types
-
-	using WriteMemberFunction = void (WindowFileEntry::*)(const char*, const size_t);
-	using WriteMemberFunctionMap = std::map<std::string, WriteMemberFunction>;
 
 protected: // data
 
-	//! XWindow associated with this FileEntry
-	xpp::XWindow m_win; // currently a flat copy of the window, it's not much data
-
-	// a mapping of file system names to their associated write functions
-	static const WriteMemberFunctionMap m_write_member_function_map;
+	/// XWindow associated with this FileEntry
+	xpp::XWindow m_win;
 };
 
 } // end ns

@@ -1,4 +1,10 @@
+// C++
+#include <map>
+#include <sstream>
+#include <string>
+
 // cosmos
+#include <cosmos/formatting.hxx>
 #include <cosmos/string.hxx>
 
 // libxpp
@@ -6,7 +12,6 @@
 #include <xpp/XWindowAttrs.hxx>
 
 // xwmfs
-#include "fuse/DirEntry.hxx"
 #include "main/Exception.hxx"
 #include "main/logger.hxx"
 #include "main/WindowFileEntry.hxx"
@@ -14,7 +19,11 @@
 
 namespace xwmfs {
 
-const WindowFileEntry::WriteMemberFunctionMap WindowFileEntry::m_write_member_function_map = {
+using WriteMemberFunction = void (WindowFileEntry::*)(
+			const char*, const size_t);
+using WriteMemberFunctionMap = std::map<std::string, WriteMemberFunction>;
+
+const WriteMemberFunctionMap write_member_function_map = {
 	{ "name", &WindowFileEntry::writeName },
 	{ "desktop", &WindowFileEntry::writeDesktop },
 	{ "control", &WindowFileEntry::writeCommand },
@@ -26,7 +35,7 @@ void WindowFileEntry::writeProperties(const char *data, const size_t bytes) {
 	cosmos::MutexGuard g{Xwmfs::getInstance().getEventLock()};
 	std::string input{data, bytes};
 
-	if (!input.empty() && input[0] == '!') {
+	if (input.starts_with("!")) {
 		return delProperty(input.substr(1));
 	} else {
 		return setProperty(input);
@@ -48,7 +57,8 @@ void WindowFileEntry::setProperty(const std::string &input) {
 	}
 
 	const auto prop_name = input.substr(0, open_par);
-	const auto type_name = input.substr(open_par+1, close_par - open_par - 1);
+	const auto type_name = input.substr(open_par+1,
+			close_par - open_par - 1);
 	const auto value = cosmos::stripped(input.substr(assign+1));
 
 	if (prop_name.empty() || type_name.empty() || value.empty()) {
@@ -60,18 +70,23 @@ void WindowFileEntry::setProperty(const std::string &input) {
 		prop = value.c_str();
 		m_win.setProperty(prop_name, prop);
 	} else if (type_name == "CARDINAL") {
-		std::stringstream ss;
-		int int_value;
-		ss.str(value);
-		ss >> int_value;
-		if (ss.fail()) {
-			// NOTE: this parsing is not completely bullet proof
-			// against extra non-numeric characters or hex based
-			// numbers yet
-			throw Exception{"non-integer value for CARDINAL property"};
+		int parsed_int = 0;
+		try {
+			size_t last_parsed;
+			/*
+			 * with base 0 we can support the usual hexadecimal
+			 * and octal syntax as well.
+			 */
+			parsed_int = std::stoi(value, &last_parsed, 0);
+
+			if (last_parsed != value.size()) {
+				throw Exception{"excess data in string input"};
+			}
+		} catch (const std::exception &ex) {
+			throw Exception{cosmos::sprintf("bad integer value for CARDINAL property: %s", ex.what())};
 		}
 		xpp::Property<int> prop;
-		prop = int_value;
+		prop = parsed_int;
 		m_win.setProperty(prop_name, prop);
 	} else if (type_name == "UTF8_STRING") {
 		xpp::utf8_string string_u8;
@@ -117,7 +132,8 @@ void WindowFileEntry::writeGeometry(const char *data, const size_t bytes) {
 }
 
 void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
-	const auto command = cosmos::to_lower(cosmos::stripped(std::string{data, bytes}));
+	const auto command = cosmos::to_lower(cosmos::stripped(
+				std::string{data, bytes}));
 
 	if (command == "destroy") {
 		m_win.destroy();
@@ -128,7 +144,8 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
 	}
 }
 
-int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) {
+int WindowFileEntry::write(OpenContext *ctx,
+		const char *data, const size_t bytes, off_t offset) {
 	(void)ctx;
 	if (!m_writable)
 		return -EBADF;
@@ -137,9 +154,9 @@ int WindowFileEntry::write(OpenContext *ctx, const char *data, const size_t byte
 		return -EOPNOTSUPP;
 
 	try {
-		auto it = m_write_member_function_map.find(m_name);
+		auto it = write_member_function_map.find(m_name);
 
-		if (it == m_write_member_function_map.end()) {
+		if (it == write_member_function_map.end()) {
 			logger->error()
 				<< __FUNCTION__
 				<< ": Write call for window file entry of unknown type: \""
@@ -170,7 +187,8 @@ void WindowFileEntry::writeDesktop(const char *data, const size_t bytes) {
 	const auto parsed = parseInteger(data, bytes, the_num);
 
 	if (parsed >= 0) {
-		Xwmfs::getInstance().getRootWin().moveToDesktop(m_win, the_num);
+		Xwmfs::getInstance().getRootWin().moveToDesktop(
+				m_win, the_num);
 	}
 }
 
