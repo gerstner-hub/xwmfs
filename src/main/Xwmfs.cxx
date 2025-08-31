@@ -207,9 +207,11 @@ void Xwmfs::createFS() {
 		FileSysWriteGuard write_guard{m_fs_root};
 
 		for (const auto &win: *windows) {
-			m_win_dir->addWindow(xpp::XWindow{win},
-					/* initial = */ true,
-					/* is_root_win = */ win == m_root_win);
+			m_win_dir->addWindow(
+					xpp::XWindow{win},
+					WindowsRootDir::InitialPopulation{true},
+					WindowsRootDir::IsRootWin{win == m_root_win}
+			);
 		}
 	}
 

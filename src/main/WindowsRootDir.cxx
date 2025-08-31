@@ -1,6 +1,3 @@
-// C++
-#include <sstream>
-
 // libxpp
 #include <xpp/formatting.hxx>
 #include <xpp/XWindow.hxx>
@@ -17,35 +14,20 @@ WindowsRootDir::WindowsRootDir() :
 		DirEntry{"windows"} {
 }
 
-/*
- * Upon a destroy event for a window this function is called for the according
- * window.
- *
- * It is possible that the given window isn't existing in the filesystem in
- * which case the event should be ignored.
- *
- * Exceptions are handled by the caller
- */
 void WindowsRootDir::removeWindow(const xpp::XWindow &win) {
 	removeEntry(xpp::to_string(win.id()));
 }
 
 WindowDirEntry* WindowsRootDir::getWindowDir(const xpp::XWindow &win) {
-	// TODO: this is an unsafe cast, because we have no type information
-	// for WindowDirEntry ... :-/
-	auto win_dir = reinterpret_cast<WindowDirEntry*>(
+	auto win_dir = dynamic_cast<WindowDirEntry*>(
 		getDirEntry(xpp::to_string(win.id()))
 	);
 
 	return win_dir;
 }
 
-/*
- * Upon create event for a window this function is called for the according
- * window
- */
 void WindowsRootDir::addWindow(const xpp::XWindow &win,
-		const bool initial, const bool is_root_win) {
+		const InitialPopulation initial, const IsRootWin is_root_win) {
 	if (!is_root_win) {
 		// we want to get any structure change events
 		//
@@ -69,28 +51,34 @@ void WindowsRootDir::addWindow(const xpp::XWindow &win,
 	try {
 		// the window directories are named after their IDs
 		addEntry(win_dir, false);
-		logger->debug() << "Added window " << xpp::to_string(win.id()) << std::endl;
+		logger->debug() << "Added window "
+			<< xpp::to_string(win.id()) << "\n";
 	} catch (const DirEntry::DoubleAddError &) {
 		/*
-		 * this situation happens sometimes e.g. on i3 window manager.
+		 * This situation happens sometimes e.g. on i3 window manager.
 		 * a window is destroyed but some kind of zombie entry remains
-		 * in the client list. if xwmfs starts up in this situation
+		 * in the client list. If xwmfs starts up in this situation
 		 * then it will populate this zombie window in the file
 		 * system, however all operations on it will fail, thus many
 		 * directory nodes will be missing.
 		 *
-		 * when a new window is created then i3 seems to recycle the
+		 * When a new window is created then i3 seems to recycle the
 		 * zombie window id and a create event for this new window is
-		 * coming in. in this situation we have a double add from our
-		 * point of view. we try to recover from it and be robust
+		 * coming in. In this situation we have a double add from our
+		 * point of view. We try to recover from it and be robust
 		 * about it, by updating the existing entry
 		 */
 		logger->warn() << "double-add of window "
 			<< win_dir->name() << ": updating existing entry\n";
-		auto orig_entry = reinterpret_cast<WindowDirEntry*>(
+		auto orig_entry = dynamic_cast<WindowDirEntry*>(
 			getDirEntry(win_dir->name())
 		);
-		orig_entry->updateAll();
+
+		if (orig_entry) {
+			orig_entry->updateAll();
+		} else {
+			logger->error() << "double-add of window, but existing entry is not a WindowDirEntry?!\n";
+		}
 		// delete the duplicate
 		delete win_dir;
 	} catch (...) {
@@ -152,9 +140,9 @@ void WindowsRootDir::updateParent(const xpp::XWindow &win) {
 
 	logger->info()
 		<< "New parent for " << xpp::to_string(win.id())
-		<< ": " << xpp::XWindow(win.getParent()) << std::endl;
+		<< ": " << xpp::XWindow{win.getParent()} << std::endl;
 
-	win_dir->newParent(xpp::XWindow(win.getParent()));
+	win_dir->newParent(xpp::XWindow{win.getParent()});
 }
 
 void WindowsRootDir::missingWindow(const xpp::XWindow &win, const std::string &action) {
