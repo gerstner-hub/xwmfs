@@ -3,6 +3,9 @@
 // C++
 #include <atomic>
 
+// cosmos
+#include <cosmos/thread/pthread.hxx>
+
 // POSIX
 #include <unistd.h>
 
@@ -239,7 +242,7 @@ public: // functions
 	 * \brief
 	 * 	Abort an ongoing blocking read call, if any and if supported
 	 **/
-	void abortBlockingCall(pthread_t thread);
+	void abortBlockingCall(const cosmos::pthread::ID thread);
 
 protected: // functions
 

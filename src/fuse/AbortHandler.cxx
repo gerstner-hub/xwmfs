@@ -8,7 +8,7 @@ AbortHandler::AbortHandler(cosmos::Condition &cond) :
 		m_cond{cond} {
 }
 
-void AbortHandler::abort(pthread_t thread) {
+void AbortHandler::abort(const cosmos::pthread::ID thread) {
 	{
 		cosmos::MutexGuard g{m_cond.mutex()};
 		m_abort_set.insert(thread);
@@ -18,7 +18,7 @@ void AbortHandler::abort(pthread_t thread) {
 }
 
 bool AbortHandler::wasAborted() {
-	const auto self = pthread_self();
+	const auto self = cosmos::pthread::get_id();
 	auto it = m_abort_set.find(self);
 
 	if (it == m_abort_set.end()) {

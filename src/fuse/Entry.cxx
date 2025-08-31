@@ -41,7 +41,7 @@ void Entry::createAbortHandler(cosmos::Condition &cond) {
 	m_abort_handler = new AbortHandler{cond};
 }
 
-void Entry::abortBlockingCall(pthread_t thread) {
+void Entry::abortBlockingCall(const cosmos::pthread::ID thread) {
 	if (!m_abort_handler) {
 		return;
 	}

@@ -5,68 +5,57 @@
 
 // cosmos
 #include <cosmos/thread/Condition.hxx>
+#include <cosmos/thread/pthread.hxx>
 
 namespace xwmfs {
 
 class Entry;
 
+/// Blocking call abort helper for Entry.
 /**
- * \brief
- * 	Mixin class for Entry
- * \details
- * 	If a certain Entry implementation needs to support blocking calls
- * 	then this mixin helps dealing with its complexities.
- *
- * 	Functions in Entry and the logic in the Xwmfs main class work
- * 	together with this mixin.
+ * If an Entry implementation needs to support blocking calls then this mixin
+ * helps dealing with its complexities.
+ * 
+ * Functions in Entry and the logic in the Xwmfs main class work together with
+ * this mixin.
  **/
 class AbortHandler {
 public: // functions
 
 	AbortHandler(cosmos::Condition &cond);
 
+	/// Returns whether the calling thread should abort its operation.
 	/**
-	 * \brief
-	 * 	Returns whether the calling thread should abort its operation
-	 * \details
-	 * 	The information will be deleted after calling this function,
-	 * 	so a subsequent call will return false.
-	 *
-	 * 	This function needs to be called with the mutex associated
-	 * 	with m_cond held!
+	 * The information will be deleted after calling this function, so a
+	 * subsequent call will return `false`.
+	 * 
+	 * This function needs to be called with the mutex associated
+	 * with m_cond held!
 	 **/
 	bool wasAborted();
 
-	/**
-	 * \brief
-	 * 	Records an abort request for the given thread and wakes up
-	 * 	associated threads
-	 **/
-	void abort(pthread_t thread);
+	/// Records an abort request for the given thread and wakes up associated threads.
+	void abort(const cosmos::pthread::ID thread);
 
+	/// Call this before a blocking call is about to be executed.
 	/**
-	 * \brief
-	 * 	Call this before a blocking call is about to be executed
-	 * \return
-	 * 	true if registration was successful, false if the current
-	 * 	program state doesn't allow execution of blocking calls
+	 * \return 
+	 * `true` if registration was successful, `false` if the current
+	 * program state doesn't allow execution of blocking calls.
 	 **/
 	bool prepareBlockingCall(Entry *file);
 
-	/**
-	 * \brief
-	 * 	Call this after a blocking call has finished
-	 **/
+	/// Call this after a blocking call has finished.
 	void finishedBlockingCall();
 
 protected: // types
 
-	typedef std::set<pthread_t> AbortSet;
+	using AbortSet = std::set<cosmos::pthread::ID>;
 
 protected: // data
 
 	cosmos::Condition &m_cond;
-	//! holds threads for which blocking calls shall be aborted
+	/// Records threads for which blocking calls shall be aborted.
 	AbortSet m_abort_set;
 };
 

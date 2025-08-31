@@ -673,7 +673,7 @@ void Xwmfs::abortBlockingCall(const cosmos::pthread::ID thread) {
 
 	auto ef = it->second;
 
-	ef->abortBlockingCall(thread.raw());
+	ef->abortBlockingCall(thread);
 }
 
 void Xwmfs::abortAllBlockingCalls() {
@@ -682,7 +682,7 @@ void Xwmfs::abortAllBlockingCalls() {
 	for (auto it: m_blocking_calls) {
 		auto entry = it.second;
 
-		entry->abortBlockingCall(it.first.raw());
+		entry->abortBlockingCall(it.first);
 	}
 
 	/*
