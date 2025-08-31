@@ -38,7 +38,7 @@ int FileEntry::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	seekg(offset, xwmfs::FileEntry::beg);
 
 	// read data into fuse buffer
-	static_cast<std::stringstream&>(*this).read( buf, size );
+	static_cast<std::stringstream&>(*this).read(buf, size);
 
 	const int ret = gcount();
 
