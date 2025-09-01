@@ -14,17 +14,13 @@
 #include <cosmos/thread/Mutex.hxx>
 #include <cosmos/thread/PosixThread.hxx>
 
+// xpp
+#include <xpp/fwd.hxx>
+
 // Xwmfs
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
 #include "x11/WinManagerWindow.hxx"
-
-namespace xpp {
-
-class CreateEvent;
-class DestroyEvent;
-
-}
 
 namespace xwmfs {
 

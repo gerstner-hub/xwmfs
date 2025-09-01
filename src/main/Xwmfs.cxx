@@ -2,9 +2,6 @@
 #include <functional>
 #include <vector>
 
-// FUSE
-#include <fuse.h>
-
 // cosmos
 #include <cosmos/error/ApiError.hxx>
 #include <cosmos/formatting.hxx>
@@ -30,7 +27,6 @@
 #include <xpp/formatting.hxx>
 #include <xpp/PropertyTraits.hxx>
 #include <xpp/XDisplay.hxx>
-
 
 // xwmfs
 #include "fuse/Entry.hxx"

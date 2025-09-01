@@ -5,9 +5,9 @@
 #include <xpp/XWindow.hxx>
 
 // xwmfs
+#include "main/logger.hxx"
 #include "main/WinManagerFileEntry.hxx"
 #include "main/Xwmfs.hxx"
-#include "main/logger.hxx"
 #include "x11/WinManagerWindow.hxx"
 
 namespace xwmfs {

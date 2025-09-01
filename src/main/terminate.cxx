@@ -31,7 +31,7 @@ public:
 
 	void terminate() {
 		if (isExceptionActive()) {
-			std::cerr << "Uncaught exception occured!" << std::endl;
+			std::cerr << "Uncaught exception occurred!" << std::endl;
 			printException();
 		} else {
 			std::cerr

@@ -110,7 +110,7 @@ void WinManagerDirEntry::update(const xpp::AtomID changed_atom) {
 		*entry << '\n';
 	} catch (const std::exception &ex) {
 		logger->error()
-			<< "Error udpating " << update_spec.name << " property"
+			<< "Error updating " << update_spec.name << " property"
 			<< ex.what() << "\n";
 		return;
 	}

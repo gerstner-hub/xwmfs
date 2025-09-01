@@ -54,7 +54,7 @@ public: // functions
 
 	/// Updates all information stored in the window directory.
 	/**
-	 * This is effectivelly a poll of all information from the X server.
+	 * This is effectively a poll of all information from the X server.
 	 **/
 	void updateAll();
 
@@ -109,7 +109,7 @@ protected: // functions
 	/// Adds/updates an entry for the client machine a window is running on.
 	void updateClientMachine(FileEntry &entry);
 
-	/// Adds/udpates a list of all properties of the window.
+	/// Adds/updates a list of all properties of the window.
 	void updateProperties(FileEntry &entry);
 
 	/// Adds/updates the window instance and class name.

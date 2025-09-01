@@ -19,8 +19,7 @@
 
 namespace xwmfs {
 
-using WriteMemberFunction = void (WindowFileEntry::*)(
-			const char*, const size_t);
+using WriteMemberFunction = void (WindowFileEntry::*)(const char*, const size_t);
 using WriteMemberFunctionMap = std::map<std::string, WriteMemberFunction>;
 
 const WriteMemberFunctionMap write_member_function_map = {
@@ -83,7 +82,8 @@ void WindowFileEntry::setProperty(const std::string &input) {
 				throw Exception{"excess data in string input"};
 			}
 		} catch (const std::exception &ex) {
-			throw Exception{cosmos::sprintf("bad integer value for CARDINAL property: %s", ex.what())};
+			throw Exception{cosmos::sprintf(
+					"bad integer value for CARDINAL property: %s", ex.what())};
 		}
 		xpp::Property<int> prop;
 		prop = parsed_int;

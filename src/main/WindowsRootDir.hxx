@@ -9,7 +9,6 @@
 // xwmfs
 #include "fuse/DirEntry.hxx"
 
-
 namespace xwmfs {
 
 class WindowDirEntry;
