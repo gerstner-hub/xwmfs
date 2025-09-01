@@ -5,7 +5,7 @@
 #include <xpp/XWindow.hxx>
 
 // xwmfs
-#include "main/UpdateableDir.hxx"
+#include "main/UpdatableDir.hxx"
 
 namespace xwmfs {
 
@@ -18,7 +18,7 @@ class WindowFileEntry;
  * sub-entries that contain the window-specific information and controls.
  **/
 class WindowDirEntry :
-		public UpdateableDir<WindowDirEntry> {
+		public UpdatableDir<WindowDirEntry> {
 public: // functions
 
 	/// Create a new window dir entry.

@@ -17,7 +17,7 @@ namespace xwmfs {
 
 WindowDirEntry::WindowDirEntry(const xpp::XWindow &win,
 			const bool query_attrs) :
-		UpdateableDir{xpp::to_string(win.id()), getSpecVector()},
+		UpdatableDir{xpp::to_string(win.id()), getSpecVector()},
 		m_win{win} {
 	addEntries();
 
@@ -69,7 +69,7 @@ void WindowDirEntry::addEntries() {
 bool WindowDirEntry::markDeleted() {
 	m_events->addEvent("destroyed");
 
-	return UpdateableDir::markDeleted();
+	return UpdatableDir::markDeleted();
 }
 
 WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const {
@@ -110,7 +110,7 @@ WindowDirEntry::SpecVector WindowDirEntry::getSpecVector() const {
 }
 
 void WindowDirEntry::addSpecEntry(
-		const UpdateableDir<WindowDirEntry>::EntrySpec &spec) {
+		const UpdatableDir<WindowDirEntry>::EntrySpec &spec) {
 	FileEntry *entry = new xwmfs::WindowFileEntry{
 		spec.name, m_win, m_modify_time, spec.writable
 	};

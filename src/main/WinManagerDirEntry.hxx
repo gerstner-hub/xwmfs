@@ -5,7 +5,7 @@
 #include <xpp/types.hxx>
 
 // xwmfs
-#include "main/UpdateableDir.hxx"
+#include "main/UpdatableDir.hxx"
 
 namespace xwmfs {
 
@@ -19,7 +19,7 @@ class EventFile;
  * controls.
  **/
 class WinManagerDirEntry :
-		public UpdateableDir<WinManagerDirEntry> {
+		public UpdatableDir<WinManagerDirEntry> {
 public: // functions
 
 	explicit WinManagerDirEntry(WinManagerWindow &root_win);
@@ -40,7 +40,7 @@ protected: // functions
 
 	void addEntries();
 
-	void addSpecEntry(const UpdateableDir<WinManagerDirEntry>::EntrySpec &spec);
+	void addSpecEntry(const UpdatableDir<WinManagerDirEntry>::EntrySpec &spec);
 
 	SpecVector getSpecVector() const;
 

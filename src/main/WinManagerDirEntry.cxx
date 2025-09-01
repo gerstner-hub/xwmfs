@@ -13,7 +13,7 @@
 namespace xwmfs {
 
 WinManagerDirEntry::WinManagerDirEntry(WinManagerWindow &root_win) :
-		UpdateableDir{"wm", getSpecVector()}, m_root_win{root_win} {
+		UpdatableDir{"wm", getSpecVector()}, m_root_win{root_win} {
 	addEntries();
 
 	m_events = new EventFile{*this, "events"};

@@ -13,9 +13,9 @@
 
 namespace xwmfs {
 
-/// Base class for directories that contain updateable files.
+/// Base class for directories that contain updatable files.
 template <typename CLASS>
-class UpdateableDir :
+class UpdatableDir :
 		public DirEntry {
 protected: // types
 
@@ -63,7 +63,7 @@ protected: // types
 
 protected: // functions
 
-	UpdateableDir(const std::string &n, const SpecVector &vec);
+	UpdatableDir(const std::string &n, const SpecVector &vec);
 
 	void updateModifyTime();
 

@@ -82,7 +82,7 @@ xwmfs_SOURCES = \
 		fuse/SymlinkEntry.cxx fuse/EventFile.cxx fuse/AbortHandler.cxx \
 		main/Xwmfs.cxx main/main.cxx main/logger.cxx main/terminate.cxx main/WindowDirEntry.cxx \
 		main/WindowFileEntry.cxx main/WinManagerFileEntry.cxx main/WinManagerDirEntry.cxx \
-		main/WindowsRootDir.cxx main/UpdateableDir.cxx main/SelectionDirEntry.cxx \
+		main/WindowsRootDir.cxx main/UpdatableDir.cxx main/SelectionDirEntry.cxx \
 		main/SelectionOwnerFile.cxx main/SelectionAccessFile.cxx \
 		main/DesktopsRootDir.cxx main/DesktopDirEntry.cxx \
 		x11/WinManagerWindow.cxx
@@ -92,7 +92,7 @@ xwmfs_SOURCES += \
 		fuse/SymlinkEntry.hxx fuse/xwmfs_fuse.hxx \
 		main/Options.hxx \
 		main/SelectionAccessFile.hxx main/SelectionDirEntry.hxx main/SelectionOwnerFile.hxx \
-		main/logger.hxx main/UpdateableDir.hxx main/WinManagerDirEntry.hxx \
+		main/logger.hxx main/UpdatableDir.hxx main/WinManagerDirEntry.hxx \
 		main/WinManagerFileEntry.hxx main/WindowDirEntry.hxx main/WindowFileEntry.hxx \
 		main/WindowsRootDir.hxx main/Xwmfs.hxx \
 		main/DesktopsRootDir.hxx main/DesktopDirEntry.hxx \

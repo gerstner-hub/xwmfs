@@ -1,5 +1,5 @@
 // xwmfs
-#include "main/UpdateableDir.hxx"
+#include "main/UpdatableDir.hxx"
 #include "main/WinManagerDirEntry.hxx"
 #include "main/WindowDirEntry.hxx"
 #include "main/Xwmfs.hxx"
@@ -7,7 +7,7 @@
 namespace xwmfs {
 
 template <typename CLASS>
-UpdateableDir<CLASS>::UpdateableDir(const std::string &n, const SpecVector &vec) :
+UpdatableDir<CLASS>::UpdatableDir(const std::string &n, const SpecVector &vec) :
 		DirEntry{n, Xwmfs::getInstance().getCurrentTime()},
 		m_specs{vec},
 		m_always_update_specs{getAlwaysUpdateSpecs()},
@@ -15,7 +15,7 @@ UpdateableDir<CLASS>::UpdateableDir(const std::string &n, const SpecVector &vec)
 }
 
 template <typename CLASS>
-typename UpdateableDir<CLASS>::AtomSpecMap UpdateableDir<CLASS>::getUpdateMap() const {
+typename UpdatableDir<CLASS>::AtomSpecMap UpdatableDir<CLASS>::getUpdateMap() const {
 	AtomSpecMap ret;
 
 	for (const auto &spec: m_specs) {
@@ -28,8 +28,8 @@ typename UpdateableDir<CLASS>::AtomSpecMap UpdateableDir<CLASS>::getUpdateMap() 
 }
 
 template <typename CLASS>
-typename UpdateableDir<CLASS>::SpecVector
-UpdateableDir<CLASS>::getAlwaysUpdateSpecs() const {
+typename UpdatableDir<CLASS>::SpecVector
+UpdatableDir<CLASS>::getAlwaysUpdateSpecs() const {
 	SpecVector ret;
 
 	for (const auto &spec: m_specs) {
@@ -42,12 +42,12 @@ UpdateableDir<CLASS>::getAlwaysUpdateSpecs() const {
 }
 
 template <typename CLASS>
-void UpdateableDir<CLASS>::updateModifyTime() {
+void UpdatableDir<CLASS>::updateModifyTime() {
 	m_modify_time = Xwmfs::getInstance().getCurrentTime();
 }
 
 /* explicit template instantiations */
-template class UpdateableDir<WinManagerDirEntry>;
-template class UpdateableDir<WindowDirEntry>;
+template class UpdatableDir<WinManagerDirEntry>;
+template class UpdatableDir<WindowDirEntry>;
 
 } // end ns
