@@ -6,7 +6,7 @@
 /**
  * \file
  *
- * This header defines miscellaneous data structures for the fuse part of
+ * This header defines miscellaneous data structures for the FUSE part of
  * xwmfs.
  **/
 

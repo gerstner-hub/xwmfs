@@ -1,5 +1,5 @@
 /*
- * This is the implementation of the fuse specific functions that make xwmfs
+ * This is the implementation of the FUSE specific functions that make xwmfs
  * actually work as a FS.
  *
  * The file system operations are called directly by FUSE as soon as some

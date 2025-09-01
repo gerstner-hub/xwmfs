@@ -4,7 +4,7 @@
 #include <fuse.h>
 
 /*
- * This is a C/C++ header that declares the fuse operations implemented for
+ * This is a C/C++ header that declares the FUSE operations implemented for
  * xwmfs
  *
  * It needs to be includeable by C, because the definition of struct

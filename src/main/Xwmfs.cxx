@@ -536,7 +536,7 @@ void Xwmfs::handleSelectionEvent(const xpp::Event &ev) {
 	}
 }
 
-/// Global sync signal handler for the fuse abort signal.
+/// Global sync signal handler for the FUSE abort signal.
 void fuse_abort_signal(const cosmos::Signal sig) {
 	auto &xwmfs = Xwmfs::getInstance();
 
@@ -611,7 +611,7 @@ void Xwmfs::setupAbortSignals(const bool on_off) {
 	 * After some testing I'm going for solution b). This works now.
 	 * Solution a) had strange problems when the FUSE main thread didn't
 	 * react to the fuse_exit() call on the first attempt. It seems the
-	 * sem_wait() the fuse main thread does did not always return EINTR in
+	 * sem_wait() the FUSE main thread does did not always return EINTR in
 	 * these situations.
 	 */
 	cosmos::SigAction action, orig;

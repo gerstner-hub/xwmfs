@@ -1,7 +1,7 @@
 #include "fuse/xwmfs_fuse_ops.h"
 
 /*
- * This is a C99 only file that simply defines the fuse operations with
+ * This is a C99 only file that simply defines the FUSE operations with
  * designated initializers, which we cannot do in C++.
  */
 
