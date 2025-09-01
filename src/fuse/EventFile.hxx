@@ -38,7 +38,7 @@ public:
 	 * 	This is necessary to avoid infinite growth of the event queue
 	 * 	in case an active reader doesn't catch up with the data.
 	 **/
-	EventFile(DirEntry &parent, const std::string &name, const time_t time = 0,
+	EventFile(DirEntry &parent, const std::string &name, const cosmos::RealTime &time = cosmos::RealTime{},
 			const size_t max_backlog = 64);
 
 	/// Creates an extended OpenContext with additional EventFile context data.

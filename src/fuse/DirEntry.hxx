@@ -53,7 +53,7 @@ public: // functions
 	 * The given time `t` will be used for the initial status and
 	 * modification times of the directory.
 	 **/
-	DirEntry(const std::string &n, const time_t &t = 0) :
+	DirEntry(const std::string &n, const cosmos::RealTime &t = cosmos::RealTime{}) :
 		Entry{n, DIRECTORY, t} {
 	}
 

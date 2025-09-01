@@ -29,7 +29,7 @@ WindowDirEntry::WindowDirEntry(const xpp::XWindow &win,
 	addEntry(m_mapped);
 
 	m_geometry = new WindowFileEntry{"geometry",
-		m_win, m_modify_time};
+		m_win, m_modify_time, Writable{true}};
 	addEntry(m_geometry);
 	{
 		xpp::XWindowAttrs attrs;

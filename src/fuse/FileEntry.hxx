@@ -53,8 +53,8 @@ public:
 	 * \param[in] the initial timestamp of the file
 	 **/
 	FileEntry(const std::string &n,
-			const Writable writable = Writable{false},
-			const time_t t = 0) :
+			const cosmos::RealTime t = cosmos::RealTime{},
+			const Writable writable = Writable{false}) :
 			Entry{n, REG_FILE, t, writable} {
 	}
 

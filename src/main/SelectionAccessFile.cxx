@@ -14,7 +14,7 @@ namespace xwmfs {
 
 SelectionAccessFile::SelectionAccessFile(const std::string &n,
 			SelectionDirEntry &parent, const xpp::AtomID type) :
-		FileEntry{n, Writable{true}},
+		FileEntry{n, cosmos::RealTime{}, Writable{true}},
 		m_parent{parent},
 		m_sel_type{type},
 		m_target_prop{xpp::atom_mapper.mapAtom(n)},
@@ -56,7 +56,7 @@ int SelectionAccessFile::write(
 
 	auto &sel_window = xwmfs::Xwmfs::getInstance().getSelectionWindow();
 
-	sel_window.makeSelectionOwner(m_sel_type, CurrentTime);
+	sel_window.makeSelectionOwner(m_sel_type, xpp::XTime::CURRENT_TIME);
 
 	// store the data for later requests to provide the selection buffer
 	this->str("");

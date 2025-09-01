@@ -27,7 +27,7 @@ struct RootEntry :
 public: // functions
 
 	/// Creates a new file system root with the given time value.
-	RootEntry(const time_t t = 0) :
+	RootEntry(const cosmos::RealTime &t = cosmos::RealTime{}) :
 			DirEntry{"/", t} {
 		/// root is its own parent
 		this->setParent(this);

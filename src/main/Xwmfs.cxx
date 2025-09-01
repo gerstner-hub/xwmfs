@@ -12,6 +12,7 @@
 #include <cosmos/io/StreamIO.hxx>
 #include <cosmos/proc/process.hxx>
 #include <cosmos/proc/signal.hxx>
+#include <cosmos/time/Clock.hxx>
 
 // libxpp
 #include <xpp/atoms.hxx>
@@ -153,7 +154,7 @@ void Xwmfs::exit() noexcept {
 }
 
 void Xwmfs::updateTime() {
-	m_current_time = time(nullptr);
+	m_current_time = cosmos::RealTimeClock{}.now();
 }
 
 void Xwmfs::createFS() {

@@ -19,8 +19,8 @@ class WinManagerWindow;
 struct WinManagerFileEntry :
 		public FileEntry {
 
-	WinManagerFileEntry(const std::string &n, const time_t t = 0) :
-			FileEntry{n, Writable{true}, t} {
+	WinManagerFileEntry(const std::string &n, const cosmos::RealTime &t = cosmos::RealTime{}) :
+			FileEntry{n, t, Writable{true}} {
 	}
 
 	int write(OpenContext *ctx, const char *data,

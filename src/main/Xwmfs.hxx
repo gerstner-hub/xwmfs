@@ -113,7 +113,7 @@ public: // functions
 	static cosmos::FileMode getUmask() { return m_umask; }
 
 	/// Returns the current time (updated for each new X event)
-	time_t getCurrentTime() const { return m_current_time; }
+	const cosmos::RealTime& getCurrentTime() const { return m_current_time; }
 
 	/// Returns the "desktops" directory node.
 	DesktopsRootDir* getDesktopsDir() { return m_desktop_dir; }
@@ -253,7 +253,7 @@ private: // data
 	cosmos::Poller m_event_poller;
 
 	/// the time of the last event that might lead to creating new file system objects.
-	time_t m_current_time = 0;
+	cosmos::RealTime m_current_time;
 
 	/// Directory node containing all windows.
 	WindowsRootDir *m_win_dir = nullptr;

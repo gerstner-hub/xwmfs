@@ -19,10 +19,10 @@ class WindowFileEntry :
 	public FileEntry {
 public:
 	/// Creates a WindowFileEntry associated with `win`.
-	WindowFileEntry(const std::string &n, const xpp::XWindow& win,
-			const time_t &t = 0,
+	WindowFileEntry(const std::string &n, const xpp::XWindow &win,
+			const cosmos::RealTime &t = cosmos::RealTime{},
 			const Writable writable = Writable{true}) :
-		FileEntry{n, writable, t},
+		FileEntry{n, t, writable},
 		m_win{win} {
 	}
 

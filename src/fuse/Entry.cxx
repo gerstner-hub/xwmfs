@@ -58,8 +58,8 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 void Entry::getStat(struct stat *s) const {
 	s->st_uid = m_uid;
 	s->st_gid = m_gid;
-	s->st_atime = s->st_mtime = getModifyTime();
-	s->st_ctime = getStatusTime();
+	s->st_atim = s->st_mtim = getModifyTime();
+	s->st_ctim = getStatusTime();
 
 	switch(m_type) {
 	default:

@@ -37,7 +37,7 @@ struct EventOpenContext :
 };
 
 EventFile::EventFile(DirEntry &parent, const std::string &name,
-			const time_t time, const size_t max_backlog) :
+			const cosmos::RealTime &time, const size_t max_backlog) :
 		Entry{name, REG_FILE, time},
 		m_max_backlog{max_backlog},
 		m_cond{parent.getLock()} {

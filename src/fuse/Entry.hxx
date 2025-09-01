@@ -5,8 +5,9 @@
 #include <memory>
 
 // cosmos
-#include <cosmos/thread/pthread.hxx>
 #include <cosmos/fwd.hxx>
+#include <cosmos/thread/pthread.hxx>
+#include <cosmos/time/types.hxx>
 
 // POSIX
 #include <unistd.h>
@@ -96,16 +97,16 @@ public: // functions
 	bool isWritable() const { return m_writable; }
 
 	/// Sets the modification time of the file system entry to `t`.
-	void setModifyTime(const time_t &t) { m_modify_time = t; }
+	void setModifyTime(const cosmos::RealTime &t) { m_modify_time = t; }
 
 	/// Sets the status time of the file system entry to `t`.
-	void setStatusTime(const time_t &t) { m_status_time = t; }
+	void setStatusTime(const cosmos::RealTime &t) { m_status_time = t; }
 
 	/// Gets the current modification time of the file system entry.
-	const time_t& getModifyTime() const { return m_modify_time; }
+	const cosmos::RealTime& getModifyTime() const { return m_modify_time; }
 
 	/// Gets the current status time of the file system entry.
-	const time_t& getStatusTime() const { return m_status_time; }
+	const cosmos::RealTime& getStatusTime() const { return m_status_time; }
 
 	/// Fills in status information corresponding to this entry into `s`.
 	virtual void getStat(struct stat *s) const;
@@ -224,7 +225,7 @@ protected: // functions
 	 * and modification times will be `time`.
 	 **/
 	Entry(const std::string &n, const Type &t,
-			const time_t &time,
+			const cosmos::RealTime &time,
 			const Writable writable = Writable{false}) :
 		m_name{n}, m_type{t}, m_writable{writable},
 		m_modify_time{time}, m_status_time{time},
@@ -251,9 +252,9 @@ protected: // data
 	const Writable m_writable;
 
 	/// Time of the last write/creation event.
-	time_t m_modify_time = 0;
+	cosmos::RealTime m_modify_time;
 	/// Time of creation, this isn't changed afterwards any more.
-	time_t m_status_time = 0;
+	cosmos::RealTime m_status_time;
 
 	/// The user id we're running as.
 	static const uid_t m_uid;
