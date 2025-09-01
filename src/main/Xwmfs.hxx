@@ -39,10 +39,10 @@ class WinManagerDirEntry;
  * This is the connector class between the X11 and FUSE related XWMFS
  * parts. It keeps the window manager information on the one hand and the
  * FUSE file system representation on the other hand.
- * 
+ *
  * This is a singleton class such that it can be accessed globally from
  * anywhere. Any application-global data is kept here.
- * 
+ *
  * This class also runs its own thread that is responsible for dealing
  * with events dispatched from Xlib to us. This allows us to update the
  * file system structure whenever relevant window manager information
@@ -83,13 +83,13 @@ public: // functions
 	 * threads then neither the separate Event thread nor the thread
 	 * calling XInternAtom will unblock as long as no additional events
 	 * are occurring that the event thread can consume.
-	 * 
+	 *
 	 * This is a FIXME in libX11 source file xcb_io.c in function
 	 * _XReply() we're running into here. This lock here is supposed
 	 * to prevent entering this situation by only calling into
 	 * XNextEvent() when no other threads are actually doing
 	 * asynchronous X calls.
-	 * 
+	 *
 	 * This currently mostly happens in the "properties" node where
 	 * custom atom names are handled in the context of a FUSE thread.
 	 **/
@@ -124,7 +124,7 @@ public: // functions
 	 * The callee will make sure that fuse signals to abort the blocking
 	 * request will be caught and the blocking call woken up in that
 	 * situation.
-	 * 
+	 *
 	 * In any case the caller must call unregisterBlockingCall() after the
 	 * blocking call is over, whether aborted or not.
 	 *

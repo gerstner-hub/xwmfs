@@ -15,7 +15,7 @@ class Entry;
 /**
  * If an Entry implementation needs to support blocking calls then this mixin
  * helps dealing with its complexities.
- * 
+ *
  * Functions in Entry and the logic in the Xwmfs main class work together with
  * this mixin.
  **/
@@ -28,7 +28,7 @@ public: // functions
 	/**
 	 * The information will be deleted after calling this function, so a
 	 * subsequent call will return `false`.
-	 * 
+	 *
 	 * This function needs to be called with the mutex associated
 	 * with m_cond held!
 	 **/
@@ -39,7 +39,7 @@ public: // functions
 
 	/// Call this before a blocking call is about to be executed.
 	/**
-	 * \return 
+	 * \return
 	 * `true` if registration was successful, `false` if the current
 	 * program state doesn't allow execution of blocking calls.
 	 **/

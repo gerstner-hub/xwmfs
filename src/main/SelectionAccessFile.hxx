@@ -17,12 +17,12 @@ class SelectionDirEntry;
 /// This file provides access to an arbitrary X selection buffer.
 /**
  * This file type makes it possible to
- * 
+ *
  * - upon write, take ownership of a selection buffer and provide the written
  *   contents to other X clients
  * - upon read, request the selection buffer content from the current
  *   selection owner and return the data to the user
- * 
+ *
  * for any available type of X selection buffer.
  **/
 class SelectionAccessFile :

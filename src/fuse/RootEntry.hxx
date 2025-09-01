@@ -12,13 +12,13 @@ namespace xwmfs {
 /**
  * The RootEntry defines operations atop DirEntry that are of interest for the
  * file system on a global scale. The operations are:
- * 
+ *
  * - looking up entries in the file system, recursively (this operation could
  *   actually also be part of the DirEntry itself?)
  * - a file system global read-write lock for safe access to its
  *   structure. For XWMFS purposes this is good enough. For a large file
  *   system we'd need a more fine-grained approach
- * 
+ *
  * The RootEntry does not really have a name. But we name it '/', as it
  * is conventional.
  **/

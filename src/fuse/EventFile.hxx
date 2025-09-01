@@ -19,10 +19,10 @@ struct EventOpenContext;
  * While all other file system entries contain some small and defined amount
  * of data, an EventFile offers a potentially endless stream of data as new
  * events are coming in.
- * 
+ *
  * Events can be arbitrary strings to be delivered to readers. Multiple
  * readers may block on an EventFile until new data arrives.
- * 
+ *
  * If a reader is too slow to catch up with new events then it'll loose
  * some events in between without noticing.
  **/

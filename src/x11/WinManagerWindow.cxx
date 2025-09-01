@@ -1,5 +1,6 @@
 // libxpp
-#include <xpp/formatting.hxx>
+#include <xpp/formatting.hxx> // needs to be the top include to prevent
+			      // operator<< lookup errors
 #include <xpp/AtomMapper.hxx>
 #include <xpp/atoms.hxx>
 

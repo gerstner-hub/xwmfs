@@ -20,7 +20,7 @@ class WinManagerWindow;
  * This directory keeps a sub-directory for each known desktop. Desktops don't
  * have unique IDs but only have an index that can change over time. So the
  * first desktop has index 0 and so on.
- * 
+ *
  * Each desktop sub-directory contains a `name` node containing the actual
  * desktop name and a `windows` sub-directory which contains symlinks to each
  * window present on the respective desktop. The symlinks point towards the

@@ -20,26 +20,26 @@ class SelectionAccessFile;
 /// A DirEntry that holds files regarding the X11 selection buffer handling
 /**
  * There a three pre-defined selection buffers:
- * 
+ *
  * - PRIMARY
  * - SECONDARY
  * - CLIPBOARD
- * 
+ *
  * SECONDARY isn't really used any more. The X-Server only keeps track of
  * which window currently "owns" a selection. The actual selection is
  * then found in the window itself.
- * 
+ *
  * The selections can also have different formats (like encodings, or
  * image format), and may have a length limitation. For large data the
  * selection needs to be transferred in a chunked way, which I won't
  * implement for the purposes of xwmfs for now. 'xsel' is a good example
  * of how this could be done.
- * 
+ *
  * If xwmfs wants to own a selection then it also needs to keep a window
  * open for this purpose.
- * 
+ *
  * We provide the following files here:
- * 
+ *
  * - owners: will contain a line per selection buffer followed by the
  *   current owner's window ID
  * - primary:
@@ -52,10 +52,10 @@ class SelectionAccessFile;
  * - clipboard: same as primary for CLIPBOARD
  * - events: will provide change notifications when selections' owners
  *   change.
- * 
+ *
  * The following page gives a good overview of the workings of X
  * selection buffers:
- * 
+ *
  * https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
  **/
 class SelectionDirEntry :

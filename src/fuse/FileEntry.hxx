@@ -33,11 +33,11 @@ namespace xwmfs {
  * store and retrieve small bits of data from regular files. This makes
  * coding easy and should be enough for the purposes of XWMFS. We don't
  * intend to store huge files. And our files are always kept in RAM anyways.
- * 
+ *
  * FileEntry objects can be read-only or read-write. They should be read-write
  * when writing to it is possible and has a sensible effect on whatever it
  * represents.
- * 
+ *
  * The data to be returned on read is always considered to be present in
  * the inherited stringstream. Write calls, however, need to be handled
  * via specializations of FileEntry that overwrite the write-function

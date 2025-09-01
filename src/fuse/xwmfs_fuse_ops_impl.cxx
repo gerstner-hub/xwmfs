@@ -134,7 +134,7 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 /**
  * This call is used to check whether the given flags are okay for opening the
  * file
- * 
+ *
  * We can set `fi->fh` (file handle) here and it will be available in any
  * other operations coming up.
  **/
@@ -314,7 +314,7 @@ int xwmfs_create(const char *path, mode_t mode, struct fuse_file_info *ffi) {
 /// File system initialization.
 /**
  * This function is called from FUSE to setup the file system.
- * 
+ *
  * We initialize the XWMFS. It will gather all window manager related
  * information and build the file system from it. We set our global file
  * system pointer to that file system for further FUSE processing.

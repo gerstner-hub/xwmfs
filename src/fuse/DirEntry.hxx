@@ -73,7 +73,7 @@ public: // functions
 	 * This template allows us to return the exact type added from the
 	 * function call. This way some statements are written more easily,
 	 * e.g. creating a new directory entry directly like this:
-	 * 
+	 *
 	 * ```
 	 * DirEntry *new_subdir = dir->addEntry(new DirEntry{...})
 	 * ```

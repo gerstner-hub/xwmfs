@@ -183,7 +183,7 @@ public: // functions
 	 * This function is called from the low level FUSE functions to create
 	 * a new file open context at file open time. This context uniquely
 	 * identifies an open file instance.
-	 * 
+	 *
 	 * Derived classes can override this function as well as
 	 * destroyOpenContext() to return types derived from OpenContext that
 	 * contain additional data. They need to handle ref()/unref() then,
@@ -205,7 +205,7 @@ public: // functions
 	 * the kernel will cache file contents and make some assumptions.
 	 * Userspace read/write calls will not be directly mapped to FUSE
 	 * calls into the file system.
-	 * 
+	 *
 	 * In some cases this is not what we want, for example when we
 	 * don't know the file size in advance. See EventFile for an
 	 * example.
@@ -223,7 +223,7 @@ protected: // functions
 	/**
 	 * This constructor is protected, as a file system entry should only
 	 * be constructed as a specialized object like DirEntry or FileEntry.
-	 * 
+	 *
 	 * The file system entry will get the name `n`, type `t`, will
 	 * be handled as writable if `writable` is set and the initial status
 	 * and modification times will be `time`.
@@ -261,10 +261,10 @@ protected: // data
 
 	/// The user id we're running as.
 	static const uid_t m_uid;
-	//! The group id we're running as.
+	/// The group id we're running as.
 	static const gid_t m_gid;
 
-	//! Whether the file system entry was removed and is pending deletion.
+	/// Whether the file system entry was removed and is pending deletion.
 	bool m_deleted = false;
 
 	/// Reference count of the file system entry.
@@ -272,12 +272,12 @@ protected: // data
 	 * This counter is 1 upon construction and is increased for each open
 	 * file description on the FUSE side, decreased again for each closed
 	 * file description.
-	 * 
+	 *
 	 * Entries a typically not removed on FUSE request but from the X11
 	 * side, because a Window disappears or alike. In this case the
 	 * initial single reference is decremented. Whoever drops the count to
 	 * zero needs to delete the entry from memory.
-	 * 
+	 *
 	 * This complex handling is necessary, because multiple clients can
 	 * open a file at the same time and also, because the removals
 	 * originate from external events in the X server. When somebody still
