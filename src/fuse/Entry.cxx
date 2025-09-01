@@ -41,7 +41,7 @@ void Entry::abortBlockingCall(const cosmos::pthread::ID thread) {
 	return m_abort_handler->abort(thread);
 }
 
-int Entry::parseInteger(const char *data, const size_t bytes, int &result) const {
+size_t Entry::parseInteger(const char *data, const size_t bytes, int &result) const {
 	size_t endpos = 0;
 	std::string string(data, bytes);
 
@@ -49,7 +49,7 @@ int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
 		result = std::stoi(string, &endpos);
 	} catch (const std::exception &ex) {
 		result = -1;
-		return -EINVAL;
+		throw cosmos::Errno::INVALID_ARG;
 	}
 
 	return endpos;

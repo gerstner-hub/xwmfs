@@ -27,7 +27,7 @@ public:
 	}
 
 	/// Updates window properties in the context of the concrete file type.
-	int write(OpenContext *ctx, const char *data,
+	Bytes write(OpenContext *ctx, const char *data,
 			const size_t bytes, off_t offset) override;
 
 	void writeName(const char *data, const size_t bytes) {

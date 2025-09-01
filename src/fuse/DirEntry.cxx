@@ -77,21 +77,21 @@ void DirEntry::clear() {
 	}
 }
 
-int DirEntry::read(OpenContext *ctx, char *buf, const size_t size, off_t offset) {
+DirEntry::Bytes DirEntry::read(OpenContext *ctx, char *buf, const size_t size, off_t offset) {
 	(void)ctx;
 	(void)buf;
 	(void)size;
 	(void)offset;
 	// reading a directory via read doesn't make much sense
-	return -EISDIR;
+	throw cosmos::Errno::IS_DIRECTORY;
 }
 
-int DirEntry::write(OpenContext *ctx, const char *buf, const size_t size, off_t offset) {
+DirEntry::Bytes DirEntry::write(OpenContext *ctx, const char *buf, const size_t size, off_t offset) {
 	(void)ctx;
 	(void)buf;
 	(void)size;
 	(void)offset;
-	return -EISDIR;
+	throw cosmos::Errno::IS_DIRECTORY;
 }
 
 } // end ns

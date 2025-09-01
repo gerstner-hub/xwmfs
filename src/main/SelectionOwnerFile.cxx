@@ -13,7 +13,7 @@ SelectionOwnerFile::SelectionOwnerFile(const std::string &n, const SelectionDirE
 	updateOwners();
 }
 
-int SelectionOwnerFile::read(
+Entry::Bytes SelectionOwnerFile::read(
 		OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	{
 		/*

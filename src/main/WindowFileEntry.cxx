@@ -144,25 +144,26 @@ void WindowFileEntry::writeCommand(const char *data, const size_t bytes) {
 	}
 }
 
-int WindowFileEntry::write(OpenContext *ctx,
+Entry::Bytes WindowFileEntry::write(OpenContext *ctx,
 		const char *data, const size_t bytes, off_t offset) {
 	(void)ctx;
-	if (!m_writable)
-		return -EBADF;
+	if (!m_writable) {
+		throw cosmos::Errno::BAD_FD;
+	}
 	// we don't support writing at offsets
-	if (offset)
-		return -EOPNOTSUPP;
+	if (offset) {
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
+	}
 
 	try {
 		auto it = write_member_function_map.find(m_name);
 
 		if (it == write_member_function_map.end()) {
 			logger->error()
-				<< __FUNCTION__
-				<< ": Write call for window file entry of unknown type: \""
+				<< __FUNCTION__ << ": Write call for window file entry of unknown type: \""
 				<< this->m_name
 				<< "\"\n";
-			return -ENXIO;
+			throw cosmos::Errno::NXIO;
 		}
 
 		auto mem_fn = it->second;
@@ -173,23 +174,25 @@ int WindowFileEntry::write(OpenContext *ctx,
 	} catch (const std::exception &e) {
 		logger->error()
 			<< __FUNCTION__
-			<< ": Error operating on window (node '"
-			<< this->m_name << "'): "
+			<< ": Error operating on window (node '" << this->m_name << "'): "
 			<< e.what() << std::endl;
-		return -EINVAL;
+		throw cosmos::Errno::INVALID_ARG;
 	}
 
-	return bytes;
+	return Bytes{static_cast<int>(bytes)};
 }
 
 void WindowFileEntry::writeDesktop(const char *data, const size_t bytes) {
 	int the_num;
-	const auto parsed = parseInteger(data, bytes, the_num);
-
-	if (parsed >= 0) {
-		Xwmfs::getInstance().getRootWin().moveToDesktop(
-				m_win, the_num);
+	try {
+		parseInteger(data, bytes, the_num);
+	} catch (const cosmos::Errno err) {
+		logger->error()
+			<< "Failed to parse desktop number: " << err << "\n";
+		throw;
 	}
+
+	Xwmfs::getInstance().getRootWin().moveToDesktop(m_win, the_num);
 }
 
 } // end ns

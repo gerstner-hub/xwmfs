@@ -38,6 +38,11 @@ static Entry* entry_from_fi(struct fuse_file_info *fi) {
 	return context->getEntry();
 }
 
+inline int errnum_to_fuse_err(const cosmos::Errno err) {
+	// FUSE expect negative error codes
+	return - cosmos::to_integral(err);
+}
+
 } // end ns
 
 /// Get stat information about a file system entry.
@@ -196,13 +201,24 @@ int xwmfs_read(const char *path, char *buf, size_t size,
 	auto entry = context->getEntry();
 
 	try {
-		auto res = entry->isOperationAllowed();
+		if (auto res = entry->isOperationAllowed(); res)
+			return res;
 
-		return res ? res : entry->read(context, buf, size, offset);
+		const auto bytes = entry->read(context, buf, size, offset);
+		if (auto raw = cosmos::to_integral(bytes); raw >= 0) {
+			return raw;
+		} else {
+			// bad return value
+			throw cosmos::Errno::NO_DATA;
+		}
 	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to read from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
+	} catch (const cosmos::Errno errnum) {
+		xwmfs::logger->error()
+			<< "Failed to read from " << path << ": " << errnum << "\n";
+		return xwmfs::errnum_to_fuse_err(errnum);
 	}
 }
 
@@ -213,13 +229,20 @@ int xwmfs_readlink(const char *path, char *buf, size_t size) {
 	auto entry = fs.findEntry(path);
 
 	try {
-		auto res = entry->isOperationAllowed();
+		if (auto res = entry->isOperationAllowed(); res) {
+			return res;
+		}
 
-		return res ? res : entry->readlink(buf, size);
+		entry->readlink(buf, size);
+		return 0;
 	} catch (const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to readlink from " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
+	} catch (const cosmos::Errno errnum) {
+		xwmfs::logger->error()
+			<< "Failed to readlink from " << path << ": " << errnum << "\n";
+		return xwmfs::errnum_to_fuse_err(errnum);
 	}
 }
 
@@ -233,13 +256,25 @@ int xwmfs_write(const char *path, const char *buf, size_t size,
 	auto entry = context->getEntry();
 
 	try {
-		auto res = entry->isOperationAllowed();
+		if (auto res = entry->isOperationAllowed(); res) {
+			return res;
+		}
 
-		return res ? res : entry->write(context, buf, size, offset);
+		const auto bytes = entry->write(context, buf, size, offset);
+		if (auto raw = cosmos::to_integral(bytes); raw >= 0) {
+			return raw;
+		} else {
+			// bad return value
+			throw cosmos::Errno::NO_DATA;
+		}
 	} catch(const std::exception &ex) {
 		xwmfs::logger->error()
 			<< "Failed to write to " << path << ": " << ex.what() << "\n";
 		return -EFAULT;
+	} catch (const cosmos::Errno errnum) {
+		xwmfs::logger->error()
+			<< "Failed to write to " << path << ": " << errnum << "\n";
+		return xwmfs::errnum_to_fuse_err(errnum);
 	}
 }
 

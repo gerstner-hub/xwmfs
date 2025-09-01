@@ -17,16 +17,15 @@ void SymlinkEntry::getStat(struct stat *s) const {
 	s->st_size = m_target.size();
 }
 
-int SymlinkEntry::readlink(char *buf, size_t size) {
+void SymlinkEntry::readlink(char *buf, size_t size) {
 	if (size == 0)
-		return 0;
+		return;
 
 	auto copylen = std::min(size-1, m_target.size());
 	std::memcpy(buf, &m_target[0], copylen);
 	buf[copylen] = '\0';
-	// FUSE somehow doesn't except the string length here, only 0 for
-	// sucecss
-	return 0;
+	// FUSE somehow doesn't expect the string length here, only 0 for
+	// success
 }
 
 } // end ns

@@ -39,9 +39,9 @@ public: // functions
 	 **/
 	SelectionAccessFile(const std::string &n, SelectionDirEntry &parent, const xpp::AtomID type);
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
-	int write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
+	Bytes write(OpenContext *ctx, const char *data, const size_t bytes, off_t offset) override;
 
 	void reportConversionResult(const xpp::AtomID result_prop);
 
@@ -59,9 +59,9 @@ protected: // functions
 
 	/// Requests the current selection buffer contents and stores it as the file entry's data.
 	/**
-	 * \return An errno error indication to return to FUSE or zero on success.
+	 * throws cosmos::Errno on error.
 	 **/
-	int updateSelection();
+	void updateSelection();
 
 protected: // data
 

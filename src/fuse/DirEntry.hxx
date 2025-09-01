@@ -153,8 +153,8 @@ public: // functions
 		return Entry::markDeleted();
 	}
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
-	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
 	cosmos::Mutex& getLock() {
 		return m_lock;

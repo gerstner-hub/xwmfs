@@ -23,7 +23,7 @@ public: // functions
 
 	SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent);
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
 protected: // functions
 

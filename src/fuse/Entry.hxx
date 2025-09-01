@@ -44,6 +44,10 @@ public: // types
 
 	using enum Type;
 
+	/// A strong type used to denote byte units.
+	enum class Bytes : int {
+	};
+
 public: // functions
 
 	// make sure entries are never flat-copied
@@ -124,32 +128,32 @@ public: // functions
 	/**
 	 * A request to read data from the file object into the given buf of
 	 * size bytes size, starting at the relative `offset`.
-	 * 
-	 * The integer return value is the negative errno in case of error, or
-	 * the number of bytes read on success.
+	 *
+	 * The number of bytes read. To indicate errors throw an instance of
+	 * cosmos::Errno.
 	 **/
-	virtual int read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
+	virtual Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 		(void)ctx;
 		(void)buf;
 		(void)size;
 		(void)offset;
-		return -EINVAL;
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
 	}
 
 	/// Write data to the file.
 	/**
 	 * A request to write data from the given buf of size bytes size into
 	 * the file object, starting at the relative offset.
-	 * 
-	 * The integer return value is the negative errno in case of error, or
-	 * the number of bytes written on success.
+	 *
+	 * The number of bytes written. To indicate errors throw an instance
+	 * of cosmos::Errno.
 	 **/
-	virtual int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) {
+	virtual Bytes write(OpenContext *ctx, const char *buf, size_t size, off_t offset) {
 		(void)ctx;
 		(void)buf;
 		(void)size;
 		(void)offset;
-		return -EINVAL;
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
 	}
 
 	/// Read the link target from a symlink.
@@ -157,10 +161,10 @@ public: // functions
 	 * `buf` should be terminated with a null byte. If the link target
 	 * does not fit into the buffer then it should be truncated.
 	 **/
-	virtual int readlink(char *buf, size_t size) {
+	virtual void readlink(char *buf, size_t size) {
 		(void)buf;
 		(void)size;
-		return -EINVAL;
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
 	}
 
 	/// Sets the parent directory for this entry.
@@ -237,13 +241,12 @@ protected: // functions
 	 * The string in `data` can be octal, hexadecimal or decimal using
 	 * the typical syntaxes.
 	 *
+	 * On error a cosmos::Errno is thrown.
+	 *
 	 * \return
-	 * 	< 0 if an error occurred. This will then be the error code to
-	 * 	return to FUSE. >= 0 if an integer could be parsed. This will
-	 * 	then be the number of characters from `data` that have been
-	 * 	parsed.
+	 * 	The number of characters from `data` that have been parsed.
 	 **/
-	int parseInteger(const char *data, const size_t bytes, int &result) const;
+	size_t parseInteger(const char *data, const size_t bytes, int &result) const;
 
 protected: // data
 

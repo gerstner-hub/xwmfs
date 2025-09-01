@@ -23,11 +23,11 @@ struct WinManagerFileEntry :
 			FileEntry{n, t, Writable{true}} {
 	}
 
-	int write(OpenContext *ctx, const char *data,
+	Bytes write(OpenContext *ctx, const char *data,
 			const size_t bytes, off_t offset) override;
 protected: // functions
 
-	int callUpdateFunc(const int value) const;
+	void callUpdateFunc(const int value) const;
 };
 
 } // end ns

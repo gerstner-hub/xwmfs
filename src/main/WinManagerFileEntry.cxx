@@ -27,38 +27,38 @@ const SetWindowFunctionMap SET_WINDOW_FUNCTION_MAP = {
 	{"active_window", &WinManagerWindow::setActiveWindow}
 };
 
-int WinManagerFileEntry::write(OpenContext *ctx, const char *data,
+Entry::Bytes WinManagerFileEntry::write(OpenContext *ctx, const char *data,
 		const size_t bytes, off_t offset) {
 	(void)ctx;
-	if (!m_writable)
-		return -EBADF;
-	// we don't support writing at offsets
-	if (offset)
-		return -EOPNOTSUPP;
+	if (!m_writable) {
+		throw cosmos::Errno::BAD_FD;
+	} else if (offset) {
+		// we don't support writing at offsets
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
+	}
 
 	try {
 		int the_num = 0;
 
-		if (const auto parsed = parseInteger(data, bytes, the_num);
-				parsed < 0) {
+		try {
+			parseInteger(data, bytes, the_num);
+		} catch (const cosmos::Errno err) {
 			logger->warn() << __FUNCTION__
 				<<": Failed to parse integer for write to: "
-				<< this->m_name << "\n";
-			return parsed;
+				<< this->m_name << ": " << err << "\n";
+			throw;
 		}
 
 		cosmos::MutexGuard g{m_parent->getLock()};
 
-		if (auto err = callUpdateFunc(the_num); err != 0) {
-			return err;
-		}
+		callUpdateFunc(the_num);
 	} catch (const xpp::XWindow::NotImplemented &e) {
-		return -ENOSYS;
+		throw cosmos::Errno::NO_SYS;
 	} catch (const std::exception &e) {
 		logger->error()
 			<< __FUNCTION__ << ": Error setting window manager property ("
 			<< this->m_name << "): " << e.what() << std::endl;
-		return -EINVAL;
+		throw cosmos::Errno::INVALID_ARG;
 	}
 
 	/*
@@ -67,28 +67,28 @@ int WinManagerFileEntry::write(OpenContext *ctx, const char *data,
 	 * the "missing" bytes which turns into an offset write then, which we
 	 * don't support
 	 */
-	return bytes;
+	return Bytes{static_cast<int>(bytes)};
 }
 
-int WinManagerFileEntry::callUpdateFunc(const int value) const {
+void WinManagerFileEntry::callUpdateFunc(const int value) const {
 	auto &root_win = xwmfs::Xwmfs::getInstance().getRootWin();
 
 	if (auto int_it = SET_INT_FUNCTION_MAP.find(m_name);
 			int_it != SET_INT_FUNCTION_MAP.end()) {
 		auto set_func = int_it->second;
 		((root_win).*set_func)(value);
-		return 0;
+		return;
 	}
 
 	if (auto window_it = SET_WINDOW_FUNCTION_MAP.find(m_name);
 			window_it != SET_WINDOW_FUNCTION_MAP.end()) {
 		if (value < 0) {
 			// there are no negative window numbers
-			return -EINVAL;
+			throw cosmos::Errno::INVALID_ARG;
 		}
 		auto set_func = window_it->second;
 		((root_win).*set_func)(xpp::XWindow(xpp::WinID{static_cast<Window>(value)}));
-		return 0;
+		return;
 	}
 
 	logger->warn()
@@ -96,7 +96,7 @@ int WinManagerFileEntry::callUpdateFunc(const int value) const {
 		<< ": Write call for win manager file of unknown type: \""
 		<< this->m_name
 		<< "\"\n";
-	return -ENXIO;
+	throw cosmos::Errno::NXIO;
 }
 
 } // end ns

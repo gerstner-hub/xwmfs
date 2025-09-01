@@ -76,8 +76,8 @@ protected: // functions
 
 	bool markDeleted() override;
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
-	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
 	/// Returns a pointer to the next event in the queue coming after the event with `prev_id`.
 	/**

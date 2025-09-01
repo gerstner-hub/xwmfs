@@ -70,9 +70,9 @@ public:
 	 *
 	 *	If it is still called then "EINVAL" will be returned.
 	 **/
-	int write(OpenContext *ctx, const char *data, size_t size, off_t offset) override;
+	Bytes write(OpenContext *ctx, const char *data, size_t size, off_t offset) override;
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
 
 	void getStat(struct stat*) const override;
 };

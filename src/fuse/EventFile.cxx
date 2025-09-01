@@ -169,7 +169,7 @@ int EventFile::readEvent(EventOpenContext &ctx, char *buf, size_t size) {
 	return copy_size + 1;
 }
 
-int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
+EventFile::Bytes EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	// we ignore the read offset, because we return records depending on
 	// the state of the open context here
 	(void)offset;
@@ -194,10 +194,10 @@ int EventFile::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 
 	FileSysRevReadGuard guard{fs_lock};
 	const int ret = readEvent(evt_ctx, buf, size);
-	return ret;
+	return Bytes{ret};
 }
 
-int EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offset) {
+EventFile::Bytes EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offset) {
 	/*
 	 * writing to an event file is not supported at all
 	 */
@@ -205,7 +205,7 @@ int EventFile::write(OpenContext *ctx, const char *buf, size_t size, off_t offse
 	(void)buf;
 	(void)size;
 	(void)offset;
-	return -EINVAL;
+	throw cosmos::Errno::OP_NOT_SUPPORTED;
 }
 
 OpenContext* EventFile::createOpenContext() {

@@ -22,15 +22,15 @@ void FileEntry::getStat(struct stat *s) const {
 	s->st_size = stream.tellg();
 }
 
-int FileEntry::write(OpenContext *ctx, const char *data, size_t size, off_t offset) {
+FileEntry::Bytes FileEntry::write(OpenContext *ctx, const char *data, size_t size, off_t offset) {
 	(void)ctx;
 	(void)data;
 	(void)size;
 	(void)offset;
-	return -EINVAL;
+	throw cosmos::Errno::OP_NOT_SUPPORTED;
 }
 
-int FileEntry::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
+FileEntry::Bytes FileEntry::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	(void)ctx;
 	cosmos::MutexGuard g{m_parent->getLock()};
 
@@ -46,7 +46,7 @@ int FileEntry::read(OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	clear();
 
 	// return number of bytes actually retrieved
-	return ret;
+	return Bytes{ret};
 }
 
 } // end ns

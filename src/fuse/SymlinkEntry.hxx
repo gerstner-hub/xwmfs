@@ -22,7 +22,7 @@ public:
 
 	void getStat(struct stat*) const override;
 
-	virtual int readlink(char *buf, size_t size) override;
+	virtual void readlink(char *buf, size_t size) override;
 
 protected: // data
 

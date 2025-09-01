@@ -22,22 +22,18 @@ SelectionAccessFile::SelectionAccessFile(const std::string &n,
 	this->createAbortHandler(m_result_cond);
 }
 
-int SelectionAccessFile::read(
+Entry::Bytes SelectionAccessFile::read(
 		OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	updateOwner();
 	auto &xwmfs = xwmfs::Xwmfs::getInstance();
 
 	if (!m_owner.valid()) {
 		// no one owns the selection at the moment
-		return -EAGAIN;
+		throw cosmos::Errno::AGAIN;
 	} else if (m_owner != xwmfs.getSelectionWindow()) {
 		// stupid situation here, see EventFile::read
 		FileSysRevReadGuard guard(xwmfs.getFS());
-		const auto res = updateSelection();
-
-		if (res != 0) {
-			return res;
-		}
+		updateSelection();
 	}
 	// else: we ourselves own the selection, so just return our local node
 	// data
@@ -45,13 +41,13 @@ int SelectionAccessFile::read(
 	return FileEntry::read(ctx, buf, size, offset);
 }
 
-int SelectionAccessFile::write(
+Entry::Bytes SelectionAccessFile::write(
 		OpenContext *ctx, const char *data, const size_t bytes, off_t offset) {
 	(void)ctx;
 
 	// we don't support writing at offsets
 	if (offset) {
-		return -EOPNOTSUPP;
+		throw cosmos::Errno::OP_NOT_SUPPORTED;
 	}
 
 	auto &sel_window = xwmfs::Xwmfs::getInstance().getSelectionWindow();
@@ -62,7 +58,7 @@ int SelectionAccessFile::write(
 	this->str("");
 	(*this) << std::string(data, bytes);
 
-	return bytes;
+	return Bytes{static_cast<int>(bytes)};
 }
 
 void SelectionAccessFile::reportConversionResult(const xpp::AtomID result_prop) {
@@ -83,7 +79,7 @@ void SelectionAccessFile::provideConversion(xpp::XWindow &requestor,
 	requestor.setProperty(target_prop, data);
 }
 
-int SelectionAccessFile::updateSelection() {
+void SelectionAccessFile::updateSelection() {
 	auto &xwmfs = Xwmfs::Xwmfs::getInstance();
 	auto &sel_win = xwmfs.getSelectionWindow();
 
@@ -104,9 +100,9 @@ int SelectionAccessFile::updateSelection() {
 	// wait until the event thread reports the conversion data has arrived
 	while (!m_result_arrived) {
 		if (m_abort_handler->wasAborted()) {
-			return -EINTR;
+			throw cosmos::Errno::INTERRUPTED;
 		} else if (!m_abort_handler->prepareBlockingCall(this)) {
-			return -EINTR;
+			throw cosmos::Errno::INTERRUPTED;
 		}
 
 		m_result_cond.wait();
@@ -118,14 +114,14 @@ int SelectionAccessFile::updateSelection() {
 		xwmfs::logger->error()
 			<< "Selection conversion for "
 			<< cosmos::to_integral(m_sel_type) << " failed.";
-		return -EIO;
+		throw cosmos::Errno::IO_ERROR;
 	} else if (m_result_prop != m_target_prop) {
 		// was written to a different property?!
 		xwmfs::logger->error()
 			<< "Selection conversion was sent to property "
 			<< cosmos::to_integral(m_result_prop) << " instead of "
 			<< cosmos::to_integral(m_target_prop);
-		return -EIO;
+		throw cosmos::Errno::IO_ERROR;
 	}
 
 	try {
@@ -138,10 +134,8 @@ int SelectionAccessFile::updateSelection() {
 		xwmfs::logger->error()
 			<< "Failed to acquire selection buffer conversion data: "
 			<< ex.what();
-		return -EIO;
+		throw cosmos::Errno::IO_ERROR;
 	}
-
-	return 0;
 }
 
 void SelectionAccessFile::updateOwner() {
