@@ -121,6 +121,7 @@ int xwmfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	for (const auto &it: entries) {
 		if (provide_stat) {
+			cosmos::zero_object(stbuf);
 			it.second->getStat(&stbuf);
 		}
 
