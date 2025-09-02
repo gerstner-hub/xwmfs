@@ -48,7 +48,12 @@ void SelectionOwnerFile::updateOwners() {
 	for (const auto &selection: m_selection_dir.getSelectionTypes()) {
 		owner = xpp::XWindow{m_selection_dir.getSelectionOwner(selection.first)};
 
-		(*this) << selection.second << ": " << xpp::to_string(owner.id()) << "\n";
+		(*this) << selection.second << ": ";
+		if (owner.id() == xpp::WinID::INVALID)
+			(*this) << "0";
+		else 
+			(*this) << xpp::to_string(owner.id());
+		*this << "\n";
 	}
 }
 

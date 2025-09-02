@@ -180,7 +180,8 @@ Once mounted, the xwmfs file system presents the following hierarchy:
  |
  |--------> owners: contains one line per well-known selection buffer,
  |                  identifying the current window ID that _owns_ the
- |                  selection buffer in question.
+ |                  selection buffer in question. If there's no owner then 0
+ |                  is displayed as window ID.
  |--------> primary: On read this returns the content of the primary selection
  |                   formatted as UTF-8 text. This is the selection that is
  |                   typically pasted when pressing the middle mouse button.
