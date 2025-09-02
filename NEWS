@@ -1,3 +1,13 @@
+Version 1.10
+------------
+
+Major refactoring of the codebase using libcosmos and libxpp sub-modules.
+
+Version 1.00
+------------
+
+Support for libfuse3
+
 Version 0.81
 ------------
 
