@@ -1,40 +1,40 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
 noinst_LTLIBRARIES = libcosmos.la libxpp.la
-libcosmos_la_SOURCES = libcosmos/include/string.hxx libcosmos/include/cosmos.hxx libcosmos/include/types.hxx \
-	libcosmos/include/net/SocketError.hxx libcosmos/include/net/InterfaceEnumerator.hxx libcosmos/include/net/InterfaceIterator.hxx \
-	libcosmos/include/net/Socket.hxx libcosmos/include/net/UnixConnection.hxx libcosmos/include/net/InterfaceAddress.hxx \
-	libcosmos/include/net/types.hxx libcosmos/include/net/SocketAddress.hxx libcosmos/include/net/AddressInfoList.hxx \
-	libcosmos/include/net/SockOptBase.hxx libcosmos/include/net/UDPOptions.hxx libcosmos/include/net/unix_aux.hxx \
-	libcosmos/include/net/UnixClientSocket.hxx libcosmos/include/net/LinkLayerAddress.hxx libcosmos/include/net/IPOptions.hxx \
-	libcosmos/include/net/TCPOptions.hxx libcosmos/include/net/byte_order.hxx libcosmos/include/net/UnixOptions.hxx \
-	libcosmos/include/net/InterfaceAddressIterator.hxx libcosmos/include/net/InterfaceInfo.hxx libcosmos/include/net/ListenSocket.hxx \
-	libcosmos/include/net/InterfaceAddressList.hxx libcosmos/include/net/AddressInfoIterator.hxx libcosmos/include/net/UnixListenSocket.hxx \
-	libcosmos/include/net/UDPSocket.hxx libcosmos/include/net/ip_aux.hxx libcosmos/include/net/traits.hxx libcosmos/include/net/UnixDatagramSocket.hxx \
-	libcosmos/include/net/message_header.hxx libcosmos/include/net/tcp.hxx libcosmos/include/net/TCPConnection.hxx libcosmos/include/net/IPSocket.hxx \
-	libcosmos/include/net/TCPClientSocket.hxx libcosmos/include/net/AddressInfo.hxx libcosmos/include/net/AddressHints.hxx libcosmos/include/net/UnixAddress.hxx \
-	libcosmos/include/net/network.hxx libcosmos/include/net/IPAddress.hxx libcosmos/include/net/TCPListenSocket.hxx libcosmos/include/net/SocketOptions.hxx \
-	libcosmos/include/BitMask.hxx libcosmos/include/thread/pthread.hxx libcosmos/include/thread/thread.hxx libcosmos/include/thread/Condition.hxx \
-	libcosmos/include/thread/RWLock.hxx libcosmos/include/thread/PosixThread.hxx libcosmos/include/thread/Mutex.hxx libcosmos/include/GroupInfo.hxx \
-	libcosmos/include/time/types.hxx libcosmos/include/time/Clock.hxx libcosmos/include/time/TimerFD.hxx libcosmos/include/time/StopWatch.hxx \
-	libcosmos/include/time/time.hxx libcosmos/include/PasswdInfo.hxx libcosmos/include/compiler.hxx libcosmos/include/utils.hxx \
-	libcosmos/include/locale.hxx libcosmos/include/InfoBase.hxx libcosmos/include/limits.hxx libcosmos/include/dso_export.h \
-	libcosmos/include/proc/SigAction.hxx libcosmos/include/proc/types.hxx libcosmos/include/proc/ChildCloner.hxx libcosmos/include/proc/process.hxx \
-	libcosmos/include/proc/Scheduler.hxx libcosmos/include/proc/SigInfo.hxx libcosmos/include/proc/signal.hxx libcosmos/include/proc/mman.hxx \
-	libcosmos/include/proc/ptrace.hxx libcosmos/include/proc/SigSet.hxx libcosmos/include/proc/Tracee.hxx libcosmos/include/proc/pidfd.h \
-	libcosmos/include/proc/clone.hxx libcosmos/include/proc/ProcessFile.hxx libcosmos/include/proc/SignalFD.hxx libcosmos/include/proc/Mapping.hxx \
-	libcosmos/include/proc/SubProc.hxx libcosmos/include/proc/PidFD.hxx libcosmos/include/fs/DirFD.hxx libcosmos/include/fs/FileBase.hxx \
-	libcosmos/include/fs/types.hxx libcosmos/include/fs/TempDir.hxx libcosmos/include/fs/DirIterator.hxx libcosmos/include/fs/FileDescriptor.hxx \
-	libcosmos/include/fs/TempFile.hxx libcosmos/include/fs/filesystem.hxx libcosmos/include/fs/FDFile.hxx libcosmos/include/fs/DirStream.hxx \
-	libcosmos/include/fs/path.hxx libcosmos/include/fs/DirEntry.hxx libcosmos/include/fs/FileStatus.hxx libcosmos/include/fs/FileLock.hxx \
-	libcosmos/include/fs/File.hxx libcosmos/include/fs/Directory.hxx libcosmos/include/memory.hxx libcosmos/include/SysString.hxx \
-	libcosmos/include/main.hxx libcosmos/include/io/iovector.hxx libcosmos/include/io/StdLogger.hxx libcosmos/include/io/ILogger.hxx \
-	libcosmos/include/io/types.hxx libcosmos/include/io/SecretFile.hxx libcosmos/include/io/MemFile.hxx libcosmos/include/io/StreamIO.hxx \
-	libcosmos/include/io/Pipe.hxx libcosmos/include/io/SecretMemFile.hxx libcosmos/include/io/colors.hxx libcosmos/include/io/Terminal.hxx \
-	libcosmos/include/io/Poller.hxx libcosmos/include/io/EventFile.hxx libcosmos/include/io/StreamAdaptor.hxx libcosmos/include/formatting.hxx \
-	libcosmos/include/fwd.hxx libcosmos/include/error/UsageError.hxx libcosmos/include/error/errno.hxx libcosmos/include/error/macros.hxx \
-	libcosmos/include/error/FileError.hxx libcosmos/include/error/InternalError.hxx libcosmos/include/error/CosmosError.hxx libcosmos/include/error/RangeError.hxx \
-	libcosmos/include/error/ResolveError.hxx libcosmos/include/error/RuntimeError.hxx libcosmos/include/error/WouldBlock.hxx libcosmos/include/error/ApiError.hxx \
+libcosmos_la_SOURCES = libcosmos/include/cosmos/string.hxx libcosmos/include/cosmos/cosmos.hxx libcosmos/include/cosmos/types.hxx \
+	libcosmos/include/cosmos/net/SocketError.hxx libcosmos/include/cosmos/net/InterfaceEnumerator.hxx libcosmos/include/cosmos/net/InterfaceIterator.hxx \
+	libcosmos/include/cosmos/net/Socket.hxx libcosmos/include/cosmos/net/UnixConnection.hxx libcosmos/include/cosmos/net/InterfaceAddress.hxx \
+	libcosmos/include/cosmos/net/types.hxx libcosmos/include/cosmos/net/SocketAddress.hxx libcosmos/include/cosmos/net/AddressInfoList.hxx \
+	libcosmos/include/cosmos/net/SockOptBase.hxx libcosmos/include/cosmos/net/UDPOptions.hxx libcosmos/include/cosmos/net/unix_aux.hxx \
+	libcosmos/include/cosmos/net/UnixClientSocket.hxx libcosmos/include/cosmos/net/LinkLayerAddress.hxx libcosmos/include/cosmos/net/IPOptions.hxx \
+	libcosmos/include/cosmos/net/TCPOptions.hxx libcosmos/include/cosmos/net/byte_order.hxx libcosmos/include/cosmos/net/UnixOptions.hxx \
+	libcosmos/include/cosmos/net/InterfaceAddressIterator.hxx libcosmos/include/cosmos/net/InterfaceInfo.hxx libcosmos/include/cosmos/net/ListenSocket.hxx \
+	libcosmos/include/cosmos/net/InterfaceAddressList.hxx libcosmos/include/cosmos/net/AddressInfoIterator.hxx libcosmos/include/cosmos/net/UnixListenSocket.hxx \
+	libcosmos/include/cosmos/net/UDPSocket.hxx libcosmos/include/cosmos/net/ip_aux.hxx libcosmos/include/cosmos/net/traits.hxx libcosmos/include/cosmos/net/UnixDatagramSocket.hxx \
+	libcosmos/include/cosmos/net/message_header.hxx libcosmos/include/cosmos/net/tcp.hxx libcosmos/include/cosmos/net/TCPConnection.hxx libcosmos/include/cosmos/net/IPSocket.hxx \
+	libcosmos/include/cosmos/net/TCPClientSocket.hxx libcosmos/include/cosmos/net/AddressInfo.hxx libcosmos/include/cosmos/net/AddressHints.hxx libcosmos/include/cosmos/net/UnixAddress.hxx \
+	libcosmos/include/cosmos/net/network.hxx libcosmos/include/cosmos/net/IPAddress.hxx libcosmos/include/cosmos/net/TCPListenSocket.hxx libcosmos/include/cosmos/net/SocketOptions.hxx \
+	libcosmos/include/cosmos/BitMask.hxx libcosmos/include/cosmos/thread/pthread.hxx libcosmos/include/cosmos/thread/thread.hxx libcosmos/include/cosmos/thread/Condition.hxx \
+	libcosmos/include/cosmos/thread/RWLock.hxx libcosmos/include/cosmos/thread/PosixThread.hxx libcosmos/include/cosmos/thread/Mutex.hxx libcosmos/include/cosmos/GroupInfo.hxx \
+	libcosmos/include/cosmos/time/types.hxx libcosmos/include/cosmos/time/Clock.hxx libcosmos/include/cosmos/time/TimerFD.hxx libcosmos/include/cosmos/time/StopWatch.hxx \
+	libcosmos/include/cosmos/time/time.hxx libcosmos/include/cosmos/PasswdInfo.hxx libcosmos/include/cosmos/compiler.hxx libcosmos/include/cosmos/utils.hxx \
+	libcosmos/include/cosmos/locale.hxx libcosmos/include/cosmos/InfoBase.hxx libcosmos/include/cosmos/limits.hxx libcosmos/include/cosmos/dso_export.h \
+	libcosmos/include/cosmos/proc/SigAction.hxx libcosmos/include/cosmos/proc/types.hxx libcosmos/include/cosmos/proc/ChildCloner.hxx libcosmos/include/cosmos/proc/process.hxx \
+	libcosmos/include/cosmos/proc/Scheduler.hxx libcosmos/include/cosmos/proc/SigInfo.hxx libcosmos/include/cosmos/proc/signal.hxx libcosmos/include/cosmos/proc/mman.hxx \
+	libcosmos/include/cosmos/proc/ptrace.hxx libcosmos/include/cosmos/proc/SigSet.hxx libcosmos/include/cosmos/proc/Tracee.hxx libcosmos/include/cosmos/proc/pidfd.h \
+	libcosmos/include/cosmos/proc/clone.hxx libcosmos/include/cosmos/proc/ProcessFile.hxx libcosmos/include/cosmos/proc/SignalFD.hxx libcosmos/include/cosmos/proc/Mapping.hxx \
+	libcosmos/include/cosmos/proc/SubProc.hxx libcosmos/include/cosmos/proc/PidFD.hxx libcosmos/include/cosmos/fs/DirFD.hxx libcosmos/include/cosmos/fs/FileBase.hxx \
+	libcosmos/include/cosmos/fs/types.hxx libcosmos/include/cosmos/fs/TempDir.hxx libcosmos/include/cosmos/fs/DirIterator.hxx libcosmos/include/cosmos/fs/FileDescriptor.hxx \
+	libcosmos/include/cosmos/fs/TempFile.hxx libcosmos/include/cosmos/fs/filesystem.hxx libcosmos/include/cosmos/fs/FDFile.hxx libcosmos/include/cosmos/fs/DirStream.hxx \
+	libcosmos/include/cosmos/fs/path.hxx libcosmos/include/cosmos/fs/DirEntry.hxx libcosmos/include/cosmos/fs/FileStatus.hxx libcosmos/include/cosmos/fs/FileLock.hxx \
+	libcosmos/include/cosmos/fs/File.hxx libcosmos/include/cosmos/fs/Directory.hxx libcosmos/include/cosmos/memory.hxx libcosmos/include/cosmos/SysString.hxx \
+	libcosmos/include/cosmos/main.hxx libcosmos/include/cosmos/io/iovector.hxx libcosmos/include/cosmos/io/StdLogger.hxx libcosmos/include/cosmos/io/ILogger.hxx \
+	libcosmos/include/cosmos/io/types.hxx libcosmos/include/cosmos/io/SecretFile.hxx libcosmos/include/cosmos/io/MemFile.hxx libcosmos/include/cosmos/io/StreamIO.hxx \
+	libcosmos/include/cosmos/io/Pipe.hxx libcosmos/include/cosmos/io/SecretMemFile.hxx libcosmos/include/cosmos/io/colors.hxx libcosmos/include/cosmos/io/Terminal.hxx \
+	libcosmos/include/cosmos/io/Poller.hxx libcosmos/include/cosmos/io/EventFile.hxx libcosmos/include/cosmos/io/StreamAdaptor.hxx libcosmos/include/cosmos/formatting.hxx \
+	libcosmos/include/cosmos/fwd.hxx libcosmos/include/cosmos/error/UsageError.hxx libcosmos/include/cosmos/error/errno.hxx libcosmos/include/cosmos/error/macros.hxx \
+	libcosmos/include/cosmos/error/FileError.hxx libcosmos/include/cosmos/error/InternalError.hxx libcosmos/include/cosmos/error/CosmosError.hxx libcosmos/include/cosmos/error/RangeError.hxx \
+	libcosmos/include/cosmos/error/ResolveError.hxx libcosmos/include/cosmos/error/RuntimeError.hxx libcosmos/include/cosmos/error/WouldBlock.hxx libcosmos/include/cosmos/error/ApiError.hxx \
 	libcosmos/src/string.cxx libcosmos/src/PasswdInfo.cxx libcosmos/src/net/ip_aux.cxx libcosmos/src/net/AddressInfoList.cxx \
 	libcosmos/src/net/LinkLayerAddress.cxx libcosmos/src/net/Socket.cxx libcosmos/src/net/UnixAddress.cxx libcosmos/src/net/SockOptBase.cxx \
 	libcosmos/src/net/AddressInfo.cxx libcosmos/src/net/SocketOptions.cxx libcosmos/src/net/UnixClientSocket.cxx libcosmos/src/net/InterfaceEnumerator.cxx \
@@ -54,26 +54,33 @@ libcosmos_la_SOURCES = libcosmos/include/string.hxx libcosmos/include/cosmos.hxx
 	libcosmos/src/io/StreamIO.cxx libcosmos/src/io/SecretFile.cxx libcosmos/src/io/Poller.cxx libcosmos/src/io/Pipe.cxx \
 	libcosmos/src/io/EventFile.cxx libcosmos/src/io/ILogger.cxx libcosmos/src/error/errno.cxx libcosmos/src/error/ApiError.cxx \
 	libcosmos/src/error/CosmosError.cxx libcosmos/src/error/FileError.cxx libcosmos/src/error/ResolveError.cxx \
-	libcosmos/src/error/strerror.cxx libcosmos/src/formatting.cxx
+	libcosmos/src/error/strerror.cxx libcosmos/src/formatting.cxx \
+	libcosmos/src/cosmos/private/cosmos.hxx libcosmos/src/cosmos/private/strerror.hxx \
+	libcosmos/src/cosmos/private/Scheduler.hxx libcosmos/src/cosmos/private/sockopts.hxx \
+	libcosmos/src/cosmos/private/InfoBase.hxx libcosmos/src/cosmos/private/Initable.hxx
 
-libxpp_la_SOURCES = libxpp/include/helpers.hxx libxpp/include/Xpp.hxx libxpp/include/Event.hxx \
-	libxpp/include/types.hxx libxpp/include/Pixmap.hxx libxpp/include/SetWindowAttributes.hxx \
-	libxpp/include/Property.hxx libxpp/include/XColor.hxx libxpp/include/RootWin.hxx \
-	libxpp/include/XCursor.hxx libxpp/include/CachedAtom.hxx libxpp/include/PropertyTraits.hxx \
-	libxpp/include/X11Exception.hxx libxpp/include/event/ClientMessageEvent.hxx libxpp/include/event/PointerMovedEvent.hxx \
-	libxpp/include/event/InputEvent.hxx libxpp/include/event/ButtonEvent.hxx libxpp/include/event/KeyEvent.hxx \
-	libxpp/include/event/VisibilityEvent.hxx libxpp/include/event/ConfigureEvent.hxx libxpp/include/event/FocusChangeEvent.hxx \
-	libxpp/include/event/PropertyEvent.hxx libxpp/include/event/SelectionRequestEvent.hxx libxpp/include/event/SelectionEvent.hxx \
-	libxpp/include/WindowManagerHints.hxx libxpp/include/utils.hxx libxpp/include/SizeHints.hxx \
-	libxpp/include/utf8_string.hxx libxpp/include/dso_export.h libxpp/include/AtomMapper.hxx \
-	libxpp/include/XWindow.hxx libxpp/include/GraphicsContext.hxx libxpp/include/XDisplay.hxx \
-	libxpp/include/formatting.hxx libxpp/include/ClassHints.hxx libxpp/include/XWindowAttrs.hxx \
-	libxpp/include/keyboard.hxx libxpp/include/fwd.hxx libxpp/include/atoms.hxx \
+libxpp_la_SOURCES = libxpp/include/xpp/helpers.hxx libxpp/include/xpp/Xpp.hxx libxpp/include/xpp/Event.hxx \
+	libxpp/include/xpp/types.hxx libxpp/include/xpp/Pixmap.hxx libxpp/include/xpp/SetWindowAttributes.hxx \
+	libxpp/include/xpp/Property.hxx libxpp/include/xpp/XColor.hxx libxpp/include/xpp/RootWin.hxx \
+	libxpp/include/xpp/XCursor.hxx libxpp/include/xpp/CachedAtom.hxx libxpp/include/xpp/PropertyTraits.hxx \
+	libxpp/include/xpp/X11Exception.hxx libxpp/include/xpp/event/ClientMessageEvent.hxx libxpp/include/xpp/event/PointerMovedEvent.hxx \
+	libxpp/include/xpp/event/InputEvent.hxx libxpp/include/xpp/event/ButtonEvent.hxx libxpp/include/xpp/event/KeyEvent.hxx \
+	libxpp/include/xpp/event/VisibilityEvent.hxx libxpp/include/xpp/event/ConfigureEvent.hxx libxpp/include/xpp/event/FocusChangeEvent.hxx \
+	libxpp/include/xpp/event/PropertyEvent.hxx libxpp/include/xpp/event/SelectionRequestEvent.hxx libxpp/include/xpp/event/SelectionEvent.hxx \
+	libxpp/include/xpp/event/AnyEvent.hxx libxpp/include/xpp/event/CreateEvent.hxx \
+	libxpp/include/xpp/event/SelectionClearEvent.hxx libxpp/include/xpp/event/ButtonEvent.hxx \
+	libxpp/include/xpp/event/DestroyEvent.hxx libxpp/include/xpp/event/MapEvent.hxx libxpp/include/xpp/event/ReparentEvent.hxx \
+	libxpp/include/xpp/WindowManagerHints.hxx libxpp/include/xpp/utils.hxx libxpp/include/xpp/SizeHints.hxx \
+	libxpp/include/xpp/utf8_string.hxx libxpp/include/xpp/dso_export.h libxpp/include/xpp/AtomMapper.hxx \
+	libxpp/include/xpp/XWindow.hxx libxpp/include/xpp/GraphicsContext.hxx libxpp/include/xpp/XDisplay.hxx \
+	libxpp/include/xpp/formatting.hxx libxpp/include/xpp/ClassHints.hxx libxpp/include/xpp/XWindowAttrs.hxx \
+	libxpp/include/xpp/keyboard.hxx libxpp/include/xpp/fwd.hxx libxpp/include/xpp/atoms.hxx \
 	libxpp/src/GraphicsContext.cxx libxpp/src/XWindow.cxx libxpp/src/Pixmap.cxx \
 	libxpp/src/XWindowAttrs.cxx libxpp/src/Event.cxx libxpp/src/Xpp.cxx \
 	libxpp/src/PropertyTraits.cxx libxpp/src/helpers.cxx libxpp/src/XCursor.cxx \
 	libxpp/src/keyboard.cxx libxpp/src/CachedAtom.cxx libxpp/src/RootWin.cxx \
-	libxpp/src/XDisplay.cxx libxpp/src/AtomMapper.cxx libxpp/src/formatting.cxx
+	libxpp/src/XDisplay.cxx libxpp/src/AtomMapper.cxx libxpp/src/formatting.cxx \
+	libxpp/src/xpp/private/Xpp.hxx
 
 bin_PROGRAMS = xwmfs
 xwmfs_SOURCES = \
@@ -90,13 +97,13 @@ xwmfs_SOURCES += \
 		fuse/xwmfs_fuse_ops.h fuse/AbortHandler.hxx fuse/DirEntry.hxx fuse/Entry.hxx \
 		fuse/EventFile.hxx fuse/FileEntry.hxx fuse/OpenContext.hxx fuse/RootEntry.hxx \
 		fuse/SymlinkEntry.hxx fuse/xwmfs_fuse.hxx \
-		main/Options.hxx \
+		main/Options.hxx main/Exception.hxx \
 		main/SelectionAccessFile.hxx main/SelectionDirEntry.hxx main/SelectionOwnerFile.hxx \
 		main/logger.hxx main/UpdatableDir.hxx main/WinManagerDirEntry.hxx \
 		main/WinManagerFileEntry.hxx main/WindowDirEntry.hxx main/WindowFileEntry.hxx \
-		main/WindowsRootDir.hxx main/Xwmfs.hxx \
+		main/WindowsRootDir.hxx main/Xwmfs.hxx main/main.hxx \
 		main/DesktopsRootDir.hxx main/DesktopDirEntry.hxx \
-		x11/WinManagerWindow.hxx
+		x11/WinManagerWindow.hxx common/types.hxx
 # we need x11 and fuse
 xwmfs_DEPENDENCIES = x11 fuse libcosmos.la libxpp.la
 
