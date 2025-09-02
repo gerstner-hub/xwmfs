@@ -2,30 +2,26 @@
 #include "fuse/AbortHandler.hxx"
 #include "main/Xwmfs.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-AbortHandler::AbortHandler(Condition &cond) :
-	m_cond(cond)
-{}
+AbortHandler::AbortHandler(cosmos::Condition &cond) :
+		m_cond{cond} {
+}
 
-void AbortHandler::abort(pthread_t thread)
-{
+void AbortHandler::abort(const cosmos::pthread::ID thread) {
 	{
-		MutexGuard g(m_cond.getMutex());
-		m_abort_set.insert( thread );
+		cosmos::MutexGuard g{m_cond.mutex()};
+		m_abort_set.insert(thread);
 	}
 
 	m_cond.broadcast();
 }
 
-bool AbortHandler::wasAborted()
-{
-	const auto self = pthread_self();
-	auto it = m_abort_set.find( self );
+bool AbortHandler::wasAborted() {
+	const auto self = cosmos::pthread::get_id();
+	auto it = m_abort_set.find(self);
 
-	if( it == m_abort_set.end() )
-	{
+	if (it == m_abort_set.end()) {
 		return false;
 	}
 
@@ -34,14 +30,12 @@ bool AbortHandler::wasAborted()
 	return true;
 }
 
-bool AbortHandler::prepareBlockingCall(Entry *file)
-{
+bool AbortHandler::prepareBlockingCall(Entry *file) {
 	auto &xwmfs = xwmfs::Xwmfs::getInstance();
 	return xwmfs.registerBlockingCall(file);
 }
 
-void AbortHandler::finishedBlockingCall()
-{
+void AbortHandler::finishedBlockingCall() {
 	auto &xwmfs = xwmfs::Xwmfs::getInstance();
 	return xwmfs.unregisterBlockingCall();
 }

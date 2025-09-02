@@ -1,372 +1,305 @@
-#ifndef XWMFS_XWMFS_HXX
-#define XWMFS_XWMFS_HXX
-
-// POSIX
-#include <sys/select.h>
-#include <signal.h>
+#pragma once
 
 // C++
+#include <atomic>
 #include <map>
 #include <set>
 
+// cosmos
+#include <cosmos/io/EventFile.hxx>
+#include <cosmos/io/Pipe.hxx>
+#include <cosmos/io/Poller.hxx>
+#include <cosmos/proc/SigAction.hxx>
+#include <cosmos/proc/types.hxx>
+#include <cosmos/thread/Mutex.hxx>
+#include <cosmos/thread/PosixThread.hxx>
+
+// xpp
+#include <xpp/fwd.hxx>
+
 // Xwmfs
-#include "common/Thread.hxx"
-#include "x11/RootWin.hxx"
 #include "fuse/RootEntry.hxx"
 #include "main/Options.hxx"
-#include "main/StdLogger.hxx"
+#include "x11/WinManagerWindow.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class Entry;
 class DesktopsRootDir;
 class SelectionDirEntry;
-class WindowDirEntry;
 class WindowsRootDir;
 class WinManagerDirEntry;
 
+/// The main application class that provides XWMFS functionality.
 /**
- * \brief
- * 	The main application class that provides XWMFS functionality
- * \details
- * 	This is the connector class between the X11 and FUSE related XWMFS
- * 	parts. It keeps the window manager information on the one hand and the
- * 	FUSE file system representation on the other hand.
+ * This is the connector class between the X11 and FUSE related XWMFS
+ * parts. It keeps the window manager information on the one hand and the
+ * FUSE file system representation on the other hand.
  *
- * 	This is a singleton class such that it can be accessed globally from
- * 	anyhwere. Any application-global data is kept here.
+ * This is a singleton class such that it can be accessed globally from
+ * anywhere. Any application-global data is kept here.
  *
- * 	This class also runs its own thread that is responsible for dealing
- * 	with events dispatched from Xlib to us. This allows us to update the
- * 	file system structure whenever relevant window manager information
- * 	changes.
+ * This class also runs its own thread that is responsible for dealing
+ * with events dispatched from Xlib to us. This allows us to update the
+ * file system structure whenever relevant window manager information
+ * changes.
  **/
-class Xwmfs :
-	protected IThreadEntry
-{
+class Xwmfs {
 public: // functions
 
-	/**
-	 * \brief
-	 * 	An early initialization function that needs to be called from
-	 * 	the main() function early on
-	 **/
+	/// Initialization routine that needs to be called from main() early on.
 	static void early_init();
 
+	/// Initialization routine that needs to be called by the FUSE initialization logic.
 	/**
-	 * \brief
-	 *	This function is called by FUSE for initialization
-	 * \details
-	 * 	This function is only called from within FUSE initialization
-	 * 	and thus can't throw any exceptions.
+	 *  This function is only called from within FUSE initialization and
+	 *  thus must not throw any exceptions.
+	 *
 	 * \return
 	 *	EXIT_SUCCESS if initialization went well, else otherwise.
 	 **/
-	int init();
+	cosmos::ExitStatus init() noexcept;
 
-	/**
-	 * \brief
-	 *	This function is called by FUSE for cleanup
-	 **/
-	void exit();
+	/// This function is called by FUSE for cleanup.
+	void exit() noexcept;
 
 	~Xwmfs();
 
-	//! returns the global XWMFS instance
-	static xwmfs::Xwmfs& getInstance()
-	{
+	/// Returns the global XWMFS instance.
+	static xwmfs::Xwmfs& getInstance() {
 		static Xwmfs w;
 
 		return w;
 	}
 
+	/// Lock for the X11 event handling in the event handling thread.
 	/**
-	 * \brief
-	 * 	Locks the X11 event handling in the separated event thread
-	 * \details
-	 * 	This is to work around issues in libX11 itself. It's
-	 * 	surrounding the multithreading, for example when calling
-	 * 	XInternAtom from other threads then neither the separte Event
-	 * 	thread nor the thread calling XInternAtom will unblock as long
-	 * 	as no additional events are occuring that the event thread can
-	 * 	consume.
+	 * This is to work around issues in libX11 itself. It's surrounding
+	 * the multithreading, for example when calling XInternAtom from other
+	 * threads then neither the separate Event thread nor the thread
+	 * calling XInternAtom will unblock as long as no additional events
+	 * are occurring that the event thread can consume.
 	 *
-	 * 	This is a FIXME in libX11 source file xcb_io.c in function
-	 * 	_XReply() we're running into here. This lock here is supposed
-	 * 	to prevent entering this situation by only calling into
-	 * 	XNextEvent() when no other threads are actually doing
-	 * 	asynchronous X calls.
+	 * This is a FIXME in libX11 source file xcb_io.c in function
+	 * _XReply() we're running into here. This lock here is supposed
+	 * to prevent entering this situation by only calling into
+	 * XNextEvent() when no other threads are actually doing
+	 * asynchronous X calls.
 	 *
-	 * 	This currently mostly happens in the "properties" node where
-	 * 	custom atom names are handling in the context of a FUSE
-	 * 	thread.
+	 * This currently mostly happens in the "properties" node where
+	 * custom atom names are handled in the context of a FUSE thread.
 	 **/
-	Mutex& getEventLock() { return m_event_lock; }
+	cosmos::Mutex& getEventLock() { return m_event_lock; }
 
-	//! Returns the root window held in the Xwmfs
-	xwmfs::RootWin& getRootWin() { return m_root_win; }
+	/// Returns the global window manager window representation.
+	WinManagerWindow& getRootWin() { return m_root_win; }
 
-	//! returns the file system structure root entry
-	xwmfs::RootEntry& getFS() { return m_fs_root; }
+	/// Returns the application-wide XDisplay instance.
+	auto& getDisplay() { return m_display; }
 
-	XWindow& getSelectionWindow() { return m_selection_window; }
+	/// Returns the file system structure root entry.
+	RootEntry& getFS() { return m_fs_root; }
 
-	//! returns the options in effect for Xwmfs
+	xpp::XWindow& getSelectionWindow() { return m_selection_window; }
+
+	/// Returns the options in effect for Xwmfs.
 	xwmfs::Options& getOptions() { return m_opts; }
 
-	//! returns the umask of the current process
-	static mode_t getUmask() { return m_umask; }
+	/// Returns the umask of the current process.
+	static cosmos::FileMode getUmask() { return m_umask; }
 
-	//! returns the current time (updated for each new X event)
-	time_t getCurrentTime() const { return m_current_time; }
+	/// Returns the current time (updated for each new X event)
+	const cosmos::RealTime& getCurrentTime() const { return m_current_time; }
 
-	//! returns the "desktops" directory node
+	/// Returns the "desktops" directory node.
 	DesktopsRootDir* getDesktopsDir() { return m_desktop_dir; }
 
+	/// Registers a blocking call situation.
 	/**
-	 * \brief
-	 * 	Registers blocking call situation
-	 * \details
-	 * 	The calling thread will be associated with the given file
-	 * 	object. The callee will make sure that fuse signals to abort
-	 * 	the blocking request will be caught and the blocking call
-	 * 	woken up.
+	 * The calling thread will be associated with the given file object.
+	 * The callee will make sure that fuse signals to abort the blocking
+	 * request will be caught and the blocking call woken up in that
+	 * situation.
 	 *
-	 * 	In any case the caller must call unregisterBlockingCall()
-	 * 	after the blocking call is over, whether aborted or not.
+	 * In any case the caller must call unregisterBlockingCall() after the
+	 * blocking call is over, whether aborted or not.
+	 *
+	 * \return If `false` is returned then no blocking call can take place
+	 * right now and the operation should be aborted with an error.
 	 **/
 	bool registerBlockingCall(Entry *f);
 
-	/**
-	 * \brief
-	 * 	Unregisters a previously registered blocking call situation
-	 **/
+	/// Unregisters a previously registered blocking call situation.
 	void unregisterBlockingCall();
 
 protected: // functions
 
-	friend void fuseAbortSignal(int);
+	friend void fuse_abort_signal(const cosmos::Signal);
 
-	/**
-	 * \brief
-	 * 	Called from an asynchronous signal handler in case a blocking
-	 * 	call shall be aborted for the calling thread
-	 **/
+	/// Called from an asynchronous signal handler in case a blocking shall be aborted.
 	void abortBlockingCall(const bool all);
 
+	/// Abort a blocking call for the given thread
 	/**
-	 * \brief
-	 * 	Abort a blocking call for the given thread, called
-	 * 	synchronously from the event handling thread
+	 * This is called synchronously from the event handling thread.
 	 **/
-	void abortBlockingCall(pthread_t thread);
+	void abortBlockingCall(const cosmos::pthread::ID thread);
 
-	/**
-	 * \brief
-	 * 	Called synchronously from the event calling thread to abort
-	 * 	all pending blocking calls
-	 **/
+	/// Abort all pending blocking calls.
 	void abortAllBlockingCalls();
 
-
-	/**
-	 * \brief
-	 * 	Read an available message from the abort pipe
-	 **/
+	/// Read an available message from the abort pipe.
 	void readAbortPipe();
 
-	/**
-	 * \brief
-	 * 	Sets up any asynchronous signal handlers we need for aborting
-	 * 	blocking calls
-	 **/
+	/// Sets up asynchronous signal handlers needed for aborting blocking calls.
 	void setupAbortSignals(const bool on_off);
 
+	/// Callback for Xlib protocol errors.
 	/**
-	 * \brief
-	 * 	Called from Xlib on protocol errors
-	 * \details
-	 * 	If we don't overwrite this handler then the default handler
-	 * 	from xlib will call exit() in situations that can happen in
-	 * 	normal operation to us like race conditions e.g. a window
-	 * 	property updated but then the window also is destroyed but we
-	 * 	still attempt to get the properties from the already dead
-	 * 	window.
+	 * If we don't overwrite this handler then the default handler from
+	 * Xlib will call exit() in situations that can happen in normal
+	 * operation to us like race conditions e.g. a window property updated
+	 * but then the window also is destroyed but we still attempt to get
+	 * the properties from the already dead window.
 	 *
-	 * 	For being able to recover such situations we overwrite the
-	 * 	error handler and simply print out information to stdout
-	 * 	without exiting.
+	 * For being able to recover such situations, we overwrite the error
+	 * handler and simply print out information to stdout without exiting.
 	 **/
 	static int XErrorHandler(Display *disp, XErrorEvent *error);
 
+	/// Callback for Xlib fatal error conditions.
 	/**
-	 * \brief
-	 * 	Called from Xlib on fatal error conditions
-	 * \details
-	 * 	This is called if fatal errors occur like the X connection
-	 * 	being lost. It's supposed not to return, otherwise Xlib calls
-	 * 	exit()
+	 * This is called if fatal errors occur like the X connection being
+	 * lost. It's supposed not to return, otherwise Xlib calls exit().
 	 **/
 	static int XIOErrorHandler(Display *disp);
 
-	//! working loop for the event handling thread
-	void threadEntry(const Thread &t) override;
+	/// Working loop for the event handling thread
+	void eventThread();
 
-	/**
-	 * \brief
-	 * 	Reads and processes all events that can currently be read
-	 * 	without blocking
-	 **/
+	/// Processes all events that can currently be read without blocking.
 	void handlePendingEvents();
 
-	/**
-	 * \brief
-	 * 	Handles a single X11 event received by the x11 event thread
-	 **/
-	void handleEvent(const XEvent &ev);
+	/// Handles a single X11 event received by the event thread.
+	void handleEvent(const xpp::Event &ev);
 
+	/// Handles a window creation event.
 	/**
-	 * \brief
-	 * 	Handles a window CreateNotify event
 	 * \return
 	 * 	Whether the window has been added to the file system or not
 	 **/
-	bool handleCreateEvent(const XCreateWindowEvent &ev);
+	bool handleCreateEvent(const xpp::CreateEvent &ev);
 
-	/**
-	 * \brief
-	 * 	Handles a window DestroyNotify event
-	 **/
-	void handleDestroyEvent(const XDestroyWindowEvent &ev);
+	/// Handles a window destruction event
+	void handleDestroyEvent(const xpp::DestroyEvent &ev);
 
-	/**
-	 * \brief
-	 * 	Handles any selection buffer related events
-	 **/
-	void handleSelectionEvent(const XEvent &ev);
+	/// Handles any selection buffer related events.
+	void handleSelectionEvent(const xpp::Event &ev);
 
-	/**
-	 * \brief
-	 * 	Returns whether the given CreateNotify event refers to a
-	 * 	pseudo window
-	 **/
-	bool isPseudoWindow(const XCreateWindowEvent &ev) const;
+	/// Returns whether the given event refers to pseudo window.
+	bool isPseudoWindow(const xpp::CreateEvent &ev) const;
 
-	bool isIgnored(const XWindow &win) const
-	{
-		return m_ignored_windows.find(win.id()) != m_ignored_windows.end();
+	bool isIgnored(const xpp::WinID win) const {
+		return m_ignored_windows.find(win) != m_ignored_windows.end();
 	}
 
 private: // types
 
-	typedef std::map<pthread_t, Entry*> BlockingCallMap;
-	typedef std::map<int, struct sigaction> SignalHandlerMap;
+	using BlockingCallMap = std::map<cosmos::pthread::ID, Entry*>;
+	using SignalHandlerMap = std::map<cosmos::Signal, cosmos::SigAction>;
 
-	//! different abort signal contexts
-	enum class AbortType
-	{
-		//! abort just a single ongoing call in the associated thread
+	/// Different abort signal contexts
+	enum class AbortType {
+		/// Abort just a single ongoing call in the associated thread.
 		CALL,
-		//! abort all ongoing blocking calls to prepare for shutdown
+		/// Abort all ongoing blocking calls to prepare for shutdown.
 		SHUTDOWN
 	};
 
-	struct AbortMsg
-	{
+	struct AbortMsg {
 		AbortType type;
 		pthread_t thread = 0;
 	};
 
-	typedef std::set<Window> WindowSet;
+	using WindowSet = std::set<xpp::WinID>;
 
 private: // data
 
-	//! \brief
-	//! The gathered window manager information for the current X
-	//! display (X11 part of XWMFS)
-	xwmfs::RootWin m_root_win;
+	/// The display we're operating on.
+	xpp::XDisplay &m_display;
 
-	//! \brief
-	//! The file system root entry that composes the complete file system
-	//! (FUSE part of XWMFS)
+	/// Access to window manager information for the current X display (X11 part of XWMFS).
+	WinManagerWindow m_root_win;
+
+	/// The file system root entry that composes the complete file system (FUSE part of XWMFS).
 	xwmfs::RootEntry m_fs_root;
 
-	//! Thread evaluating X11 events and updating m_wmi, m_fs_root
-	xwmfs::Thread m_ev_thread;
+	/// X11 event handling thread.
+	cosmos::PosixThread m_ev_thread;
+	/// Whether m_ev_thread should still be running.
+	std::atomic_bool m_running;
 
-	//! options for the current instance
+	/// Options in effect for the current instance
 	xwmfs::Options &m_opts;
 
-	//! this is the fd for the connection to the display
-	int m_dis_fd = -1;
-	//! wakeup pipe read and write end
-	int m_wakeup_pipe[2];
+	/// Wakeup signaling file descriptor.
+	cosmos::EventFile m_wakeup_event;
 
-	//! file descriptors to monitor for events
-	fd_set m_select_set;
+	/// File descriptor poller for the event thread.
+	cosmos::Poller m_event_poller;
 
-	XEvent m_ev;
-	Display *m_display = nullptr;
+	/// the time of the last event that might lead to creating new file system objects.
+	cosmos::RealTime m_current_time;
 
-	//! the time of the last event that might lead to creating new file
-	//! system objects
-	time_t m_current_time = 0;
-
-	//! directory node containing all windows
+	/// Directory node containing all windows.
 	WindowsRootDir *m_win_dir = nullptr;
-	//! directory node containing all desktops and their windows
+	/// Directory node containing all desktops and their windows.
 	DesktopsRootDir *m_desktop_dir = nullptr;
-	//! directory node containing global wm information
+	/// Directory node containing global window manager information.
 	WinManagerDirEntry *m_wm_dir = nullptr;
-	//! directory ndoe containing selection buffer information
+	/// Directory node containing selection buffer information.
 	SelectionDirEntry *m_selection_dir = nullptr;
 
-	//! abort pipe to signal abort requests for a specific thread
-	int m_abort_pipe[2];
-	//! a mapping of active blocking threads and their associated files
+	/// Abort pipe to signal abort requests for a specific thread.
+	cosmos::Pipe m_abort_pipe;
+	/// A mapping of active blocking threads and their associated files.
 	BlockingCallMap m_blocking_calls;
-	//! protection for m_blocking_calls
-	Mutex m_blocking_call_lock;
-	//! whether we're in a shutdown condition
+	/// Synchronization for access to m_blocking_calls.
+	cosmos::Mutex m_blocking_call_lock;
+	/// Whether we're in a shutdown condition.
 	bool m_shutdown = false;
-	//! used for storing the original fuse signal handlers
+	/// used for storing the original fuse signal handlers.
 	SignalHandlerMap m_signal_handlers;
 
-	//! the active umask of the current process
-	static mode_t m_umask;
+	/// The active umask of the current process.
+	static cosmos::FileMode m_umask;
 
-	//! currently existing windows that are ignored by us
+	/// Currently existing windows that are ignored by us.
 	WindowSet m_ignored_windows;
 
-	Mutex m_event_lock;
+	cosmos::Mutex m_event_lock;
 
-	//! an XWindow created by the xwmfs for managing selection buffers
-	XWindow m_selection_window;
+	/// An XWindow created by us for managing selection buffers.
+	xpp::XWindow m_selection_window;
 
 private: // functions
 
-	//! private constructor to enforce singleton pattern
+	/// Private constructor to enforce singleton pattern.
 	Xwmfs();
 
-	//! deleted copy constructor to enforce singleton pattern
+	/// Deleted copy constructor to enforce singleton pattern.
 	Xwmfs(const Xwmfs &w) = delete;
 
-	/**
-	 * \brief
-	 * 	Creates the initial filesystem
-	 **/
+	/// Creates the initial file system.
 	void createFS();
 
 	void createSelectionWindow();
 
-	//! print application state for debugging purposes
+	/// Print application state for debugging purposes.
 	void printWMInfo();
 
-	//! updates m_current_time with the current time :-)
+	/// Updates m_current_time with the current time :-)
 	void updateTime();
 };
 
 } // end ns
-
-#endif // inc. guard

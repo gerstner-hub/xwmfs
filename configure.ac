@@ -15,6 +15,8 @@ AC_CONFIG_HEADERS([config.h])
 dnl pull in automake in a current version
 AM_INIT_AUTOMAKE([1.10.1 gnu])
 
+LT_INIT()
+
 dnl check for C and C++ compilers (we need a C99 compiler for fuse structure setup)
 AC_PROG_CC
 AC_PROG_CXX

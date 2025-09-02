@@ -1,10 +1,11 @@
 // C++
 #include <string>
-#include <iostream>
 
 // POSIX
 #include <sys/stat.h>
-#include <unistd.h>
+
+// cosmos
+#include <cosmos/thread/Condition.hxx>
 
 // xwmfs
 #include "fuse/AbortHandler.hxx"
@@ -12,75 +13,55 @@
 #include "fuse/OpenContext.hxx"
 #include "main/Xwmfs.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 const uid_t Entry::m_uid = ::getuid();
 const gid_t Entry::m_gid = ::getgid();
 
-
-Entry::~Entry()
-{
-	if( !m_parent || m_parent == this )
-		// no distict parent
+Entry::~Entry() {
+	if (!m_parent || m_parent == this)
+		// no distinct parent
 		return;
 
-	if( m_parent->unref() )
-	{
+	if (m_parent->unref()) {
 		delete m_parent,
 		m_parent = nullptr;
 	}
-
-	if( m_abort_handler )
-	{
-		delete m_abort_handler;
-		m_abort_handler = nullptr;
-	}
 }
 
-void Entry::createAbortHandler(Condition &cond)
-{
-	m_abort_handler = new AbortHandler(cond);
+void Entry::createAbortHandler(cosmos::Condition &cond) {
+	m_abort_handler = std::make_unique<AbortHandler>(cond);
 }
 
-void Entry::abortBlockingCall(pthread_t thread)
-{
-	if( !m_abort_handler )
-	{
+void Entry::abortBlockingCall(const cosmos::pthread::ID thread) {
+	if (!m_abort_handler) {
 		return;
 	}
 
 	return m_abort_handler->abort(thread);
 }
 
-int Entry::parseInteger(const char *data, const size_t bytes, int &result) const
-{
+size_t Entry::parseInteger(const char *data, const size_t bytes, int &result) const {
 	size_t endpos = 0;
 	std::string string(data, bytes);
 
-	try
-	{
-		result = std::stoi( string, &endpos );
-	}
-	catch( const std::exception &ex )
-	{
-		std::cerr << ex.what() << std::endl;
+	try {
+		result = std::stoi(string, &endpos);
+	} catch (const std::exception &ex) {
 		result = -1;
-		return -EINVAL;
+		throw cosmos::Errno::INVALID_ARG;
 	}
 
 	return endpos;
 }
 
-void Entry::getStat(struct stat *s) const
-{
+void Entry::getStat(struct stat *s) const {
 	s->st_uid = m_uid;
 	s->st_gid = m_gid;
-	s->st_atime = s->st_mtime = getModifyTime();
-	s->st_ctime = getStatusTime();
+	s->st_atim = s->st_mtim = getModifyTime();
+	s->st_ctim = getStatusTime();
 
-	switch(m_type)
-	{
+	switch(m_type) {
 	default:
 		// ???
 		s->st_mode = 0;
@@ -100,13 +81,11 @@ void Entry::getStat(struct stat *s) const
 	}
 
 	// apply the current process's umask to the file permissions
-	s->st_mode &= ~(Xwmfs::getUmask());
+	s->st_mode &= ~(cosmos::to_integral(Xwmfs::getUmask().raw()));
 }
 
-int Entry::isOperationAllowed() const
-{
-	if( isDeleted() )
-	{
+int Entry::isOperationAllowed() const {
+	if (isDeleted()) {
 		// difficult to say what the correct errno for "file
 		// disappeared" is. This one seems suitable. It would also be
 		// valid to succeed in reading but then the application can't
@@ -118,11 +97,10 @@ int Entry::isOperationAllowed() const
 	return 0;
 }
 
-void Entry::setParent(DirEntry *dir)
-{
+void Entry::setParent(DirEntry *dir) {
 	m_parent = dir;
 
-	if( this == dir )
+	if (this == dir)
 		// it's ourselves, no need for reference handling
 		return;
 
@@ -130,30 +108,30 @@ void Entry::setParent(DirEntry *dir)
 	m_parent->ref();
 }
 
-OpenContext* Entry::createOpenContext()
-{
+OpenContext* Entry::createOpenContext() {
 	// TODO: we could improve performance here by using pre-allocated
-	// objects for OpenContext
-	auto ret = new OpenContext(this);
+	// objects for OpenContext. Probably overkill for the few files we
+	// currently handle, though.
+	auto ret = new OpenContext{this};
 
-	// increase the reference count to avoid deletion while the file is
-	// opened
-	//
-	// NOTE: this race conditions only shows if fuse is mounted with the
-	// direct_io option, otherwise heavy caching is employed that avoids
-	// the SEGFAULT when somebody tries to read from an Entry that's
-	// already been deleted
+	/*
+	 * Increase the reference count to avoid deletion while the file is
+	 * open.
+	 *
+	 * NOTE: this race conditions only occurs if FUSE is mounted with
+	 * the direct_io option, otherwise heavy caching is employed that
+	 * avoids the SEGFAULT when somebody tries to read from an Entry
+	 * that's already been deleted
+	 */
 	this->ref();
 
 	return ret;
 }
 
-void Entry::destroyOpenContext(OpenContext *ctx)
-{
+void Entry::destroyOpenContext(OpenContext *ctx) {
 	delete ctx;
 
-	if( this->unref() )
-	{
+	if (this->unref()) {
 		// deleting this entry should not require a write guard,
 		// because we're the last user of the file nobody else should
 		// know about it ...

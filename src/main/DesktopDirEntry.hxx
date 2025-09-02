@@ -1,15 +1,12 @@
-#ifndef XWMFS_DESKTOP_DIR_ENTRY_HXX
-#define XWMFS_DESKTOP_DIR_ENTRY_HXX
+#pragma once
 
 // xwmfs
 #include "fuse/DirEntry.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
 class DesktopDirEntry :
-	public DirEntry
-{
+		public DirEntry {
 public: // functions
 
 	DesktopDirEntry(size_t nr, const std::string &name);
@@ -25,5 +22,3 @@ protected: // functions
 };
 
 } // end ns
-
-#endif // inc. guards

@@ -1,20 +1,15 @@
-#ifndef XWMFS_OPEN_CONTEXT_HXX
-#define XWMFS_OPEN_CONTEXT_HXX
+#pragma once
 
-// xwmfs
-
-namespace xwmfs
-{
+namespace xwmfs {
 
 class Entry;
 
-class OpenContext
-{
+class OpenContext {
 public: // functions
 
 	OpenContext(Entry *entry) :
-		m_entry(entry)
-	{}
+			m_entry{entry} {
+	}
 
 	virtual ~OpenContext() {}
 
@@ -25,12 +20,10 @@ public: // functions
 
 protected: // data
 
-	//! the file entry that has been opened
+	/// The file entry that has been opened.
 	Entry *m_entry;
-	//! whether the file descriptor is in non-blocking mode
+	/// Whether the file descriptor is in non-blocking mode
 	bool m_nonblocking = false;
 };
 
 } // end ns
-
-#endif // inc. guard

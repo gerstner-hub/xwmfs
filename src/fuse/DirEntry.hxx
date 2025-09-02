@@ -1,214 +1,188 @@
-#ifndef XWMFS_DIR_ENTRY_HXX
-#define XWMFS_DIR_ENTRY_HXX
+#pragma once
 
 // C++
 #include <map>
+#include <string_view>
+
+// cosmos
+#include <cosmos/thread/Mutex.hxx>
+#include <cosmos/utils.hxx>
 
 // xwmfs
 #include "fuse/Entry.hxx"
-#include "common/Mutex.hxx"
+#include "main/Exception.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
+/// This type represents directory entries in the file system.
 /**
- * \brief
- * 	This type represents directory entries in the file system
- * \details
- * 	The peculiarity of a directory is, of course, that it contains other
- * 	file system entries. For quick access a DirEntry thus contains a map
- * 	container that maps from its contained names to the corresponding
- * 	Entry base type.
+ * The peculiarity of a directory is, of course, that it contains other file
+ * system entries. For quick access a DirEntry thus contains a map container
+ * that maps from its contained names to the corresponding Entry base type.
  *
- * 	For now DirEntries are always read-only as we can't create new files
- * 	in the XWMFS (yet).
+ * For now DirEntry object are always read-only as we can't create new files
+ * in the XWMFS (yet).
  **/
 class DirEntry :
-	public Entry
-{
+		public Entry {
 public: // types
 
-	//! \brief
-	//! a map type that maps file system names to their corresponding
-	//! objects
-	typedef std::map<const char*, Entry*, compare_cstring> NameEntryMap;
+	/// A map of file system names to their corresponding Entry objects.
+	using NameEntryMap = std::map<std::string_view, Entry*>;
 
-	//! The type enum associated with DirEntry. Can be used in templates.
-	static const Entry::Type type = Entry::DIRECTORY;
+	/// The type enum associated with DirEntry. Can be used in templates.
+	static constexpr Entry::Type type = Entry::DIRECTORY;
 
 	struct DoubleAddError :
-		public Exception
-	{
-		DoubleAddError(const std::string &name) :
-			Exception(
-				std::string("double-add of the same directory node \"")
-					+ name.c_str() + "\""
-			)
+			public Exception {
+		explicit DoubleAddError(const std::string &name,
+				const cosmos::SourceLocation &src_loc = cosmos::SourceLocation::current()) :
+			Exception{
+				std::string{"double-add of the same directory node \""} + name.c_str() + "\"",
+				src_loc
+			}
 		{}
-
-		XWMFS_EXCEPTION_IMPL;
 	};
+
+	using InheritTime = cosmos::NamedBool<struct inherit_time_t, true>;
 
 public: // functions
 
+	/// Constructs a new directory of name `n`.
 	/**
-	 * \brief
-	 * 	Constructs a new directory of name \c n
-	 * \details
-	 * 	The given time \c t will be used for the initial status and
-	 * 	modification times of the directory.
+	 * The given time `t` will be used for the initial status and
+	 * modification times of the directory.
 	 **/
-	DirEntry(const std::string &n, const time_t &t = 0) :
-		Entry(n, DIRECTORY, false, t)
-	{ }
+	DirEntry(const std::string &n, const cosmos::RealTime &t = cosmos::RealTime{}) :
+		Entry{n, DIRECTORY, t} {
+	}
 
+	/// When a DirEntry is destroyed it deletes all its contained objects.
 	/**
-	 * \brief
-	 * 	When a DirEntry is destroyed it deletes all its contained
-	 * 	objects
-	 * \details
-	 * 	Due to this behaviour the file system can recursively delete
-	 * 	itself. As our file system won't get very deep nest levels we
-	 * 	don't need to fear a stack overflow.
+	 * Due to this behaviour the file system can recursively delete
+	 * itself. As our file system won't get very deep nesting levels we
+	 * don't need to fear a stack overflow.
 	 **/
 	~DirEntry() { this->clear(); }
 
-	/**
-	 * \brief
-	 * 	Removes all contained file system objects and marks them for
-	 * 	deletion
-	 **/
+	/// Removes all contained file system objects and marks them for deletion.
 	void clear();
 
+	/// Template wrapper around addEntry(Entry*, const InheritTime) that returns the concrete type added.
 	/**
-	 * \brief
-	 * 	Template wrapper around addEntry(Entry*, const bool) that
-	 * 	returns the concrete type added
-	 * \details
-	 * 	This template allows us to return the exact type added from
-	 * 	the function call. This way some statements are written more
-	 * 	easily (e.g. creating a new directory entry directly like
-	 * 	this:
+	 * This template allows us to return the exact type added from the
+	 * function call. This way some statements are written more easily,
+	 * e.g. creating a new directory entry directly like this:
 	 *
-	 * 	DirEntry *new_subdir = dir->addEntry( new DirEntry(...) )
+	 * ```
+	 * DirEntry *new_subdir = dir->addEntry(new DirEntry{...})
+	 * ```
 	 **/
 	template <typename ENTRY>
-	ENTRY* addEntry(ENTRY * const e, const bool inherit_time = true)
-	{
+	ENTRY* addEntry(ENTRY * const e, const InheritTime inherit_time = InheritTime{true}) {
 		addEntry(static_cast<Entry*>(e), inherit_time);
 		return e;
 	}
 
+	/// Adds a new entry to the current directory.
 	/**
-	 * \brief
-	 * 	Adds an arbitrary entry to the current directory
-	 * \details
-	 * 	The given file system entry \c e will be added as member of
-	 * 	the current DirEntry object. If \c inherit_time is set then
-	 * 	the modification and status time of \c e will be set to the
-	 * 	respective values of the current DirEntry object.
+	 * The given file system entry `e` will be added as member of the
+	 * current DirEntry object. If `inherit_time` is set then the
+	 * modification and status time of `e` will be set to the respective
+	 * values of the current DirEntry object.
 	 **/
-	Entry* addEntry(Entry * const e, const bool inherit_time = true);
+	Entry* addEntry(Entry * const e, const InheritTime inherit_time = InheritTime{true});
 
-	//! wrapper for getEntry(const char*) using a std::string
-	Entry* getEntry(const std::string &s) const
-	{ return getEntry(s.c_str()); }
-
+	/// Retrieve the contained entry with the name `n`.
 	/**
-	 * \brief
-	 * 	Retrieve the contained entry with the name \c n
 	 * \return
-	 * 	A pointer to the contained entry or nullptr if there is no
+	 * 	A pointer to the contained Entry or nullptr if there is no
 	 * 	entry with that name contained in the current DirEntry.
 	 **/
-	Entry* getEntry(const char *n) const
-	{
+	Entry* getEntry(const std::string_view n) const {
 		auto obj_it = m_objs.find(n);
 
-		return ( obj_it == m_objs.end() ) ? nullptr : obj_it->second;
+		return (obj_it == m_objs.end()) ? nullptr : obj_it->second;
 	}
 
-	//! retrieve an entry in the directory with name \c n, but only if of
-	//! type \c t
-	Entry* getEntry(const char *n, const Entry::Type &t)
-	{
+	/// Retrieve an entry in the directory with name `n` and of type `t`.
+	/**
+	 * If an entry of the given name exists, but has a different type,
+	 * then nullptr is returned.
+	 **/
+	Entry* getEntry(const std::string_view n, const Entry::Type t) {
 		Entry *ret = this->getEntry(n);
-		if( ret && ret->type() != t )
+		if (ret && ret->type() != t)
 			return nullptr;
 
 		return ret;
 	}
 
-	DirEntry* getDirEntry(const char *n)
-	{
+	DirEntry* getDirEntry(const std::string_view n) {
 		return reinterpret_cast<DirEntry*>(getEntry(n, Entry::Type::DIRECTORY));
 	}
 
-	DirEntry* getDirEntry(const std::string &n)
-	{
-		return getDirEntry(n.c_str());
-	}
-
-	FileEntry* getFileEntry(const char *n)
-	{
+	FileEntry* getFileEntry(const char *n) {
 		return reinterpret_cast<FileEntry*>(getEntry(n, Entry::Type::REG_FILE));
 	}
 
-	FileEntry* getFileEntry(const std::string &n)
-	{
+	FileEntry* getFileEntry(const std::string &n) {
 		return getFileEntry(n.c_str());
 	}
 
-	//! wrapper for removeEntry(const char*) using a std::string
-	void removeEntry(const std::string &s)
-	{ return removeEntry(s.c_str()); }
+	/// wrapper for removeEntry(const char*) using a std::string.
+	void removeEntry(const std::string &s) {
+		return removeEntry(s.c_str());
+	}
 
+	/// Removes the contained entry with the name `s`
 	/**
-	 * \brief
-	 * 	Removes the contained entry with the name \c s
-	 * \details
-	 * 	Throws an Exception if no such entry is existing
+	 * Throws an Exception if no such entry is existing.
 	 **/
 	void removeEntry(const char *s);
 
-	//! Retrieves the non-modifiable map of all contained entries
-	const NameEntryMap& getEntries() const { return m_objs; }
+	/// Retrieves the non-modifiable map of all contained entries.
+	const NameEntryMap& getEntries() const {
+		return m_objs;
+	}
 
-	bool markDeleted() override
-	{
+	bool markDeleted() override {
 		// make sure all child entries get marked as deleted right
 		// away as well
 		clear();
 		return Entry::markDeleted();
 	}
 
-	int read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
-	int write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
+	Bytes read(OpenContext *ctx, char *buf, size_t size, off_t offset) override;
+	Bytes write(OpenContext *ctx, const char *buf, size_t size, off_t offset) override;
 
-	Mutex& getLock() { return m_lock; }
+	cosmos::Mutex& getLock() {
+		return m_lock;
+	}
 
 protected: // data
 
-	//! contains all objects that the directory contains with their names
-	//! as keys
+	/// Contains all entries existing in the directory with their names as keys.
+	/**
+	 * Note that the keys are flat copies of the `m_name` member in the
+	 * Entry type. This uses std::string_view to support copy-less lookup
+	 * in RootEntry::findEntry(). The string_views inserted here must
+	 * always be null terminated, however, otherwise the interfacing to
+	 * FUSE won't work properly.
+	 **/
 	NameEntryMap m_objs;
 
+	/// A lock for this directory and all its direct children.
 	/**
-	 * \brief
-	 * 	A lock for this directory and all its direct children
-	 * \details
-	 * 	For serializing parallel access to individual fs entries we
-	 * 	need some kind of locking strategy. A global lock would
-	 * 	unnecessarily serialize unrelated operations on different
-	 * 	files. One lock per entry seems waste of ressources if we have
-	 * 	many files. Thus I've settled for one lock per directory and
-	 * 	all its direct non-directory children. A middle way of saving
-	 * 	resources and still allowing parallel operations in many
-	 * 	situations.
+	 * For serializing parallel access to individual fs entries we need
+	 * some kind of locking strategy. A global lock would unnecessarily
+	 * serialize unrelated operations on different files. One lock per
+	 * entry seems waste of resources if we have many files. Thus I've
+	 * settled for one lock per directory and all its direct non-directory
+	 * children. A middle way of saving resources and still allowing
+	 * parallel operations in many situations.
 	 **/
-	Mutex m_lock;
+	cosmos::Mutex m_lock;
 };
 
 } // end ns
-
-#endif // inc. guard

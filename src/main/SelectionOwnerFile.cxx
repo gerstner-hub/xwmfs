@@ -1,58 +1,59 @@
+// libxpp
+#include <xpp/XWindow.hxx>
+
 // xwmfs
-#include "x11/XWindow.hxx"
-#include "main/SelectionOwnerFile.hxx"
 #include "main/SelectionDirEntry.hxx"
+#include "main/SelectionOwnerFile.hxx"
 #include "main/Xwmfs.hxx"
 
-namespace xwmfs
-{
+namespace xwmfs {
 
-SelectionOwnerFile::SelectionOwnerFile(
-	const std::string &n, const SelectionDirEntry &parent) :
-	FileEntry(n, false, 0),
-	m_selection_dir(parent)
-{
+SelectionOwnerFile::SelectionOwnerFile(const std::string &n, const SelectionDirEntry &parent) :
+		FileEntry{n}, m_selection_dir{parent} {
 	updateOwners();
 }
 
-int SelectionOwnerFile::read(
-	OpenContext *ctx, char *buf, size_t size, off_t offset
-)
-{
+Entry::Bytes SelectionOwnerFile::read(
+		OpenContext *ctx, char *buf, size_t size, off_t offset) {
 	{
-		// see getSelectionOwner() for an explanation of why this
-		// isn't even based
-		//
-		// NOTE: Here another multi-threading bug lingers. For some
-		// reason the event handling thread blocks in XNextEvent()
-		// holding the event lock, although XPending() returned
-		// non-zero. This is probably some breakage in the low-level
-		// workings of libX11 again.
-		// The result is that if a user is trying to read from this
-		// file the read may block until some unrelated X event
-		// wakes up the event thread, so our thread here can get the
-		// lock.
-		//
-		// Don't know what to do against this at the moment.
+		/*
+		 * see getSelectionOwner() for an explanation of why this
+		 * isn't event based.
+		 *
+		 * NOTE: Here another multi-threading bug lingers. For some
+		 * reason the event handling thread blocks in XNextEvent()
+		 * holding the event lock, although XPending() returned
+		 * non-zero. This is probably some breakage in the low-level
+		 * workings of libX11 again.
+		 * The result is that if a user is trying to read from this
+		 * file, the read may block until some unrelated X event
+		 * wakes up the event thread, so our thread here can get the
+		 * lock.
+		 *
+		 * Don't know what to do against this at the moment.
+		 */
 		auto &xwmfs = Xwmfs::Xwmfs::getInstance();
-		MutexGuard g(xwmfs.getEventLock());
+		cosmos::MutexGuard g{xwmfs.getEventLock()};
 		updateOwners();
 	}
 
 	return FileEntry::read(ctx, buf, size, offset);
 }
 
-void SelectionOwnerFile::updateOwners()
-{
+void SelectionOwnerFile::updateOwners() {
 	this->str("");
 
-	XWindow owner;
+	xpp::XWindow owner;
 
-	for( const auto &selection: m_selection_dir.getSelectionTypes() )
-	{
-		owner = XWindow( m_selection_dir.getSelectionOwner( selection.first ) );
+	for (const auto &selection: m_selection_dir.getSelectionTypes()) {
+		owner = xpp::XWindow{m_selection_dir.getSelectionOwner(selection.first)};
 
-		(*this) << selection.second << ": " << owner << "\n";
+		(*this) << selection.second << ": ";
+		if (owner.id() == xpp::WinID::INVALID)
+			(*this) << "0";
+		else 
+			(*this) << xpp::to_string(owner.id());
+		*this << "\n";
 	}
 }
 
