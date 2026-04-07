@@ -152,7 +152,7 @@ def makeDistCheck():
 		)
 
 		subprocess.check_call(
-			[ "/usr/bin/make", "distcheck" ],
+			[ "/usr/bin/make", "distcheck", "-j" ],
 			close_fds = True,
 			shell = False,
 			cwd = buildtree
